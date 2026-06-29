@@ -1,0 +1,14 @@
+== stdout ==
+
+== stderr ==
+    Blocking waiting for file lock on package cache
+    Blocking waiting for file lock on package cache
+    Blocking waiting for file lock on package cache
+    Blocking waiting for file lock on build directory
+   Compiling kaspa-wrpc-client v1.2.2-toc.4 (/Users/arthur/RustroverProjects/rusty-kaspa/rpc/wrpc/client)
+   Compiling rgk-kaspa v0.1.0 (/Users/arthur/RustroverProjects/rgk/crates/rgk-kaspa)
+   Compiling rgk-resolver v0.1.0 (/Users/arthur/RustroverProjects/rgk/crates/rgk-resolver)
+   Compiling rgk-sync v0.1.0 (/Users/arthur/RustroverProjects/rgk/crates/rgk-sync)
+   Compiling rgk-e2e v0.1.0 (/Users/arthur/RustroverProjects/rgk/tests/rgk-e2e)
+    Finished `test` profile [optimized + debuginfo] target(s) in 15.59s
+  Executable tests/live_covenant.rs (target/debug/deps/live_covenant-7bf44a871ab07a5e)

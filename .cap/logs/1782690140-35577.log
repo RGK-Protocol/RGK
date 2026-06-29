@@ -1,0 +1,22 @@
+== stdout ==
+
+running 1 test
+test rgk_allocation_exclusion_segment_pair_groth16_proof_executes_in_upstream_toccata_vm ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 10 filtered out; finished in 35.30s
+
+
+== stderr ==
+    Blocking waiting for file lock on package cache
+    Blocking waiting for file lock on package cache
+    Blocking waiting for file lock on package cache
+    Blocking waiting for file lock on build directory
+   Compiling kaspa-wrpc-client v1.2.2-toc.4 (/Users/arthur/RustroverProjects/rusty-kaspa/rpc/wrpc/client)
+   Compiling rgk-zk v0.1.0 (/Users/arthur/RustroverProjects/rgk/crates/rgk-zk)
+   Compiling rgk-kaspa v0.1.0 (/Users/arthur/RustroverProjects/rgk/crates/rgk-kaspa)
+   Compiling rgk-sync v0.1.0 (/Users/arthur/RustroverProjects/rgk/crates/rgk-sync)
+   Compiling rgk-resolver v0.1.0 (/Users/arthur/RustroverProjects/rgk/crates/rgk-resolver)
+   Compiling rgk-e2e v0.1.0 (/Users/arthur/RustroverProjects/rgk/tests/rgk-e2e)
+    Finished `test` profile [optimized + debuginfo] target(s) in 11.46s
+     Running tests/zk_precompile_vm.rs (target/debug/deps/zk_precompile_vm-d80893c784f18fe4)
+[zk-precompile-vm] allocation_exclusion_segment_pair public_inputs=29 vk_bytes=1192 proof_bytes=128 script_bytes=2287

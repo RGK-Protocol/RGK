@@ -1,0 +1,17 @@
+== stdout ==
+
+running 5 tests
+test real_zk::tests::lane_discovery_statement_matches_native_derivation ... ok
+test real_zk::tests::wrong_view_key_cannot_satisfy_lane_discovery_circuit ... ok
+test real_zk::tests::lane_discovery_changed_public_scan_tag_rejected ... ok
+test real_zk::tests::lane_discovery_precompile_stack_shape_is_toccata_compatible ... ok
+test real_zk::tests::prove_then_verify_lane_discovery ... ok
+
+test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 38 filtered out; finished in 9.98s
+
+
+== stderr ==
+   Compiling rgk-asset v0.1.0 (/Users/arthur/RustroverProjects/rgk/crates/rgk-asset)
+   Compiling rgk-zk v0.1.0 (/Users/arthur/RustroverProjects/rgk/crates/rgk-zk)
+    Finished `test` profile [optimized + debuginfo] target(s) in 2.33s
+     Running unittests src/lib.rs (target/debug/deps/rgk_zk-2d7d6e784de2143c)

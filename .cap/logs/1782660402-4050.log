@@ -1,0 +1,10 @@
+== stdout ==
+
+== stderr ==
+    Blocking waiting for file lock on package cache
+    Blocking waiting for file lock on package cache
+    Blocking waiting for file lock on package cache
+    Blocking waiting for file lock on build directory
+   Compiling rgk-receipt v0.1.0 (/Users/arthur/RustroverProjects/rgk/crates/rgk-receipt)
+    Finished `bench` profile [optimized] target(s) in 21.98s
+  Executable benches/receipt_hot_paths.rs (target/release/deps/receipt_hot_paths-4ddad17d903febfd)

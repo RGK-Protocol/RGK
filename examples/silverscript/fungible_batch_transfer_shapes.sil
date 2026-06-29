@@ -1,0 +1,81 @@
+pragma silverscript ^0.1.0;
+
+contract RGKFungibleBatchTransferShapes() {
+    int amount = 1000;
+    byte[32] asset_id = 0x1111111111111111111111111111111111111111111111111111111111111111;
+    byte[32] lane_id = 0x2222222222222222222222222222222222222222222222222222222222222222;
+    byte[32] proof_policy = 0x4444444444444444444444444444444444444444444444444444444444444444;
+    byte[32] state_digest = 0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb;
+
+    #[covenant.singleton(mode = verification)]
+    function fanout_2x2(
+        State prev_state,
+        State new_state,
+        int spent_count,
+        int new_count,
+        byte[32] transition_digest
+    ) {
+        require(spent_count == 2);
+        require(new_count == 2);
+        require(prev_state.amount == new_state.amount);
+        require(prev_state.asset_id == new_state.asset_id);
+        require(prev_state.lane_id == new_state.lane_id);
+        require(prev_state.proof_policy == new_state.proof_policy);
+        require(prev_state.state_digest != new_state.state_digest);
+        require(transition_digest != prev_state.state_digest);
+    }
+
+    #[covenant.singleton(mode = verification)]
+    function merge_3x2(
+        State prev_state,
+        State new_state,
+        int spent_count,
+        int new_count,
+        byte[32] transition_digest
+    ) {
+        require(spent_count == 3);
+        require(new_count == 2);
+        require(prev_state.amount == new_state.amount);
+        require(prev_state.asset_id == new_state.asset_id);
+        require(prev_state.lane_id == new_state.lane_id);
+        require(prev_state.proof_policy == new_state.proof_policy);
+        require(prev_state.state_digest != new_state.state_digest);
+        require(transition_digest != prev_state.state_digest);
+    }
+
+    #[covenant.singleton(mode = verification)]
+    function merge_4x2(
+        State prev_state,
+        State new_state,
+        int spent_count,
+        int new_count,
+        byte[32] transition_digest
+    ) {
+        require(spent_count == 4);
+        require(new_count == 2);
+        require(prev_state.amount == new_state.amount);
+        require(prev_state.asset_id == new_state.asset_id);
+        require(prev_state.lane_id == new_state.lane_id);
+        require(prev_state.proof_policy == new_state.proof_policy);
+        require(prev_state.state_digest != new_state.state_digest);
+        require(transition_digest != prev_state.state_digest);
+    }
+
+    #[covenant.singleton(mode = verification)]
+    function batch_4x4(
+        State prev_state,
+        State new_state,
+        int spent_count,
+        int new_count,
+        byte[32] transition_digest
+    ) {
+        require(spent_count == 4);
+        require(new_count == 4);
+        require(prev_state.amount == new_state.amount);
+        require(prev_state.asset_id == new_state.asset_id);
+        require(prev_state.lane_id == new_state.lane_id);
+        require(prev_state.proof_policy == new_state.proof_policy);
+        require(prev_state.state_digest != new_state.state_digest);
+        require(transition_digest != prev_state.state_digest);
+    }
+}

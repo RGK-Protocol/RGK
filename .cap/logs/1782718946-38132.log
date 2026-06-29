@@ -1,0 +1,16 @@
+== stdout ==
+
+running 1 test
+test native::tests::nft_collection_policy_derives_fixed_supply_token_ids ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 47 filtered out; finished in 0.00s
+
+
+== stderr ==
+    Blocking waiting for file lock on package cache
+    Blocking waiting for file lock on package cache
+    Blocking waiting for file lock on package cache
+    Blocking waiting for file lock on package cache
+   Compiling rgk-asset v0.1.0 (/Users/arthur/RustroverProjects/rgk/crates/rgk-asset)
+    Finished `test` profile [optimized + debuginfo] target(s) in 1.09s
+     Running unittests src/lib.rs (target/debug/deps/rgk_asset-62819fe3dc6f14f9)

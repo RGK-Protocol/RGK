@@ -1,0 +1,25 @@
+[package]
+name = "rgk-receipt"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+description = "RGK receipt generation, canonical id, and fail-closed verification"
+
+[dependencies]
+rgk-core.workspace = true
+thiserror.workspace = true
+sha2.workspace = true
+
+[dev-dependencies]
+criterion = "0.7"
+proptest = "1"
+
+[features]
+default = ["std"]
+std = []
+
+[[bench]]
+name = "receipt_hot_paths"
+harness = false

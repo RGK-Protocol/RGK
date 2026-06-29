@@ -1,0 +1,2897 @@
+{
+  "contract_name": "RGKMetadataOwnershipGuardrails",
+  "compiler_version": "0.1.0",
+  "script": [
+    32,
+    17,
+    17,
+    17,
+    17,
+    17,
+    17,
+    17,
+    17,
+    17,
+    17,
+    17,
+    17,
+    17,
+    17,
+    17,
+    17,
+    17,
+    17,
+    17,
+    17,
+    17,
+    17,
+    17,
+    17,
+    17,
+    17,
+    17,
+    17,
+    17,
+    17,
+    17,
+    17,
+    32,
+    34,
+    34,
+    34,
+    34,
+    34,
+    34,
+    34,
+    34,
+    34,
+    34,
+    34,
+    34,
+    34,
+    34,
+    34,
+    34,
+    34,
+    34,
+    34,
+    34,
+    34,
+    34,
+    34,
+    34,
+    34,
+    34,
+    34,
+    34,
+    34,
+    34,
+    34,
+    34,
+    32,
+    153,
+    153,
+    153,
+    153,
+    153,
+    153,
+    153,
+    153,
+    153,
+    153,
+    153,
+    153,
+    153,
+    153,
+    153,
+    153,
+    153,
+    153,
+    153,
+    153,
+    153,
+    153,
+    153,
+    153,
+    153,
+    153,
+    153,
+    153,
+    153,
+    153,
+    153,
+    153,
+    32,
+    170,
+    170,
+    170,
+    170,
+    170,
+    170,
+    170,
+    170,
+    170,
+    170,
+    170,
+    170,
+    170,
+    170,
+    170,
+    170,
+    170,
+    170,
+    170,
+    170,
+    170,
+    170,
+    170,
+    170,
+    170,
+    170,
+    170,
+    170,
+    170,
+    170,
+    170,
+    170,
+    32,
+    187,
+    187,
+    187,
+    187,
+    187,
+    187,
+    187,
+    187,
+    187,
+    187,
+    187,
+    187,
+    187,
+    187,
+    187,
+    187,
+    187,
+    187,
+    187,
+    187,
+    187,
+    187,
+    187,
+    187,
+    187,
+    187,
+    187,
+    187,
+    187,
+    187,
+    187,
+    187,
+    32,
+    204,
+    204,
+    204,
+    204,
+    204,
+    204,
+    204,
+    204,
+    204,
+    204,
+    204,
+    204,
+    204,
+    204,
+    204,
+    204,
+    204,
+    204,
+    204,
+    204,
+    204,
+    204,
+    204,
+    204,
+    204,
+    204,
+    204,
+    204,
+    204,
+    204,
+    204,
+    204,
+    32,
+    221,
+    221,
+    221,
+    221,
+    221,
+    221,
+    221,
+    221,
+    221,
+    221,
+    221,
+    221,
+    221,
+    221,
+    221,
+    221,
+    221,
+    221,
+    221,
+    221,
+    221,
+    221,
+    221,
+    221,
+    221,
+    221,
+    221,
+    221,
+    221,
+    221,
+    221,
+    221,
+    86,
+    121,
+    91,
+    121,
+    91,
+    121,
+    91,
+    121,
+    91,
+    121,
+    84,
+    121,
+    1,
+    23,
+    121,
+    135,
+    105,
+    84,
+    121,
+    92,
+    121,
+    135,
+    105,
+    90,
+    121,
+    91,
+    121,
+    135,
+    105,
+    1,
+    21,
+    121,
+    91,
+    121,
+    135,
+    105,
+    89,
+    121,
+    84,
+    121,
+    135,
+    105,
+    1,
+    20,
+    121,
+    84,
+    121,
+    135,
+    105,
+    83,
+    121,
+    90,
+    121,
+    135,
+    105,
+    88,
+    121,
+    83,
+    121,
+    135,
+    105,
+    1,
+    18,
+    121,
+    82,
+    121,
+    135,
+    105,
+    82,
+    121,
+    89,
+    121,
+    135,
+    105,
+    120,
+    88,
+    121,
+    135,
+    105,
+    82,
+    121,
+    82,
+    121,
+    135,
+    145,
+    105,
+    118,
+    87,
+    121,
+    135,
+    105,
+    118,
+    32,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    135,
+    145,
+    105,
+    1,
+    17,
+    121,
+    120,
+    135,
+    105,
+    85,
+    121,
+    1,
+    17,
+    121,
+    135,
+    145,
+    105,
+    185,
+    203,
+    81,
+    156,
+    105,
+    1,
+    22,
+    121,
+    1,
+    32,
+    124,
+    126,
+    1,
+    22,
+    121,
+    1,
+    32,
+    124,
+    126,
+    1,
+    22,
+    121,
+    1,
+    32,
+    124,
+    126,
+    1,
+    22,
+    121,
+    1,
+    32,
+    124,
+    126,
+    1,
+    22,
+    121,
+    1,
+    32,
+    124,
+    126,
+    1,
+    22,
+    121,
+    1,
+    32,
+    124,
+    126,
+    1,
+    22,
+    121,
+    1,
+    32,
+    124,
+    126,
+    126,
+    126,
+    126,
+    126,
+    126,
+    126,
+    185,
+    118,
+    201,
+    118,
+    2,
+    247,
+    1,
+    148,
+    2,
+    231,
+    0,
+    147,
+    124,
+    188,
+    126,
+    170,
+    2,
+    0,
+    0,
+    1,
+    170,
+    126,
+    1,
+    32,
+    126,
+    124,
+    126,
+    1,
+    135,
+    126,
+    185,
+    0,
+    204,
+    195,
+    135,
+    105,
+    0,
+    122,
+    117,
+    0,
+    122,
+    117,
+    0,
+    122,
+    117,
+    0,
+    122,
+    117,
+    0,
+    122,
+    117,
+    117,
+    117,
+    117,
+    117,
+    117,
+    117,
+    117,
+    117,
+    117,
+    117,
+    117,
+    117,
+    117,
+    117,
+    117,
+    117,
+    117,
+    117,
+    81
+  ],
+  "ast": {
+    "pragma": {
+      "name": "silverscript",
+      "value": "^0.1.0",
+      "span": "pragma silverscript ^0.1.0;",
+      "name_span": "silverscript",
+      "value_span": "^0.1.0"
+    },
+    "name": "RGKMetadataOwnershipGuardrails",
+    "params": [],
+    "fields": [
+      {
+        "type_ref": {
+          "base": "byte",
+          "array_dims": [
+            {
+              "kind": "fixed",
+              "value": 32
+            }
+          ]
+        },
+        "name": "asset_id",
+        "expr": {
+          "kind": "array",
+          "data": [
+            {
+              "kind": "byte",
+              "data": 17,
+              "span": "0x1111111111111111111111111111111111111111111111111111111111111111"
+            },
+            {
+              "kind": "byte",
+              "data": 17,
+              "span": "0x1111111111111111111111111111111111111111111111111111111111111111"
+            },
+            {
+              "kind": "byte",
+              "data": 17,
+              "span": "0x1111111111111111111111111111111111111111111111111111111111111111"
+            },
+            {
+              "kind": "byte",
+              "data": 17,
+              "span": "0x1111111111111111111111111111111111111111111111111111111111111111"
+            },
+            {
+              "kind": "byte",
+              "data": 17,
+              "span": "0x1111111111111111111111111111111111111111111111111111111111111111"
+            },
+            {
+              "kind": "byte",
+              "data": 17,
+              "span": "0x1111111111111111111111111111111111111111111111111111111111111111"
+            },
+            {
+              "kind": "byte",
+              "data": 17,
+              "span": "0x1111111111111111111111111111111111111111111111111111111111111111"
+            },
+            {
+              "kind": "byte",
+              "data": 17,
+              "span": "0x1111111111111111111111111111111111111111111111111111111111111111"
+            },
+            {
+              "kind": "byte",
+              "data": 17,
+              "span": "0x1111111111111111111111111111111111111111111111111111111111111111"
+            },
+            {
+              "kind": "byte",
+              "data": 17,
+              "span": "0x1111111111111111111111111111111111111111111111111111111111111111"
+            },
+            {
+              "kind": "byte",
+              "data": 17,
+              "span": "0x1111111111111111111111111111111111111111111111111111111111111111"
+            },
+            {
+              "kind": "byte",
+              "data": 17,
+              "span": "0x1111111111111111111111111111111111111111111111111111111111111111"
+            },
+            {
+              "kind": "byte",
+              "data": 17,
+              "span": "0x1111111111111111111111111111111111111111111111111111111111111111"
+            },
+            {
+              "kind": "byte",
+              "data": 17,
+              "span": "0x1111111111111111111111111111111111111111111111111111111111111111"
+            },
+            {
+              "kind": "byte",
+              "data": 17,
+              "span": "0x1111111111111111111111111111111111111111111111111111111111111111"
+            },
+            {
+              "kind": "byte",
+              "data": 17,
+              "span": "0x1111111111111111111111111111111111111111111111111111111111111111"
+            },
+            {
+              "kind": "byte",
+              "data": 17,
+              "span": "0x1111111111111111111111111111111111111111111111111111111111111111"
+            },
+            {
+              "kind": "byte",
+              "data": 17,
+              "span": "0x1111111111111111111111111111111111111111111111111111111111111111"
+            },
+            {
+              "kind": "byte",
+              "data": 17,
+              "span": "0x1111111111111111111111111111111111111111111111111111111111111111"
+            },
+            {
+              "kind": "byte",
+              "data": 17,
+              "span": "0x1111111111111111111111111111111111111111111111111111111111111111"
+            },
+            {
+              "kind": "byte",
+              "data": 17,
+              "span": "0x1111111111111111111111111111111111111111111111111111111111111111"
+            },
+            {
+              "kind": "byte",
+              "data": 17,
+              "span": "0x1111111111111111111111111111111111111111111111111111111111111111"
+            },
+            {
+              "kind": "byte",
+              "data": 17,
+              "span": "0x1111111111111111111111111111111111111111111111111111111111111111"
+            },
+            {
+              "kind": "byte",
+              "data": 17,
+              "span": "0x1111111111111111111111111111111111111111111111111111111111111111"
+            },
+            {
+              "kind": "byte",
+              "data": 17,
+              "span": "0x1111111111111111111111111111111111111111111111111111111111111111"
+            },
+            {
+              "kind": "byte",
+              "data": 17,
+              "span": "0x1111111111111111111111111111111111111111111111111111111111111111"
+            },
+            {
+              "kind": "byte",
+              "data": 17,
+              "span": "0x1111111111111111111111111111111111111111111111111111111111111111"
+            },
+            {
+              "kind": "byte",
+              "data": 17,
+              "span": "0x1111111111111111111111111111111111111111111111111111111111111111"
+            },
+            {
+              "kind": "byte",
+              "data": 17,
+              "span": "0x1111111111111111111111111111111111111111111111111111111111111111"
+            },
+            {
+              "kind": "byte",
+              "data": 17,
+              "span": "0x1111111111111111111111111111111111111111111111111111111111111111"
+            },
+            {
+              "kind": "byte",
+              "data": 17,
+              "span": "0x1111111111111111111111111111111111111111111111111111111111111111"
+            },
+            {
+              "kind": "byte",
+              "data": 17,
+              "span": "0x1111111111111111111111111111111111111111111111111111111111111111"
+            }
+          ],
+          "span": "0x1111111111111111111111111111111111111111111111111111111111111111"
+        },
+        "span": "byte[32] asset_id = 0x1111111111111111111111111111111111111111111111111111111111111111;",
+        "type_span": "byte[32]",
+        "name_span": "asset_id"
+      },
+      {
+        "type_ref": {
+          "base": "byte",
+          "array_dims": [
+            {
+              "kind": "fixed",
+              "value": 32
+            }
+          ]
+        },
+        "name": "lane_id",
+        "expr": {
+          "kind": "array",
+          "data": [
+            {
+              "kind": "byte",
+              "data": 34,
+              "span": "0x2222222222222222222222222222222222222222222222222222222222222222"
+            },
+            {
+              "kind": "byte",
+              "data": 34,
+              "span": "0x2222222222222222222222222222222222222222222222222222222222222222"
+            },
+            {
+              "kind": "byte",
+              "data": 34,
+              "span": "0x2222222222222222222222222222222222222222222222222222222222222222"
+            },
+            {
+              "kind": "byte",
+              "data": 34,
+              "span": "0x2222222222222222222222222222222222222222222222222222222222222222"
+            },
+            {
+              "kind": "byte",
+              "data": 34,
+              "span": "0x2222222222222222222222222222222222222222222222222222222222222222"
+            },
+            {
+              "kind": "byte",
+              "data": 34,
+              "span": "0x2222222222222222222222222222222222222222222222222222222222222222"
+            },
+            {
+              "kind": "byte",
+              "data": 34,
+              "span": "0x2222222222222222222222222222222222222222222222222222222222222222"
+            },
+            {
+              "kind": "byte",
+              "data": 34,
+              "span": "0x2222222222222222222222222222222222222222222222222222222222222222"
+            },
+            {
+              "kind": "byte",
+              "data": 34,
+              "span": "0x2222222222222222222222222222222222222222222222222222222222222222"
+            },
+            {
+              "kind": "byte",
+              "data": 34,
+              "span": "0x2222222222222222222222222222222222222222222222222222222222222222"
+            },
+            {
+              "kind": "byte",
+              "data": 34,
+              "span": "0x2222222222222222222222222222222222222222222222222222222222222222"
+            },
+            {
+              "kind": "byte",
+              "data": 34,
+              "span": "0x2222222222222222222222222222222222222222222222222222222222222222"
+            },
+            {
+              "kind": "byte",
+              "data": 34,
+              "span": "0x2222222222222222222222222222222222222222222222222222222222222222"
+            },
+            {
+              "kind": "byte",
+              "data": 34,
+              "span": "0x2222222222222222222222222222222222222222222222222222222222222222"
+            },
+            {
+              "kind": "byte",
+              "data": 34,
+              "span": "0x2222222222222222222222222222222222222222222222222222222222222222"
+            },
+            {
+              "kind": "byte",
+              "data": 34,
+              "span": "0x2222222222222222222222222222222222222222222222222222222222222222"
+            },
+            {
+              "kind": "byte",
+              "data": 34,
+              "span": "0x2222222222222222222222222222222222222222222222222222222222222222"
+            },
+            {
+              "kind": "byte",
+              "data": 34,
+              "span": "0x2222222222222222222222222222222222222222222222222222222222222222"
+            },
+            {
+              "kind": "byte",
+              "data": 34,
+              "span": "0x2222222222222222222222222222222222222222222222222222222222222222"
+            },
+            {
+              "kind": "byte",
+              "data": 34,
+              "span": "0x2222222222222222222222222222222222222222222222222222222222222222"
+            },
+            {
+              "kind": "byte",
+              "data": 34,
+              "span": "0x2222222222222222222222222222222222222222222222222222222222222222"
+            },
+            {
+              "kind": "byte",
+              "data": 34,
+              "span": "0x2222222222222222222222222222222222222222222222222222222222222222"
+            },
+            {
+              "kind": "byte",
+              "data": 34,
+              "span": "0x2222222222222222222222222222222222222222222222222222222222222222"
+            },
+            {
+              "kind": "byte",
+              "data": 34,
+              "span": "0x2222222222222222222222222222222222222222222222222222222222222222"
+            },
+            {
+              "kind": "byte",
+              "data": 34,
+              "span": "0x2222222222222222222222222222222222222222222222222222222222222222"
+            },
+            {
+              "kind": "byte",
+              "data": 34,
+              "span": "0x2222222222222222222222222222222222222222222222222222222222222222"
+            },
+            {
+              "kind": "byte",
+              "data": 34,
+              "span": "0x2222222222222222222222222222222222222222222222222222222222222222"
+            },
+            {
+              "kind": "byte",
+              "data": 34,
+              "span": "0x2222222222222222222222222222222222222222222222222222222222222222"
+            },
+            {
+              "kind": "byte",
+              "data": 34,
+              "span": "0x2222222222222222222222222222222222222222222222222222222222222222"
+            },
+            {
+              "kind": "byte",
+              "data": 34,
+              "span": "0x2222222222222222222222222222222222222222222222222222222222222222"
+            },
+            {
+              "kind": "byte",
+              "data": 34,
+              "span": "0x2222222222222222222222222222222222222222222222222222222222222222"
+            },
+            {
+              "kind": "byte",
+              "data": 34,
+              "span": "0x2222222222222222222222222222222222222222222222222222222222222222"
+            }
+          ],
+          "span": "0x2222222222222222222222222222222222222222222222222222222222222222"
+        },
+        "span": "byte[32] lane_id = 0x2222222222222222222222222222222222222222222222222222222222222222;",
+        "type_span": "byte[32]",
+        "name_span": "lane_id"
+      },
+      {
+        "type_ref": {
+          "base": "byte",
+          "array_dims": [
+            {
+              "kind": "fixed",
+              "value": 32
+            }
+          ]
+        },
+        "name": "metadata_commitment",
+        "expr": {
+          "kind": "array",
+          "data": [
+            {
+              "kind": "byte",
+              "data": 153,
+              "span": "0x9999999999999999999999999999999999999999999999999999999999999999"
+            },
+            {
+              "kind": "byte",
+              "data": 153,
+              "span": "0x9999999999999999999999999999999999999999999999999999999999999999"
+            },
+            {
+              "kind": "byte",
+              "data": 153,
+              "span": "0x9999999999999999999999999999999999999999999999999999999999999999"
+            },
+            {
+              "kind": "byte",
+              "data": 153,
+              "span": "0x9999999999999999999999999999999999999999999999999999999999999999"
+            },
+            {
+              "kind": "byte",
+              "data": 153,
+              "span": "0x9999999999999999999999999999999999999999999999999999999999999999"
+            },
+            {
+              "kind": "byte",
+              "data": 153,
+              "span": "0x9999999999999999999999999999999999999999999999999999999999999999"
+            },
+            {
+              "kind": "byte",
+              "data": 153,
+              "span": "0x9999999999999999999999999999999999999999999999999999999999999999"
+            },
+            {
+              "kind": "byte",
+              "data": 153,
+              "span": "0x9999999999999999999999999999999999999999999999999999999999999999"
+            },
+            {
+              "kind": "byte",
+              "data": 153,
+              "span": "0x9999999999999999999999999999999999999999999999999999999999999999"
+            },
+            {
+              "kind": "byte",
+              "data": 153,
+              "span": "0x9999999999999999999999999999999999999999999999999999999999999999"
+            },
+            {
+              "kind": "byte",
+              "data": 153,
+              "span": "0x9999999999999999999999999999999999999999999999999999999999999999"
+            },
+            {
+              "kind": "byte",
+              "data": 153,
+              "span": "0x9999999999999999999999999999999999999999999999999999999999999999"
+            },
+            {
+              "kind": "byte",
+              "data": 153,
+              "span": "0x9999999999999999999999999999999999999999999999999999999999999999"
+            },
+            {
+              "kind": "byte",
+              "data": 153,
+              "span": "0x9999999999999999999999999999999999999999999999999999999999999999"
+            },
+            {
+              "kind": "byte",
+              "data": 153,
+              "span": "0x9999999999999999999999999999999999999999999999999999999999999999"
+            },
+            {
+              "kind": "byte",
+              "data": 153,
+              "span": "0x9999999999999999999999999999999999999999999999999999999999999999"
+            },
+            {
+              "kind": "byte",
+              "data": 153,
+              "span": "0x9999999999999999999999999999999999999999999999999999999999999999"
+            },
+            {
+              "kind": "byte",
+              "data": 153,
+              "span": "0x9999999999999999999999999999999999999999999999999999999999999999"
+            },
+            {
+              "kind": "byte",
+              "data": 153,
+              "span": "0x9999999999999999999999999999999999999999999999999999999999999999"
+            },
+            {
+              "kind": "byte",
+              "data": 153,
+              "span": "0x9999999999999999999999999999999999999999999999999999999999999999"
+            },
+            {
+              "kind": "byte",
+              "data": 153,
+              "span": "0x9999999999999999999999999999999999999999999999999999999999999999"
+            },
+            {
+              "kind": "byte",
+              "data": 153,
+              "span": "0x9999999999999999999999999999999999999999999999999999999999999999"
+            },
+            {
+              "kind": "byte",
+              "data": 153,
+              "span": "0x9999999999999999999999999999999999999999999999999999999999999999"
+            },
+            {
+              "kind": "byte",
+              "data": 153,
+              "span": "0x9999999999999999999999999999999999999999999999999999999999999999"
+            },
+            {
+              "kind": "byte",
+              "data": 153,
+              "span": "0x9999999999999999999999999999999999999999999999999999999999999999"
+            },
+            {
+              "kind": "byte",
+              "data": 153,
+              "span": "0x9999999999999999999999999999999999999999999999999999999999999999"
+            },
+            {
+              "kind": "byte",
+              "data": 153,
+              "span": "0x9999999999999999999999999999999999999999999999999999999999999999"
+            },
+            {
+              "kind": "byte",
+              "data": 153,
+              "span": "0x9999999999999999999999999999999999999999999999999999999999999999"
+            },
+            {
+              "kind": "byte",
+              "data": 153,
+              "span": "0x9999999999999999999999999999999999999999999999999999999999999999"
+            },
+            {
+              "kind": "byte",
+              "data": 153,
+              "span": "0x9999999999999999999999999999999999999999999999999999999999999999"
+            },
+            {
+              "kind": "byte",
+              "data": 153,
+              "span": "0x9999999999999999999999999999999999999999999999999999999999999999"
+            },
+            {
+              "kind": "byte",
+              "data": 153,
+              "span": "0x9999999999999999999999999999999999999999999999999999999999999999"
+            }
+          ],
+          "span": "0x9999999999999999999999999999999999999999999999999999999999999999"
+        },
+        "span": "byte[32] metadata_commitment = 0x9999999999999999999999999999999999999999999999999999999999999999;",
+        "type_span": "byte[32]",
+        "name_span": "metadata_commitment"
+      },
+      {
+        "type_ref": {
+          "base": "byte",
+          "array_dims": [
+            {
+              "kind": "fixed",
+              "value": 32
+            }
+          ]
+        },
+        "name": "previous_owner_commitment",
+        "expr": {
+          "kind": "array",
+          "data": [
+            {
+              "kind": "byte",
+              "data": 170,
+              "span": "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+            },
+            {
+              "kind": "byte",
+              "data": 170,
+              "span": "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+            },
+            {
+              "kind": "byte",
+              "data": 170,
+              "span": "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+            },
+            {
+              "kind": "byte",
+              "data": 170,
+              "span": "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+            },
+            {
+              "kind": "byte",
+              "data": 170,
+              "span": "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+            },
+            {
+              "kind": "byte",
+              "data": 170,
+              "span": "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+            },
+            {
+              "kind": "byte",
+              "data": 170,
+              "span": "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+            },
+            {
+              "kind": "byte",
+              "data": 170,
+              "span": "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+            },
+            {
+              "kind": "byte",
+              "data": 170,
+              "span": "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+            },
+            {
+              "kind": "byte",
+              "data": 170,
+              "span": "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+            },
+            {
+              "kind": "byte",
+              "data": 170,
+              "span": "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+            },
+            {
+              "kind": "byte",
+              "data": 170,
+              "span": "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+            },
+            {
+              "kind": "byte",
+              "data": 170,
+              "span": "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+            },
+            {
+              "kind": "byte",
+              "data": 170,
+              "span": "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+            },
+            {
+              "kind": "byte",
+              "data": 170,
+              "span": "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+            },
+            {
+              "kind": "byte",
+              "data": 170,
+              "span": "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+            },
+            {
+              "kind": "byte",
+              "data": 170,
+              "span": "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+            },
+            {
+              "kind": "byte",
+              "data": 170,
+              "span": "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+            },
+            {
+              "kind": "byte",
+              "data": 170,
+              "span": "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+            },
+            {
+              "kind": "byte",
+              "data": 170,
+              "span": "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+            },
+            {
+              "kind": "byte",
+              "data": 170,
+              "span": "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+            },
+            {
+              "kind": "byte",
+              "data": 170,
+              "span": "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+            },
+            {
+              "kind": "byte",
+              "data": 170,
+              "span": "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+            },
+            {
+              "kind": "byte",
+              "data": 170,
+              "span": "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+            },
+            {
+              "kind": "byte",
+              "data": 170,
+              "span": "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+            },
+            {
+              "kind": "byte",
+              "data": 170,
+              "span": "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+            },
+            {
+              "kind": "byte",
+              "data": 170,
+              "span": "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+            },
+            {
+              "kind": "byte",
+              "data": 170,
+              "span": "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+            },
+            {
+              "kind": "byte",
+              "data": 170,
+              "span": "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+            },
+            {
+              "kind": "byte",
+              "data": 170,
+              "span": "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+            },
+            {
+              "kind": "byte",
+              "data": 170,
+              "span": "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+            },
+            {
+              "kind": "byte",
+              "data": 170,
+              "span": "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+            }
+          ],
+          "span": "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+        },
+        "span": "byte[32] previous_owner_commitment = 0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa;",
+        "type_span": "byte[32]",
+        "name_span": "previous_owner_commitment"
+      },
+      {
+        "type_ref": {
+          "base": "byte",
+          "array_dims": [
+            {
+              "kind": "fixed",
+              "value": 32
+            }
+          ]
+        },
+        "name": "new_owner_commitment",
+        "expr": {
+          "kind": "array",
+          "data": [
+            {
+              "kind": "byte",
+              "data": 187,
+              "span": "0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+            },
+            {
+              "kind": "byte",
+              "data": 187,
+              "span": "0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+            },
+            {
+              "kind": "byte",
+              "data": 187,
+              "span": "0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+            },
+            {
+              "kind": "byte",
+              "data": 187,
+              "span": "0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+            },
+            {
+              "kind": "byte",
+              "data": 187,
+              "span": "0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+            },
+            {
+              "kind": "byte",
+              "data": 187,
+              "span": "0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+            },
+            {
+              "kind": "byte",
+              "data": 187,
+              "span": "0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+            },
+            {
+              "kind": "byte",
+              "data": 187,
+              "span": "0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+            },
+            {
+              "kind": "byte",
+              "data": 187,
+              "span": "0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+            },
+            {
+              "kind": "byte",
+              "data": 187,
+              "span": "0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+            },
+            {
+              "kind": "byte",
+              "data": 187,
+              "span": "0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+            },
+            {
+              "kind": "byte",
+              "data": 187,
+              "span": "0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+            },
+            {
+              "kind": "byte",
+              "data": 187,
+              "span": "0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+            },
+            {
+              "kind": "byte",
+              "data": 187,
+              "span": "0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+            },
+            {
+              "kind": "byte",
+              "data": 187,
+              "span": "0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+            },
+            {
+              "kind": "byte",
+              "data": 187,
+              "span": "0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+            },
+            {
+              "kind": "byte",
+              "data": 187,
+              "span": "0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+            },
+            {
+              "kind": "byte",
+              "data": 187,
+              "span": "0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+            },
+            {
+              "kind": "byte",
+              "data": 187,
+              "span": "0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+            },
+            {
+              "kind": "byte",
+              "data": 187,
+              "span": "0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+            },
+            {
+              "kind": "byte",
+              "data": 187,
+              "span": "0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+            },
+            {
+              "kind": "byte",
+              "data": 187,
+              "span": "0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+            },
+            {
+              "kind": "byte",
+              "data": 187,
+              "span": "0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+            },
+            {
+              "kind": "byte",
+              "data": 187,
+              "span": "0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+            },
+            {
+              "kind": "byte",
+              "data": 187,
+              "span": "0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+            },
+            {
+              "kind": "byte",
+              "data": 187,
+              "span": "0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+            },
+            {
+              "kind": "byte",
+              "data": 187,
+              "span": "0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+            },
+            {
+              "kind": "byte",
+              "data": 187,
+              "span": "0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+            },
+            {
+              "kind": "byte",
+              "data": 187,
+              "span": "0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+            },
+            {
+              "kind": "byte",
+              "data": 187,
+              "span": "0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+            },
+            {
+              "kind": "byte",
+              "data": 187,
+              "span": "0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+            },
+            {
+              "kind": "byte",
+              "data": 187,
+              "span": "0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+            }
+          ],
+          "span": "0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+        },
+        "span": "byte[32] new_owner_commitment = 0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb;",
+        "type_span": "byte[32]",
+        "name_span": "new_owner_commitment"
+      },
+      {
+        "type_ref": {
+          "base": "byte",
+          "array_dims": [
+            {
+              "kind": "fixed",
+              "value": 32
+            }
+          ]
+        },
+        "name": "ownership_authorization_commitment",
+        "expr": {
+          "kind": "array",
+          "data": [
+            {
+              "kind": "byte",
+              "data": 204,
+              "span": "0xcccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+            },
+            {
+              "kind": "byte",
+              "data": 204,
+              "span": "0xcccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+            },
+            {
+              "kind": "byte",
+              "data": 204,
+              "span": "0xcccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+            },
+            {
+              "kind": "byte",
+              "data": 204,
+              "span": "0xcccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+            },
+            {
+              "kind": "byte",
+              "data": 204,
+              "span": "0xcccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+            },
+            {
+              "kind": "byte",
+              "data": 204,
+              "span": "0xcccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+            },
+            {
+              "kind": "byte",
+              "data": 204,
+              "span": "0xcccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+            },
+            {
+              "kind": "byte",
+              "data": 204,
+              "span": "0xcccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+            },
+            {
+              "kind": "byte",
+              "data": 204,
+              "span": "0xcccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+            },
+            {
+              "kind": "byte",
+              "data": 204,
+              "span": "0xcccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+            },
+            {
+              "kind": "byte",
+              "data": 204,
+              "span": "0xcccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+            },
+            {
+              "kind": "byte",
+              "data": 204,
+              "span": "0xcccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+            },
+            {
+              "kind": "byte",
+              "data": 204,
+              "span": "0xcccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+            },
+            {
+              "kind": "byte",
+              "data": 204,
+              "span": "0xcccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+            },
+            {
+              "kind": "byte",
+              "data": 204,
+              "span": "0xcccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+            },
+            {
+              "kind": "byte",
+              "data": 204,
+              "span": "0xcccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+            },
+            {
+              "kind": "byte",
+              "data": 204,
+              "span": "0xcccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+            },
+            {
+              "kind": "byte",
+              "data": 204,
+              "span": "0xcccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+            },
+            {
+              "kind": "byte",
+              "data": 204,
+              "span": "0xcccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+            },
+            {
+              "kind": "byte",
+              "data": 204,
+              "span": "0xcccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+            },
+            {
+              "kind": "byte",
+              "data": 204,
+              "span": "0xcccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+            },
+            {
+              "kind": "byte",
+              "data": 204,
+              "span": "0xcccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+            },
+            {
+              "kind": "byte",
+              "data": 204,
+              "span": "0xcccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+            },
+            {
+              "kind": "byte",
+              "data": 204,
+              "span": "0xcccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+            },
+            {
+              "kind": "byte",
+              "data": 204,
+              "span": "0xcccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+            },
+            {
+              "kind": "byte",
+              "data": 204,
+              "span": "0xcccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+            },
+            {
+              "kind": "byte",
+              "data": 204,
+              "span": "0xcccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+            },
+            {
+              "kind": "byte",
+              "data": 204,
+              "span": "0xcccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+            },
+            {
+              "kind": "byte",
+              "data": 204,
+              "span": "0xcccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+            },
+            {
+              "kind": "byte",
+              "data": 204,
+              "span": "0xcccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+            },
+            {
+              "kind": "byte",
+              "data": 204,
+              "span": "0xcccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+            },
+            {
+              "kind": "byte",
+              "data": 204,
+              "span": "0xcccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+            }
+          ],
+          "span": "0xcccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+        },
+        "span": "byte[32] ownership_authorization_commitment = 0xcccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc;",
+        "type_span": "byte[32]",
+        "name_span": "ownership_authorization_commitment"
+      },
+      {
+        "type_ref": {
+          "base": "byte",
+          "array_dims": [
+            {
+              "kind": "fixed",
+              "value": 32
+            }
+          ]
+        },
+        "name": "state_digest",
+        "expr": {
+          "kind": "array",
+          "data": [
+            {
+              "kind": "byte",
+              "data": 221,
+              "span": "0xdddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd"
+            },
+            {
+              "kind": "byte",
+              "data": 221,
+              "span": "0xdddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd"
+            },
+            {
+              "kind": "byte",
+              "data": 221,
+              "span": "0xdddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd"
+            },
+            {
+              "kind": "byte",
+              "data": 221,
+              "span": "0xdddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd"
+            },
+            {
+              "kind": "byte",
+              "data": 221,
+              "span": "0xdddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd"
+            },
+            {
+              "kind": "byte",
+              "data": 221,
+              "span": "0xdddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd"
+            },
+            {
+              "kind": "byte",
+              "data": 221,
+              "span": "0xdddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd"
+            },
+            {
+              "kind": "byte",
+              "data": 221,
+              "span": "0xdddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd"
+            },
+            {
+              "kind": "byte",
+              "data": 221,
+              "span": "0xdddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd"
+            },
+            {
+              "kind": "byte",
+              "data": 221,
+              "span": "0xdddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd"
+            },
+            {
+              "kind": "byte",
+              "data": 221,
+              "span": "0xdddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd"
+            },
+            {
+              "kind": "byte",
+              "data": 221,
+              "span": "0xdddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd"
+            },
+            {
+              "kind": "byte",
+              "data": 221,
+              "span": "0xdddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd"
+            },
+            {
+              "kind": "byte",
+              "data": 221,
+              "span": "0xdddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd"
+            },
+            {
+              "kind": "byte",
+              "data": 221,
+              "span": "0xdddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd"
+            },
+            {
+              "kind": "byte",
+              "data": 221,
+              "span": "0xdddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd"
+            },
+            {
+              "kind": "byte",
+              "data": 221,
+              "span": "0xdddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd"
+            },
+            {
+              "kind": "byte",
+              "data": 221,
+              "span": "0xdddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd"
+            },
+            {
+              "kind": "byte",
+              "data": 221,
+              "span": "0xdddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd"
+            },
+            {
+              "kind": "byte",
+              "data": 221,
+              "span": "0xdddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd"
+            },
+            {
+              "kind": "byte",
+              "data": 221,
+              "span": "0xdddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd"
+            },
+            {
+              "kind": "byte",
+              "data": 221,
+              "span": "0xdddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd"
+            },
+            {
+              "kind": "byte",
+              "data": 221,
+              "span": "0xdddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd"
+            },
+            {
+              "kind": "byte",
+              "data": 221,
+              "span": "0xdddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd"
+            },
+            {
+              "kind": "byte",
+              "data": 221,
+              "span": "0xdddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd"
+            },
+            {
+              "kind": "byte",
+              "data": 221,
+              "span": "0xdddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd"
+            },
+            {
+              "kind": "byte",
+              "data": 221,
+              "span": "0xdddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd"
+            },
+            {
+              "kind": "byte",
+              "data": 221,
+              "span": "0xdddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd"
+            },
+            {
+              "kind": "byte",
+              "data": 221,
+              "span": "0xdddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd"
+            },
+            {
+              "kind": "byte",
+              "data": 221,
+              "span": "0xdddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd"
+            },
+            {
+              "kind": "byte",
+              "data": 221,
+              "span": "0xdddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd"
+            },
+            {
+              "kind": "byte",
+              "data": 221,
+              "span": "0xdddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd"
+            }
+          ],
+          "span": "0xdddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd"
+        },
+        "span": "byte[32] state_digest = 0xdddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd;",
+        "type_span": "byte[32]",
+        "name_span": "state_digest"
+      }
+    ],
+    "constants": [],
+    "functions": [
+      {
+        "name": "__covenant_policy_authorize_handoff",
+        "params": [
+          {
+            "type_ref": {
+              "base": "State"
+            },
+            "name": "prev_state",
+            "span": "State prev_state",
+            "type_span": "State ",
+            "name_span": "prev_state"
+          },
+          {
+            "type_ref": {
+              "base": "State"
+            },
+            "name": "new_state",
+            "span": "State new_state",
+            "type_span": "State ",
+            "name_span": "new_state"
+          },
+          {
+            "type_ref": {
+              "base": "byte",
+              "array_dims": [
+                {
+                  "kind": "fixed",
+                  "value": 32
+                }
+              ]
+            },
+            "name": "committed_metadata",
+            "span": "byte[32] committed_metadata",
+            "type_span": "byte[32]",
+            "name_span": "committed_metadata"
+          },
+          {
+            "type_ref": {
+              "base": "byte",
+              "array_dims": [
+                {
+                  "kind": "fixed",
+                  "value": 32
+                }
+              ]
+            },
+            "name": "previous_owner",
+            "span": "byte[32] previous_owner",
+            "type_span": "byte[32]",
+            "name_span": "previous_owner"
+          },
+          {
+            "type_ref": {
+              "base": "byte",
+              "array_dims": [
+                {
+                  "kind": "fixed",
+                  "value": 32
+                }
+              ]
+            },
+            "name": "new_owner",
+            "span": "byte[32] new_owner",
+            "type_span": "byte[32]",
+            "name_span": "new_owner"
+          },
+          {
+            "type_ref": {
+              "base": "byte",
+              "array_dims": [
+                {
+                  "kind": "fixed",
+                  "value": 32
+                }
+              ]
+            },
+            "name": "handoff_authorization",
+            "span": "byte[32] handoff_authorization",
+            "type_span": "byte[32]",
+            "name_span": "handoff_authorization"
+          }
+        ],
+        "entrypoint": false,
+        "return_types": [],
+        "returns_tuple": false,
+        "body": [
+          {
+            "kind": "require",
+            "data": {
+              "expr": {
+                "kind": "binary",
+                "data": {
+                  "op": "eq",
+                  "left": {
+                    "kind": "field_access",
+                    "data": {
+                      "source": {
+                        "kind": "identifier",
+                        "data": "prev_state",
+                        "span": "prev_state"
+                      },
+                      "field": "asset_id",
+                      "field_span": "asset_id"
+                    },
+                    "span": "prev_state.asset_id"
+                  },
+                  "right": {
+                    "kind": "field_access",
+                    "data": {
+                      "source": {
+                        "kind": "identifier",
+                        "data": "new_state",
+                        "span": "new_state"
+                      },
+                      "field": "asset_id",
+                      "field_span": "asset_id"
+                    },
+                    "span": "new_state.asset_id"
+                  }
+                },
+                "span": "prev_state.asset_id == new_state.asset_id"
+              },
+              "message": null,
+              "span": "require(prev_state.asset_id == new_state.asset_id);",
+              "message_span": null
+            }
+          },
+          {
+            "kind": "require",
+            "data": {
+              "expr": {
+                "kind": "binary",
+                "data": {
+                  "op": "eq",
+                  "left": {
+                    "kind": "field_access",
+                    "data": {
+                      "source": {
+                        "kind": "identifier",
+                        "data": "prev_state",
+                        "span": "prev_state"
+                      },
+                      "field": "asset_id",
+                      "field_span": "asset_id"
+                    },
+                    "span": "prev_state.asset_id"
+                  },
+                  "right": {
+                    "kind": "identifier",
+                    "data": "asset_id",
+                    "span": "asset_id"
+                  }
+                },
+                "span": "prev_state.asset_id == asset_id"
+              },
+              "message": null,
+              "span": "require(prev_state.asset_id == asset_id);",
+              "message_span": null
+            }
+          },
+          {
+            "kind": "require",
+            "data": {
+              "expr": {
+                "kind": "binary",
+                "data": {
+                  "op": "eq",
+                  "left": {
+                    "kind": "field_access",
+                    "data": {
+                      "source": {
+                        "kind": "identifier",
+                        "data": "prev_state",
+                        "span": "prev_state"
+                      },
+                      "field": "lane_id",
+                      "field_span": "lane_id"
+                    },
+                    "span": "prev_state.lane_id"
+                  },
+                  "right": {
+                    "kind": "identifier",
+                    "data": "lane_id",
+                    "span": "lane_id"
+                  }
+                },
+                "span": "prev_state.lane_id == lane_id"
+              },
+              "message": null,
+              "span": "require(prev_state.lane_id == lane_id);",
+              "message_span": null
+            }
+          },
+          {
+            "kind": "require",
+            "data": {
+              "expr": {
+                "kind": "binary",
+                "data": {
+                  "op": "eq",
+                  "left": {
+                    "kind": "field_access",
+                    "data": {
+                      "source": {
+                        "kind": "identifier",
+                        "data": "new_state",
+                        "span": "new_state"
+                      },
+                      "field": "lane_id",
+                      "field_span": "lane_id"
+                    },
+                    "span": "new_state.lane_id"
+                  },
+                  "right": {
+                    "kind": "identifier",
+                    "data": "lane_id",
+                    "span": "lane_id"
+                  }
+                },
+                "span": "new_state.lane_id == lane_id"
+              },
+              "message": null,
+              "span": "require(new_state.lane_id == lane_id);",
+              "message_span": null
+            }
+          },
+          {
+            "kind": "require",
+            "data": {
+              "expr": {
+                "kind": "binary",
+                "data": {
+                  "op": "eq",
+                  "left": {
+                    "kind": "field_access",
+                    "data": {
+                      "source": {
+                        "kind": "identifier",
+                        "data": "prev_state",
+                        "span": "prev_state"
+                      },
+                      "field": "metadata_commitment",
+                      "field_span": "metadata_commitment"
+                    },
+                    "span": "prev_state.metadata_commitment"
+                  },
+                  "right": {
+                    "kind": "identifier",
+                    "data": "committed_metadata",
+                    "span": "committed_metadata"
+                  }
+                },
+                "span": "prev_state.metadata_commitment == committed_metadata"
+              },
+              "message": null,
+              "span": "require(prev_state.metadata_commitment == committed_metadata);",
+              "message_span": null
+            }
+          },
+          {
+            "kind": "require",
+            "data": {
+              "expr": {
+                "kind": "binary",
+                "data": {
+                  "op": "eq",
+                  "left": {
+                    "kind": "field_access",
+                    "data": {
+                      "source": {
+                        "kind": "identifier",
+                        "data": "new_state",
+                        "span": "new_state"
+                      },
+                      "field": "metadata_commitment",
+                      "field_span": "metadata_commitment"
+                    },
+                    "span": "new_state.metadata_commitment"
+                  },
+                  "right": {
+                    "kind": "identifier",
+                    "data": "committed_metadata",
+                    "span": "committed_metadata"
+                  }
+                },
+                "span": "new_state.metadata_commitment == committed_metadata"
+              },
+              "message": null,
+              "span": "require(new_state.metadata_commitment == committed_metadata);",
+              "message_span": null
+            }
+          },
+          {
+            "kind": "require",
+            "data": {
+              "expr": {
+                "kind": "binary",
+                "data": {
+                  "op": "eq",
+                  "left": {
+                    "kind": "identifier",
+                    "data": "committed_metadata",
+                    "span": "committed_metadata"
+                  },
+                  "right": {
+                    "kind": "identifier",
+                    "data": "metadata_commitment",
+                    "span": "metadata_commitment"
+                  }
+                },
+                "span": "committed_metadata == metadata_commitment"
+              },
+              "message": null,
+              "span": "require(committed_metadata == metadata_commitment);",
+              "message_span": null
+            }
+          },
+          {
+            "kind": "require",
+            "data": {
+              "expr": {
+                "kind": "binary",
+                "data": {
+                  "op": "eq",
+                  "left": {
+                    "kind": "field_access",
+                    "data": {
+                      "source": {
+                        "kind": "identifier",
+                        "data": "prev_state",
+                        "span": "prev_state"
+                      },
+                      "field": "previous_owner_commitment",
+                      "field_span": "previous_owner_commitment"
+                    },
+                    "span": "prev_state.previous_owner_commitment"
+                  },
+                  "right": {
+                    "kind": "identifier",
+                    "data": "previous_owner",
+                    "span": "previous_owner"
+                  }
+                },
+                "span": "prev_state.previous_owner_commitment == previous_owner"
+              },
+              "message": null,
+              "span": "require(prev_state.previous_owner_commitment == previous_owner);",
+              "message_span": null
+            }
+          },
+          {
+            "kind": "require",
+            "data": {
+              "expr": {
+                "kind": "binary",
+                "data": {
+                  "op": "eq",
+                  "left": {
+                    "kind": "field_access",
+                    "data": {
+                      "source": {
+                        "kind": "identifier",
+                        "data": "new_state",
+                        "span": "new_state"
+                      },
+                      "field": "new_owner_commitment",
+                      "field_span": "new_owner_commitment"
+                    },
+                    "span": "new_state.new_owner_commitment"
+                  },
+                  "right": {
+                    "kind": "identifier",
+                    "data": "new_owner",
+                    "span": "new_owner"
+                  }
+                },
+                "span": "new_state.new_owner_commitment == new_owner"
+              },
+              "message": null,
+              "span": "require(new_state.new_owner_commitment == new_owner);",
+              "message_span": null
+            }
+          },
+          {
+            "kind": "require",
+            "data": {
+              "expr": {
+                "kind": "binary",
+                "data": {
+                  "op": "eq",
+                  "left": {
+                    "kind": "identifier",
+                    "data": "previous_owner",
+                    "span": "previous_owner"
+                  },
+                  "right": {
+                    "kind": "identifier",
+                    "data": "previous_owner_commitment",
+                    "span": "previous_owner_commitment"
+                  }
+                },
+                "span": "previous_owner == previous_owner_commitment"
+              },
+              "message": null,
+              "span": "require(previous_owner == previous_owner_commitment);",
+              "message_span": null
+            }
+          },
+          {
+            "kind": "require",
+            "data": {
+              "expr": {
+                "kind": "binary",
+                "data": {
+                  "op": "eq",
+                  "left": {
+                    "kind": "identifier",
+                    "data": "new_owner",
+                    "span": "new_owner"
+                  },
+                  "right": {
+                    "kind": "identifier",
+                    "data": "new_owner_commitment",
+                    "span": "new_owner_commitment"
+                  }
+                },
+                "span": "new_owner == new_owner_commitment"
+              },
+              "message": null,
+              "span": "require(new_owner == new_owner_commitment);",
+              "message_span": null
+            }
+          },
+          {
+            "kind": "require",
+            "data": {
+              "expr": {
+                "kind": "binary",
+                "data": {
+                  "op": "ne",
+                  "left": {
+                    "kind": "identifier",
+                    "data": "previous_owner",
+                    "span": "previous_owner"
+                  },
+                  "right": {
+                    "kind": "identifier",
+                    "data": "new_owner",
+                    "span": "new_owner"
+                  }
+                },
+                "span": "previous_owner != new_owner"
+              },
+              "message": null,
+              "span": "require(previous_owner != new_owner);",
+              "message_span": null
+            }
+          },
+          {
+            "kind": "require",
+            "data": {
+              "expr": {
+                "kind": "binary",
+                "data": {
+                  "op": "eq",
+                  "left": {
+                    "kind": "identifier",
+                    "data": "handoff_authorization",
+                    "span": "handoff_authorization"
+                  },
+                  "right": {
+                    "kind": "identifier",
+                    "data": "ownership_authorization_commitment",
+                    "span": "ownership_authorization_commitment"
+                  }
+                },
+                "span": "handoff_authorization == ownership_authorization_commitment"
+              },
+              "message": null,
+              "span": "require(handoff_authorization == ownership_authorization_commitment);",
+              "message_span": null
+            }
+          },
+          {
+            "kind": "require",
+            "data": {
+              "expr": {
+                "kind": "binary",
+                "data": {
+                  "op": "ne",
+                  "left": {
+                    "kind": "identifier",
+                    "data": "handoff_authorization",
+                    "span": "handoff_authorization"
+                  },
+                  "right": {
+                    "kind": "array",
+                    "data": [
+                      {
+                        "kind": "byte",
+                        "data": 0,
+                        "span": "0x0000000000000000000000000000000000000000000000000000000000000000"
+                      },
+                      {
+                        "kind": "byte",
+                        "data": 0,
+                        "span": "0x0000000000000000000000000000000000000000000000000000000000000000"
+                      },
+                      {
+                        "kind": "byte",
+                        "data": 0,
+                        "span": "0x0000000000000000000000000000000000000000000000000000000000000000"
+                      },
+                      {
+                        "kind": "byte",
+                        "data": 0,
+                        "span": "0x0000000000000000000000000000000000000000000000000000000000000000"
+                      },
+                      {
+                        "kind": "byte",
+                        "data": 0,
+                        "span": "0x0000000000000000000000000000000000000000000000000000000000000000"
+                      },
+                      {
+                        "kind": "byte",
+                        "data": 0,
+                        "span": "0x0000000000000000000000000000000000000000000000000000000000000000"
+                      },
+                      {
+                        "kind": "byte",
+                        "data": 0,
+                        "span": "0x0000000000000000000000000000000000000000000000000000000000000000"
+                      },
+                      {
+                        "kind": "byte",
+                        "data": 0,
+                        "span": "0x0000000000000000000000000000000000000000000000000000000000000000"
+                      },
+                      {
+                        "kind": "byte",
+                        "data": 0,
+                        "span": "0x0000000000000000000000000000000000000000000000000000000000000000"
+                      },
+                      {
+                        "kind": "byte",
+                        "data": 0,
+                        "span": "0x0000000000000000000000000000000000000000000000000000000000000000"
+                      },
+                      {
+                        "kind": "byte",
+                        "data": 0,
+                        "span": "0x0000000000000000000000000000000000000000000000000000000000000000"
+                      },
+                      {
+                        "kind": "byte",
+                        "data": 0,
+                        "span": "0x0000000000000000000000000000000000000000000000000000000000000000"
+                      },
+                      {
+                        "kind": "byte",
+                        "data": 0,
+                        "span": "0x0000000000000000000000000000000000000000000000000000000000000000"
+                      },
+                      {
+                        "kind": "byte",
+                        "data": 0,
+                        "span": "0x0000000000000000000000000000000000000000000000000000000000000000"
+                      },
+                      {
+                        "kind": "byte",
+                        "data": 0,
+                        "span": "0x0000000000000000000000000000000000000000000000000000000000000000"
+                      },
+                      {
+                        "kind": "byte",
+                        "data": 0,
+                        "span": "0x0000000000000000000000000000000000000000000000000000000000000000"
+                      },
+                      {
+                        "kind": "byte",
+                        "data": 0,
+                        "span": "0x0000000000000000000000000000000000000000000000000000000000000000"
+                      },
+                      {
+                        "kind": "byte",
+                        "data": 0,
+                        "span": "0x0000000000000000000000000000000000000000000000000000000000000000"
+                      },
+                      {
+                        "kind": "byte",
+                        "data": 0,
+                        "span": "0x0000000000000000000000000000000000000000000000000000000000000000"
+                      },
+                      {
+                        "kind": "byte",
+                        "data": 0,
+                        "span": "0x0000000000000000000000000000000000000000000000000000000000000000"
+                      },
+                      {
+                        "kind": "byte",
+                        "data": 0,
+                        "span": "0x0000000000000000000000000000000000000000000000000000000000000000"
+                      },
+                      {
+                        "kind": "byte",
+                        "data": 0,
+                        "span": "0x0000000000000000000000000000000000000000000000000000000000000000"
+                      },
+                      {
+                        "kind": "byte",
+                        "data": 0,
+                        "span": "0x0000000000000000000000000000000000000000000000000000000000000000"
+                      },
+                      {
+                        "kind": "byte",
+                        "data": 0,
+                        "span": "0x0000000000000000000000000000000000000000000000000000000000000000"
+                      },
+                      {
+                        "kind": "byte",
+                        "data": 0,
+                        "span": "0x0000000000000000000000000000000000000000000000000000000000000000"
+                      },
+                      {
+                        "kind": "byte",
+                        "data": 0,
+                        "span": "0x0000000000000000000000000000000000000000000000000000000000000000"
+                      },
+                      {
+                        "kind": "byte",
+                        "data": 0,
+                        "span": "0x0000000000000000000000000000000000000000000000000000000000000000"
+                      },
+                      {
+                        "kind": "byte",
+                        "data": 0,
+                        "span": "0x0000000000000000000000000000000000000000000000000000000000000000"
+                      },
+                      {
+                        "kind": "byte",
+                        "data": 0,
+                        "span": "0x0000000000000000000000000000000000000000000000000000000000000000"
+                      },
+                      {
+                        "kind": "byte",
+                        "data": 0,
+                        "span": "0x0000000000000000000000000000000000000000000000000000000000000000"
+                      },
+                      {
+                        "kind": "byte",
+                        "data": 0,
+                        "span": "0x0000000000000000000000000000000000000000000000000000000000000000"
+                      },
+                      {
+                        "kind": "byte",
+                        "data": 0,
+                        "span": "0x0000000000000000000000000000000000000000000000000000000000000000"
+                      }
+                    ],
+                    "span": "0x0000000000000000000000000000000000000000000000000000000000000000"
+                  }
+                },
+                "span": "handoff_authorization != 0x0000000000000000000000000000000000000000000000000000000000000000"
+              },
+              "message": null,
+              "span": "require(handoff_authorization != 0x0000000000000000000000000000000000000000000000000000000000000000);",
+              "message_span": null
+            }
+          },
+          {
+            "kind": "require",
+            "data": {
+              "expr": {
+                "kind": "binary",
+                "data": {
+                  "op": "eq",
+                  "left": {
+                    "kind": "field_access",
+                    "data": {
+                      "source": {
+                        "kind": "identifier",
+                        "data": "new_state",
+                        "span": "new_state"
+                      },
+                      "field": "ownership_authorization_commitment",
+                      "field_span": "ownership_authorization_commitment"
+                    },
+                    "span": "new_state.ownership_authorization_commitment"
+                  },
+                  "right": {
+                    "kind": "identifier",
+                    "data": "handoff_authorization",
+                    "span": "handoff_authorization"
+                  }
+                },
+                "span": "new_state.ownership_authorization_commitment == handoff_authorization"
+              },
+              "message": null,
+              "span": "require(new_state.ownership_authorization_commitment == handoff_authorization);",
+              "message_span": null
+            }
+          },
+          {
+            "kind": "require",
+            "data": {
+              "expr": {
+                "kind": "binary",
+                "data": {
+                  "op": "ne",
+                  "left": {
+                    "kind": "field_access",
+                    "data": {
+                      "source": {
+                        "kind": "identifier",
+                        "data": "prev_state",
+                        "span": "prev_state"
+                      },
+                      "field": "state_digest",
+                      "field_span": "state_digest"
+                    },
+                    "span": "prev_state.state_digest"
+                  },
+                  "right": {
+                    "kind": "field_access",
+                    "data": {
+                      "source": {
+                        "kind": "identifier",
+                        "data": "new_state",
+                        "span": "new_state"
+                      },
+                      "field": "state_digest",
+                      "field_span": "state_digest"
+                    },
+                    "span": "new_state.state_digest"
+                  }
+                },
+                "span": "prev_state.state_digest != new_state.state_digest"
+              },
+              "message": null,
+              "span": "require(prev_state.state_digest != new_state.state_digest);",
+              "message_span": null
+            }
+          }
+        ],
+        "return_type_spans": [],
+        "span": "#[covenant.singleton(mode = verification)]\n    function authorize_handoff(\n        State prev_state,\n        State new_state,\n        byte[32] committed_metadata,\n        byte[32] previous_owner,\n        byte[32] new_owner,\n        byte[32] handoff_authorization\n    ) {\n        require(prev_state.asset_id == new_state.asset_id);\n        require(prev_state.asset_id == asset_id);\n        require(prev_state.lane_id == lane_id);\n        require(new_state.lane_id == lane_id);\n        require(prev_state.metadata_commitment == committed_metadata);\n        require(new_state.metadata_commitment == committed_metadata);\n        require(committed_metadata == metadata_commitment);\n        require(prev_state.previous_owner_commitment == previous_owner);\n        require(new_state.new_owner_commitment == new_owner);\n        require(previous_owner == previous_owner_commitment);\n        require(new_owner == new_owner_commitment);\n        require(previous_owner != new_owner);\n        require(handoff_authorization == ownership_authorization_commitment);\n        require(handoff_authorization != 0x0000000000000000000000000000000000000000000000000000000000000000);\n        require(new_state.ownership_authorization_commitment == handoff_authorization);\n        require(prev_state.state_digest != new_state.state_digest);\n    }",
+        "name_span": "authorize_handoff",
+        "body_span": "require(prev_state.asset_id == new_state.asset_id);\n        require(prev_state.asset_id == asset_id);\n        require(prev_state.lane_id == lane_id);\n        require(new_state.lane_id == lane_id);\n        require(prev_state.metadata_commitment == committed_metadata);\n        require(new_state.metadata_commitment == committed_metadata);\n        require(committed_metadata == metadata_commitment);\n        require(prev_state.previous_owner_commitment == previous_owner);\n        require(new_state.new_owner_commitment == new_owner);\n        require(previous_owner == previous_owner_commitment);\n        require(new_owner == new_owner_commitment);\n        require(previous_owner != new_owner);\n        require(handoff_authorization == ownership_authorization_commitment);\n        require(handoff_authorization != 0x0000000000000000000000000000000000000000000000000000000000000000);\n        require(new_state.ownership_authorization_commitment == handoff_authorization);\n        require(prev_state.state_digest != new_state.state_digest);"
+      },
+      {
+        "name": "__covenant_entrypoint_auth_authorize_handoff",
+        "params": [
+          {
+            "type_ref": {
+              "base": "State"
+            },
+            "name": "new_state",
+            "span": "State new_state",
+            "type_span": "State ",
+            "name_span": "new_state"
+          },
+          {
+            "type_ref": {
+              "base": "byte",
+              "array_dims": [
+                {
+                  "kind": "fixed",
+                  "value": 32
+                }
+              ]
+            },
+            "name": "committed_metadata",
+            "span": "byte[32] committed_metadata",
+            "type_span": "byte[32]",
+            "name_span": "committed_metadata"
+          },
+          {
+            "type_ref": {
+              "base": "byte",
+              "array_dims": [
+                {
+                  "kind": "fixed",
+                  "value": 32
+                }
+              ]
+            },
+            "name": "previous_owner",
+            "span": "byte[32] previous_owner",
+            "type_span": "byte[32]",
+            "name_span": "previous_owner"
+          },
+          {
+            "type_ref": {
+              "base": "byte",
+              "array_dims": [
+                {
+                  "kind": "fixed",
+                  "value": 32
+                }
+              ]
+            },
+            "name": "new_owner",
+            "span": "byte[32] new_owner",
+            "type_span": "byte[32]",
+            "name_span": "new_owner"
+          },
+          {
+            "type_ref": {
+              "base": "byte",
+              "array_dims": [
+                {
+                  "kind": "fixed",
+                  "value": 32
+                }
+              ]
+            },
+            "name": "handoff_authorization",
+            "span": "byte[32] handoff_authorization",
+            "type_span": "byte[32]",
+            "name_span": "handoff_authorization"
+          }
+        ],
+        "entrypoint": true,
+        "return_types": [],
+        "returns_tuple": false,
+        "body": [
+          {
+            "kind": "variable_definition",
+            "data": {
+              "type_ref": {
+                "base": "int"
+              },
+              "modifiers": [],
+              "name": "__auth_out_count",
+              "expr": {
+                "kind": "call",
+                "data": {
+                  "name": "OpAuthOutputCount",
+                  "args": [
+                    {
+                      "kind": "nullary",
+                      "data": "active_input_index",
+                      "span": "<synthetic>"
+                    }
+                  ],
+                  "name_span": "<synthetic>"
+                },
+                "span": "<synthetic>"
+              },
+              "span": "<synthetic>",
+              "type_span": "<synthetic>",
+              "modifier_spans": [],
+              "name_span": "<synthetic>"
+            }
+          },
+          {
+            "kind": "variable_definition",
+            "data": {
+              "type_ref": {
+                "base": "State"
+              },
+              "modifiers": [],
+              "name": "prev_state",
+              "expr": {
+                "kind": "state_object",
+                "data": [
+                  {
+                    "name": "asset_id",
+                    "expr": {
+                      "kind": "identifier",
+                      "data": "asset_id",
+                      "span": "<synthetic>"
+                    },
+                    "span": "<synthetic>",
+                    "name_span": "<synthetic>"
+                  },
+                  {
+                    "name": "lane_id",
+                    "expr": {
+                      "kind": "identifier",
+                      "data": "lane_id",
+                      "span": "<synthetic>"
+                    },
+                    "span": "<synthetic>",
+                    "name_span": "<synthetic>"
+                  },
+                  {
+                    "name": "metadata_commitment",
+                    "expr": {
+                      "kind": "identifier",
+                      "data": "metadata_commitment",
+                      "span": "<synthetic>"
+                    },
+                    "span": "<synthetic>",
+                    "name_span": "<synthetic>"
+                  },
+                  {
+                    "name": "previous_owner_commitment",
+                    "expr": {
+                      "kind": "identifier",
+                      "data": "previous_owner_commitment",
+                      "span": "<synthetic>"
+                    },
+                    "span": "<synthetic>",
+                    "name_span": "<synthetic>"
+                  },
+                  {
+                    "name": "new_owner_commitment",
+                    "expr": {
+                      "kind": "identifier",
+                      "data": "new_owner_commitment",
+                      "span": "<synthetic>"
+                    },
+                    "span": "<synthetic>",
+                    "name_span": "<synthetic>"
+                  },
+                  {
+                    "name": "ownership_authorization_commitment",
+                    "expr": {
+                      "kind": "identifier",
+                      "data": "ownership_authorization_commitment",
+                      "span": "<synthetic>"
+                    },
+                    "span": "<synthetic>",
+                    "name_span": "<synthetic>"
+                  },
+                  {
+                    "name": "state_digest",
+                    "expr": {
+                      "kind": "identifier",
+                      "data": "state_digest",
+                      "span": "<synthetic>"
+                    },
+                    "span": "<synthetic>",
+                    "name_span": "<synthetic>"
+                  }
+                ],
+                "span": "<synthetic>"
+              },
+              "span": "<synthetic>",
+              "type_span": "<synthetic>",
+              "modifier_spans": [],
+              "name_span": "<synthetic>"
+            }
+          },
+          {
+            "kind": "function_call",
+            "data": {
+              "name": "__covenant_policy_authorize_handoff",
+              "args": [
+                {
+                  "kind": "identifier",
+                  "data": "prev_state",
+                  "span": "<synthetic>"
+                },
+                {
+                  "kind": "identifier",
+                  "data": "new_state",
+                  "span": "<synthetic>"
+                },
+                {
+                  "kind": "identifier",
+                  "data": "committed_metadata",
+                  "span": "<synthetic>"
+                },
+                {
+                  "kind": "identifier",
+                  "data": "previous_owner",
+                  "span": "<synthetic>"
+                },
+                {
+                  "kind": "identifier",
+                  "data": "new_owner",
+                  "span": "<synthetic>"
+                },
+                {
+                  "kind": "identifier",
+                  "data": "handoff_authorization",
+                  "span": "<synthetic>"
+                }
+              ],
+              "span": "<synthetic>",
+              "name_span": "<synthetic>"
+            }
+          },
+          {
+            "kind": "require",
+            "data": {
+              "expr": {
+                "kind": "binary",
+                "data": {
+                  "op": "eq",
+                  "left": {
+                    "kind": "identifier",
+                    "data": "__auth_out_count",
+                    "span": "<synthetic>"
+                  },
+                  "right": {
+                    "kind": "int",
+                    "data": 1,
+                    "span": "<synthetic>"
+                  }
+                },
+                "span": "<synthetic>"
+              },
+              "message": null,
+              "span": "<synthetic>",
+              "message_span": null
+            }
+          },
+          {
+            "kind": "variable_definition",
+            "data": {
+              "type_ref": {
+                "base": "int"
+              },
+              "modifiers": [],
+              "name": "__cov_out_idx",
+              "expr": {
+                "kind": "call",
+                "data": {
+                  "name": "OpAuthOutputIdx",
+                  "args": [
+                    {
+                      "kind": "nullary",
+                      "data": "active_input_index",
+                      "span": "<synthetic>"
+                    },
+                    {
+                      "kind": "int",
+                      "data": 0,
+                      "span": "<synthetic>"
+                    }
+                  ],
+                  "name_span": "<synthetic>"
+                },
+                "span": "<synthetic>"
+              },
+              "span": "<synthetic>",
+              "type_span": "<synthetic>",
+              "modifier_spans": [],
+              "name_span": "<synthetic>"
+            }
+          },
+          {
+            "kind": "function_call",
+            "data": {
+              "name": "validateOutputState",
+              "args": [
+                {
+                  "kind": "identifier",
+                  "data": "__cov_out_idx",
+                  "span": "<synthetic>"
+                },
+                {
+                  "kind": "identifier",
+                  "data": "new_state",
+                  "span": "<synthetic>"
+                }
+              ],
+              "span": "<synthetic>",
+              "name_span": "<synthetic>"
+            }
+          }
+        ],
+        "return_type_spans": [],
+        "span": "#[covenant.singleton(mode = verification)]\n    function authorize_handoff(\n        State prev_state,\n        State new_state,\n        byte[32] committed_metadata,\n        byte[32] previous_owner,\n        byte[32] new_owner,\n        byte[32] handoff_authorization\n    ) {\n        require(prev_state.asset_id == new_state.asset_id);\n        require(prev_state.asset_id == asset_id);\n        require(prev_state.lane_id == lane_id);\n        require(new_state.lane_id == lane_id);\n        require(prev_state.metadata_commitment == committed_metadata);\n        require(new_state.metadata_commitment == committed_metadata);\n        require(committed_metadata == metadata_commitment);\n        require(prev_state.previous_owner_commitment == previous_owner);\n        require(new_state.new_owner_commitment == new_owner);\n        require(previous_owner == previous_owner_commitment);\n        require(new_owner == new_owner_commitment);\n        require(previous_owner != new_owner);\n        require(handoff_authorization == ownership_authorization_commitment);\n        require(handoff_authorization != 0x0000000000000000000000000000000000000000000000000000000000000000);\n        require(new_state.ownership_authorization_commitment == handoff_authorization);\n        require(prev_state.state_digest != new_state.state_digest);\n    }",
+        "name_span": "authorize_handoff",
+        "body_span": "require(prev_state.asset_id == new_state.asset_id);\n        require(prev_state.asset_id == asset_id);\n        require(prev_state.lane_id == lane_id);\n        require(new_state.lane_id == lane_id);\n        require(prev_state.metadata_commitment == committed_metadata);\n        require(new_state.metadata_commitment == committed_metadata);\n        require(committed_metadata == metadata_commitment);\n        require(prev_state.previous_owner_commitment == previous_owner);\n        require(new_state.new_owner_commitment == new_owner);\n        require(previous_owner == previous_owner_commitment);\n        require(new_owner == new_owner_commitment);\n        require(previous_owner != new_owner);\n        require(handoff_authorization == ownership_authorization_commitment);\n        require(handoff_authorization != 0x0000000000000000000000000000000000000000000000000000000000000000);\n        require(new_state.ownership_authorization_commitment == handoff_authorization);\n        require(prev_state.state_digest != new_state.state_digest);"
+      }
+    ],
+    "span": "contract RGKMetadataOwnershipGuardrails() {\n    byte[32] asset_id = 0x1111111111111111111111111111111111111111111111111111111111111111;\n    byte[32] lane_id = 0x2222222222222222222222222222222222222222222222222222222222222222;\n    byte[32] metadata_commitment = 0x9999999999999999999999999999999999999999999999999999999999999999;\n    byte[32] previous_owner_commitment = 0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa;\n    byte[32] new_owner_commitment = 0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb;\n    byte[32] ownership_authorization_commitment = 0xcccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc;\n    byte[32] state_digest = 0xdddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd;\n\n    #[covenant.singleton(mode = verification)]\n    function authorize_handoff(\n        State prev_state,\n        State new_state,\n        byte[32] committed_metadata,\n        byte[32] previous_owner,\n        byte[32] new_owner,\n        byte[32] handoff_authorization\n    ) {\n        require(prev_state.asset_id == new_state.asset_id);\n        require(prev_state.asset_id == asset_id);\n        require(prev_state.lane_id == lane_id);\n        require(new_state.lane_id == lane_id);\n        require(prev_state.metadata_commitment == committed_metadata);\n        require(new_state.metadata_commitment == committed_metadata);\n        require(committed_metadata == metadata_commitment);\n        require(prev_state.previous_owner_commitment == previous_owner);\n        require(new_state.new_owner_commitment == new_owner);\n        require(previous_owner == previous_owner_commitment);\n        require(new_owner == new_owner_commitment);\n        require(previous_owner != new_owner);\n        require(handoff_authorization == ownership_authorization_commitment);\n        require(handoff_authorization != 0x0000000000000000000000000000000000000000000000000000000000000000);\n        require(new_state.ownership_authorization_commitment == handoff_authorization);\n        require(prev_state.state_digest != new_state.state_digest);\n    }\n}",
+    "name_span": "RGKMetadataOwnershipGuardrails"
+  },
+  "abi": [
+    {
+      "name": "__covenant_entrypoint_auth_authorize_handoff",
+      "inputs": [
+        {
+          "name": "new_state",
+          "type_name": "State"
+        },
+        {
+          "name": "committed_metadata",
+          "type_name": "byte[32]"
+        },
+        {
+          "name": "previous_owner",
+          "type_name": "byte[32]"
+        },
+        {
+          "name": "new_owner",
+          "type_name": "byte[32]"
+        },
+        {
+          "name": "handoff_authorization",
+          "type_name": "byte[32]"
+        }
+      ]
+    }
+  ],
+  "without_selector": true,
+  "state_layout": {
+    "start": 0,
+    "len": 231
+  },
+  "debug_info": null
+}

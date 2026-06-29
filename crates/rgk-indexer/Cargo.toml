@@ -1,0 +1,28 @@
+[package]
+name = "rgk-indexer"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+description = "RGK in-memory indexer for covenant UTXOs, spends, replay protection, and reorg rollback"
+
+[dependencies]
+rgk-core.workspace = true
+rgk-receipt.workspace = true
+rgk-covenant.workspace = true
+thiserror.workspace = true
+sled = { version = "0.34", optional = true }
+
+[dev-dependencies]
+criterion = "0.7"
+proptest = "1"
+
+[features]
+default = ["std"]
+std = []
+persistent = ["std", "dep:sled"]
+
+[[bench]]
+name = "indexer_hot_paths"
+harness = false

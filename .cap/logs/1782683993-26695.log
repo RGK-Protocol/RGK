@@ -1,0 +1,15 @@
+== stdout ==
+
+running 3 tests
+test e2e_summary_renders_all_fields ... ok
+test canonical_state_digest_is_deterministic ... ok
+test fixture_e2e_passes ... ok
+
+test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+
+== stderr ==
+    Blocking waiting for file lock on package cache
+    Blocking waiting for file lock on package cache
+    Finished `test` profile [optimized + debuginfo] target(s) in 0.18s
+     Running unittests src/lib.rs (target/debug/deps/rgk_e2e-b673bcd913c1edb5)

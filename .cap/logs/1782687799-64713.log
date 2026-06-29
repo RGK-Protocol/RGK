@@ -1,0 +1,17 @@
+== stdout ==
+
+running 5 tests
+test real_zk::tests::allocation_transcript_segment_statement_matches_native_root ... ok
+test real_zk::tests::allocation_transcript_segment_rejects_changed_public_amount ... ok
+test real_zk::tests::allocation_transcript_segment_rejects_changed_witness_amount ... ok
+test real_zk::tests::prove_then_verify_allocation_transcript_segment ... ok
+test real_zk::tests::allocation_transcript_segment_precompile_stack_shape_is_toccata_compatible ... ok
+
+test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 53 filtered out; finished in 21.95s
+
+
+== stderr ==
+   Compiling rgk-asset v0.1.0 (/Users/arthur/RustroverProjects/rgk/crates/rgk-asset)
+   Compiling rgk-zk v0.1.0 (/Users/arthur/RustroverProjects/rgk/crates/rgk-zk)
+    Finished `test` profile [optimized + debuginfo] target(s) in 3.32s
+     Running unittests src/lib.rs (target/debug/deps/rgk_zk-2d7d6e784de2143c)

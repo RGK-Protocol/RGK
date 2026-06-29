@@ -1,0 +1,56 @@
+== stdout ==
+
+running 34 tests
+test real_zk::tests::fixed_allocation_witness_rejects_zero_arity ... ok
+test real_zk::tests::invalid_semantic_statement_cannot_satisfy_constraints ... ok
+test real_zk::tests::public_inputs_as_fr_layout_is_deterministic ... ok
+test real_zk::tests::prove_then_verify_semantic_transition_statement ... ok
+test real_zk::tests::same_receipt_id_different_body_cannot_prove ... ok
+test real_zk::tests::semantic_changed_public_input_rejected ... ok
+test real_zk::tests::semantic_groth16_precompile_stack_shape_is_toccata_compatible ... ok
+test tests::chain_id_in_public_inputs_is_pinned ... ok
+test tests::proof_encode_for_precompile ... ok
+test tests::proof_rejects_empty ... ok
+test tests::proof_rejects_oversize ... ok
+test tests::public_inputs_length_is_pinned ... ok
+test tests::semantic_transition_statement_binds_native_reports ... ok
+test tests::semantic_transition_statement_matches_receipt_statement ... ok
+test tests::semantic_transition_statement_rejects_noop_digest ... ok
+test tests::semantic_transition_statement_rejects_report_mismatch ... ok
+test tests::statement_matches_receipt_round_trip ... ok
+test tests::tag_bytes_match_upstream ... ok
+test tests::zk_receipt_local_verify_catches_statement_mismatch ... ok
+test tests::zk_receipt_local_verify_succeeds ... ok
+test tests::zk_receipt_rejects_wrong_mode ... ok
+test real_zk::tests::allocation_1x1_rejects_supply_mismatch ... ok
+test real_zk::tests::allocation_1x1_rejects_closed_seal_reuse ... ok
+test real_zk::tests::allocation_2x2_rejects_closed_seal_reuse ... ok
+test real_zk::tests::allocation_2x2_rejects_supply_mismatch ... ok
+test real_zk::tests::fixed_allocation_3x2_rejects_count_mismatch ... ok
+test real_zk::tests::different_public_body_field_rejected ... ok
+test real_zk::tests::prove_then_verify_zk_receipt ... ok
+test real_zk::tests::groth16_precompile_stack_shape_is_toccata_compatible ... ok
+test real_zk::tests::tampered_proof_rejected ... ok
+test real_zk::tests::allocation_1x1_precompile_stack_shape_is_toccata_compatible has been running for over 60 seconds
+test real_zk::tests::prove_then_verify_allocation_1x1_transition has been running for over 60 seconds
+test real_zk::tests::prove_then_verify_allocation_2x2_transition has been running for over 60 seconds
+test real_zk::tests::prove_then_verify_fixed_allocation_3x2_transition has been running for over 60 seconds
+test real_zk::tests::allocation_1x1_precompile_stack_shape_is_toccata_compatible ... ok
+test real_zk::tests::prove_then_verify_allocation_1x1_transition ... ok
+test real_zk::tests::prove_then_verify_allocation_2x2_transition ... ok
+test real_zk::tests::prove_then_verify_fixed_allocation_3x2_transition ... ok
+
+test result: ok. 34 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 102.03s
+
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+
+== stderr ==
+   Compiling rgk-zk v0.1.0 (/Users/arthur/RustroverProjects/rgk/crates/rgk-zk)
+    Finished `test` profile [optimized + debuginfo] target(s) in 1.00s
+     Running unittests src/lib.rs (target/debug/deps/rgk_zk-2d7d6e784de2143c)
+[real-zk] proof size: 129 bytes
+   Doc-tests rgk_zk

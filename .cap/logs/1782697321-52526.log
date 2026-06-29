@@ -1,0 +1,14 @@
+== stdout ==
+
+running 1 test
+test tests::transitioned_valid_uses_latest_indexed_spent_outpoint ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 14 filtered out; finished in 0.00s
+
+
+== stderr ==
+    Blocking waiting for file lock on package cache
+   Compiling rgk-indexer v0.1.0 (/Users/arthur/RustroverProjects/rgk/crates/rgk-indexer)
+   Compiling rgk-resolver v0.1.0 (/Users/arthur/RustroverProjects/rgk/crates/rgk-resolver)
+    Finished `test` profile [optimized + debuginfo] target(s) in 0.76s
+     Running unittests src/lib.rs (target/debug/deps/rgk_resolver-e5622bd245dff2fe)

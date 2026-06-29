@@ -1,0 +1,1893 @@
+{
+  "contract_name": "RGKAllocationAuditCertificateRecovery",
+  "compiler_version": "0.1.0",
+  "script": [
+    8,
+    232,
+    3,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    32,
+    17,
+    17,
+    17,
+    17,
+    17,
+    17,
+    17,
+    17,
+    17,
+    17,
+    17,
+    17,
+    17,
+    17,
+    17,
+    17,
+    17,
+    17,
+    17,
+    17,
+    17,
+    17,
+    17,
+    17,
+    17,
+    17,
+    17,
+    17,
+    17,
+    17,
+    17,
+    17,
+    32,
+    136,
+    136,
+    136,
+    136,
+    136,
+    136,
+    136,
+    136,
+    136,
+    136,
+    136,
+    136,
+    136,
+    136,
+    136,
+    136,
+    136,
+    136,
+    136,
+    136,
+    136,
+    136,
+    136,
+    136,
+    136,
+    136,
+    136,
+    136,
+    136,
+    136,
+    136,
+    136,
+    32,
+    153,
+    153,
+    153,
+    153,
+    153,
+    153,
+    153,
+    153,
+    153,
+    153,
+    153,
+    153,
+    153,
+    153,
+    153,
+    153,
+    153,
+    153,
+    153,
+    153,
+    153,
+    153,
+    153,
+    153,
+    153,
+    153,
+    153,
+    153,
+    153,
+    153,
+    153,
+    153,
+    32,
+    170,
+    170,
+    170,
+    170,
+    170,
+    170,
+    170,
+    170,
+    170,
+    170,
+    170,
+    170,
+    170,
+    170,
+    170,
+    170,
+    170,
+    170,
+    170,
+    170,
+    170,
+    170,
+    170,
+    170,
+    170,
+    170,
+    170,
+    170,
+    170,
+    170,
+    170,
+    170,
+    32,
+    187,
+    187,
+    187,
+    187,
+    187,
+    187,
+    187,
+    187,
+    187,
+    187,
+    187,
+    187,
+    187,
+    187,
+    187,
+    187,
+    187,
+    187,
+    187,
+    187,
+    187,
+    187,
+    187,
+    187,
+    187,
+    187,
+    187,
+    187,
+    187,
+    187,
+    187,
+    187,
+    118,
+    86,
+    121,
+    95,
+    121,
+    156,
+    105,
+    85,
+    121,
+    94,
+    121,
+    135,
+    105,
+    84,
+    121,
+    93,
+    121,
+    135,
+    145,
+    105,
+    83,
+    121,
+    92,
+    121,
+    135,
+    145,
+    105,
+    90,
+    121,
+    89,
+    121,
+    135,
+    105,
+    87,
+    121,
+    120,
+    135,
+    145,
+    105,
+    118,
+    90,
+    121,
+    135,
+    145,
+    105,
+    185,
+    203,
+    81,
+    156,
+    105,
+    94,
+    121,
+    88,
+    205,
+    1,
+    8,
+    124,
+    126,
+    94,
+    121,
+    1,
+    32,
+    124,
+    126,
+    94,
+    121,
+    1,
+    32,
+    124,
+    126,
+    94,
+    121,
+    1,
+    32,
+    124,
+    126,
+    94,
+    121,
+    1,
+    32,
+    124,
+    126,
+    94,
+    121,
+    1,
+    32,
+    124,
+    126,
+    126,
+    126,
+    126,
+    126,
+    126,
+    185,
+    118,
+    201,
+    118,
+    2,
+    65,
+    1,
+    148,
+    2,
+    174,
+    0,
+    147,
+    124,
+    188,
+    126,
+    170,
+    2,
+    0,
+    0,
+    1,
+    170,
+    126,
+    1,
+    32,
+    126,
+    124,
+    126,
+    1,
+    135,
+    126,
+    185,
+    0,
+    204,
+    195,
+    135,
+    105,
+    0,
+    122,
+    117,
+    117,
+    117,
+    117,
+    117,
+    117,
+    117,
+    117,
+    117,
+    117,
+    117,
+    117,
+    117,
+    117,
+    117,
+    81
+  ],
+  "ast": {
+    "pragma": {
+      "name": "silverscript",
+      "value": "^0.1.0",
+      "span": "pragma silverscript ^0.1.0;",
+      "name_span": "silverscript",
+      "value_span": "^0.1.0"
+    },
+    "name": "RGKAllocationAuditCertificateRecovery",
+    "params": [],
+    "fields": [
+      {
+        "type_ref": {
+          "base": "int"
+        },
+        "name": "amount",
+        "expr": {
+          "kind": "int",
+          "data": 1000,
+          "span": "1000"
+        },
+        "span": "int amount = 1000;",
+        "type_span": "int ",
+        "name_span": "amount"
+      },
+      {
+        "type_ref": {
+          "base": "byte",
+          "array_dims": [
+            {
+              "kind": "fixed",
+              "value": 32
+            }
+          ]
+        },
+        "name": "asset_id",
+        "expr": {
+          "kind": "array",
+          "data": [
+            {
+              "kind": "byte",
+              "data": 17,
+              "span": "0x1111111111111111111111111111111111111111111111111111111111111111"
+            },
+            {
+              "kind": "byte",
+              "data": 17,
+              "span": "0x1111111111111111111111111111111111111111111111111111111111111111"
+            },
+            {
+              "kind": "byte",
+              "data": 17,
+              "span": "0x1111111111111111111111111111111111111111111111111111111111111111"
+            },
+            {
+              "kind": "byte",
+              "data": 17,
+              "span": "0x1111111111111111111111111111111111111111111111111111111111111111"
+            },
+            {
+              "kind": "byte",
+              "data": 17,
+              "span": "0x1111111111111111111111111111111111111111111111111111111111111111"
+            },
+            {
+              "kind": "byte",
+              "data": 17,
+              "span": "0x1111111111111111111111111111111111111111111111111111111111111111"
+            },
+            {
+              "kind": "byte",
+              "data": 17,
+              "span": "0x1111111111111111111111111111111111111111111111111111111111111111"
+            },
+            {
+              "kind": "byte",
+              "data": 17,
+              "span": "0x1111111111111111111111111111111111111111111111111111111111111111"
+            },
+            {
+              "kind": "byte",
+              "data": 17,
+              "span": "0x1111111111111111111111111111111111111111111111111111111111111111"
+            },
+            {
+              "kind": "byte",
+              "data": 17,
+              "span": "0x1111111111111111111111111111111111111111111111111111111111111111"
+            },
+            {
+              "kind": "byte",
+              "data": 17,
+              "span": "0x1111111111111111111111111111111111111111111111111111111111111111"
+            },
+            {
+              "kind": "byte",
+              "data": 17,
+              "span": "0x1111111111111111111111111111111111111111111111111111111111111111"
+            },
+            {
+              "kind": "byte",
+              "data": 17,
+              "span": "0x1111111111111111111111111111111111111111111111111111111111111111"
+            },
+            {
+              "kind": "byte",
+              "data": 17,
+              "span": "0x1111111111111111111111111111111111111111111111111111111111111111"
+            },
+            {
+              "kind": "byte",
+              "data": 17,
+              "span": "0x1111111111111111111111111111111111111111111111111111111111111111"
+            },
+            {
+              "kind": "byte",
+              "data": 17,
+              "span": "0x1111111111111111111111111111111111111111111111111111111111111111"
+            },
+            {
+              "kind": "byte",
+              "data": 17,
+              "span": "0x1111111111111111111111111111111111111111111111111111111111111111"
+            },
+            {
+              "kind": "byte",
+              "data": 17,
+              "span": "0x1111111111111111111111111111111111111111111111111111111111111111"
+            },
+            {
+              "kind": "byte",
+              "data": 17,
+              "span": "0x1111111111111111111111111111111111111111111111111111111111111111"
+            },
+            {
+              "kind": "byte",
+              "data": 17,
+              "span": "0x1111111111111111111111111111111111111111111111111111111111111111"
+            },
+            {
+              "kind": "byte",
+              "data": 17,
+              "span": "0x1111111111111111111111111111111111111111111111111111111111111111"
+            },
+            {
+              "kind": "byte",
+              "data": 17,
+              "span": "0x1111111111111111111111111111111111111111111111111111111111111111"
+            },
+            {
+              "kind": "byte",
+              "data": 17,
+              "span": "0x1111111111111111111111111111111111111111111111111111111111111111"
+            },
+            {
+              "kind": "byte",
+              "data": 17,
+              "span": "0x1111111111111111111111111111111111111111111111111111111111111111"
+            },
+            {
+              "kind": "byte",
+              "data": 17,
+              "span": "0x1111111111111111111111111111111111111111111111111111111111111111"
+            },
+            {
+              "kind": "byte",
+              "data": 17,
+              "span": "0x1111111111111111111111111111111111111111111111111111111111111111"
+            },
+            {
+              "kind": "byte",
+              "data": 17,
+              "span": "0x1111111111111111111111111111111111111111111111111111111111111111"
+            },
+            {
+              "kind": "byte",
+              "data": 17,
+              "span": "0x1111111111111111111111111111111111111111111111111111111111111111"
+            },
+            {
+              "kind": "byte",
+              "data": 17,
+              "span": "0x1111111111111111111111111111111111111111111111111111111111111111"
+            },
+            {
+              "kind": "byte",
+              "data": 17,
+              "span": "0x1111111111111111111111111111111111111111111111111111111111111111"
+            },
+            {
+              "kind": "byte",
+              "data": 17,
+              "span": "0x1111111111111111111111111111111111111111111111111111111111111111"
+            },
+            {
+              "kind": "byte",
+              "data": 17,
+              "span": "0x1111111111111111111111111111111111111111111111111111111111111111"
+            }
+          ],
+          "span": "0x1111111111111111111111111111111111111111111111111111111111111111"
+        },
+        "span": "byte[32] asset_id = 0x1111111111111111111111111111111111111111111111111111111111111111;",
+        "type_span": "byte[32]",
+        "name_span": "asset_id"
+      },
+      {
+        "type_ref": {
+          "base": "byte",
+          "array_dims": [
+            {
+              "kind": "fixed",
+              "value": 32
+            }
+          ]
+        },
+        "name": "spent_root",
+        "expr": {
+          "kind": "array",
+          "data": [
+            {
+              "kind": "byte",
+              "data": 136,
+              "span": "0x8888888888888888888888888888888888888888888888888888888888888888"
+            },
+            {
+              "kind": "byte",
+              "data": 136,
+              "span": "0x8888888888888888888888888888888888888888888888888888888888888888"
+            },
+            {
+              "kind": "byte",
+              "data": 136,
+              "span": "0x8888888888888888888888888888888888888888888888888888888888888888"
+            },
+            {
+              "kind": "byte",
+              "data": 136,
+              "span": "0x8888888888888888888888888888888888888888888888888888888888888888"
+            },
+            {
+              "kind": "byte",
+              "data": 136,
+              "span": "0x8888888888888888888888888888888888888888888888888888888888888888"
+            },
+            {
+              "kind": "byte",
+              "data": 136,
+              "span": "0x8888888888888888888888888888888888888888888888888888888888888888"
+            },
+            {
+              "kind": "byte",
+              "data": 136,
+              "span": "0x8888888888888888888888888888888888888888888888888888888888888888"
+            },
+            {
+              "kind": "byte",
+              "data": 136,
+              "span": "0x8888888888888888888888888888888888888888888888888888888888888888"
+            },
+            {
+              "kind": "byte",
+              "data": 136,
+              "span": "0x8888888888888888888888888888888888888888888888888888888888888888"
+            },
+            {
+              "kind": "byte",
+              "data": 136,
+              "span": "0x8888888888888888888888888888888888888888888888888888888888888888"
+            },
+            {
+              "kind": "byte",
+              "data": 136,
+              "span": "0x8888888888888888888888888888888888888888888888888888888888888888"
+            },
+            {
+              "kind": "byte",
+              "data": 136,
+              "span": "0x8888888888888888888888888888888888888888888888888888888888888888"
+            },
+            {
+              "kind": "byte",
+              "data": 136,
+              "span": "0x8888888888888888888888888888888888888888888888888888888888888888"
+            },
+            {
+              "kind": "byte",
+              "data": 136,
+              "span": "0x8888888888888888888888888888888888888888888888888888888888888888"
+            },
+            {
+              "kind": "byte",
+              "data": 136,
+              "span": "0x8888888888888888888888888888888888888888888888888888888888888888"
+            },
+            {
+              "kind": "byte",
+              "data": 136,
+              "span": "0x8888888888888888888888888888888888888888888888888888888888888888"
+            },
+            {
+              "kind": "byte",
+              "data": 136,
+              "span": "0x8888888888888888888888888888888888888888888888888888888888888888"
+            },
+            {
+              "kind": "byte",
+              "data": 136,
+              "span": "0x8888888888888888888888888888888888888888888888888888888888888888"
+            },
+            {
+              "kind": "byte",
+              "data": 136,
+              "span": "0x8888888888888888888888888888888888888888888888888888888888888888"
+            },
+            {
+              "kind": "byte",
+              "data": 136,
+              "span": "0x8888888888888888888888888888888888888888888888888888888888888888"
+            },
+            {
+              "kind": "byte",
+              "data": 136,
+              "span": "0x8888888888888888888888888888888888888888888888888888888888888888"
+            },
+            {
+              "kind": "byte",
+              "data": 136,
+              "span": "0x8888888888888888888888888888888888888888888888888888888888888888"
+            },
+            {
+              "kind": "byte",
+              "data": 136,
+              "span": "0x8888888888888888888888888888888888888888888888888888888888888888"
+            },
+            {
+              "kind": "byte",
+              "data": 136,
+              "span": "0x8888888888888888888888888888888888888888888888888888888888888888"
+            },
+            {
+              "kind": "byte",
+              "data": 136,
+              "span": "0x8888888888888888888888888888888888888888888888888888888888888888"
+            },
+            {
+              "kind": "byte",
+              "data": 136,
+              "span": "0x8888888888888888888888888888888888888888888888888888888888888888"
+            },
+            {
+              "kind": "byte",
+              "data": 136,
+              "span": "0x8888888888888888888888888888888888888888888888888888888888888888"
+            },
+            {
+              "kind": "byte",
+              "data": 136,
+              "span": "0x8888888888888888888888888888888888888888888888888888888888888888"
+            },
+            {
+              "kind": "byte",
+              "data": 136,
+              "span": "0x8888888888888888888888888888888888888888888888888888888888888888"
+            },
+            {
+              "kind": "byte",
+              "data": 136,
+              "span": "0x8888888888888888888888888888888888888888888888888888888888888888"
+            },
+            {
+              "kind": "byte",
+              "data": 136,
+              "span": "0x8888888888888888888888888888888888888888888888888888888888888888"
+            },
+            {
+              "kind": "byte",
+              "data": 136,
+              "span": "0x8888888888888888888888888888888888888888888888888888888888888888"
+            }
+          ],
+          "span": "0x8888888888888888888888888888888888888888888888888888888888888888"
+        },
+        "span": "byte[32] spent_root = 0x8888888888888888888888888888888888888888888888888888888888888888;",
+        "type_span": "byte[32]",
+        "name_span": "spent_root"
+      },
+      {
+        "type_ref": {
+          "base": "byte",
+          "array_dims": [
+            {
+              "kind": "fixed",
+              "value": 32
+            }
+          ]
+        },
+        "name": "new_root",
+        "expr": {
+          "kind": "array",
+          "data": [
+            {
+              "kind": "byte",
+              "data": 153,
+              "span": "0x9999999999999999999999999999999999999999999999999999999999999999"
+            },
+            {
+              "kind": "byte",
+              "data": 153,
+              "span": "0x9999999999999999999999999999999999999999999999999999999999999999"
+            },
+            {
+              "kind": "byte",
+              "data": 153,
+              "span": "0x9999999999999999999999999999999999999999999999999999999999999999"
+            },
+            {
+              "kind": "byte",
+              "data": 153,
+              "span": "0x9999999999999999999999999999999999999999999999999999999999999999"
+            },
+            {
+              "kind": "byte",
+              "data": 153,
+              "span": "0x9999999999999999999999999999999999999999999999999999999999999999"
+            },
+            {
+              "kind": "byte",
+              "data": 153,
+              "span": "0x9999999999999999999999999999999999999999999999999999999999999999"
+            },
+            {
+              "kind": "byte",
+              "data": 153,
+              "span": "0x9999999999999999999999999999999999999999999999999999999999999999"
+            },
+            {
+              "kind": "byte",
+              "data": 153,
+              "span": "0x9999999999999999999999999999999999999999999999999999999999999999"
+            },
+            {
+              "kind": "byte",
+              "data": 153,
+              "span": "0x9999999999999999999999999999999999999999999999999999999999999999"
+            },
+            {
+              "kind": "byte",
+              "data": 153,
+              "span": "0x9999999999999999999999999999999999999999999999999999999999999999"
+            },
+            {
+              "kind": "byte",
+              "data": 153,
+              "span": "0x9999999999999999999999999999999999999999999999999999999999999999"
+            },
+            {
+              "kind": "byte",
+              "data": 153,
+              "span": "0x9999999999999999999999999999999999999999999999999999999999999999"
+            },
+            {
+              "kind": "byte",
+              "data": 153,
+              "span": "0x9999999999999999999999999999999999999999999999999999999999999999"
+            },
+            {
+              "kind": "byte",
+              "data": 153,
+              "span": "0x9999999999999999999999999999999999999999999999999999999999999999"
+            },
+            {
+              "kind": "byte",
+              "data": 153,
+              "span": "0x9999999999999999999999999999999999999999999999999999999999999999"
+            },
+            {
+              "kind": "byte",
+              "data": 153,
+              "span": "0x9999999999999999999999999999999999999999999999999999999999999999"
+            },
+            {
+              "kind": "byte",
+              "data": 153,
+              "span": "0x9999999999999999999999999999999999999999999999999999999999999999"
+            },
+            {
+              "kind": "byte",
+              "data": 153,
+              "span": "0x9999999999999999999999999999999999999999999999999999999999999999"
+            },
+            {
+              "kind": "byte",
+              "data": 153,
+              "span": "0x9999999999999999999999999999999999999999999999999999999999999999"
+            },
+            {
+              "kind": "byte",
+              "data": 153,
+              "span": "0x9999999999999999999999999999999999999999999999999999999999999999"
+            },
+            {
+              "kind": "byte",
+              "data": 153,
+              "span": "0x9999999999999999999999999999999999999999999999999999999999999999"
+            },
+            {
+              "kind": "byte",
+              "data": 153,
+              "span": "0x9999999999999999999999999999999999999999999999999999999999999999"
+            },
+            {
+              "kind": "byte",
+              "data": 153,
+              "span": "0x9999999999999999999999999999999999999999999999999999999999999999"
+            },
+            {
+              "kind": "byte",
+              "data": 153,
+              "span": "0x9999999999999999999999999999999999999999999999999999999999999999"
+            },
+            {
+              "kind": "byte",
+              "data": 153,
+              "span": "0x9999999999999999999999999999999999999999999999999999999999999999"
+            },
+            {
+              "kind": "byte",
+              "data": 153,
+              "span": "0x9999999999999999999999999999999999999999999999999999999999999999"
+            },
+            {
+              "kind": "byte",
+              "data": 153,
+              "span": "0x9999999999999999999999999999999999999999999999999999999999999999"
+            },
+            {
+              "kind": "byte",
+              "data": 153,
+              "span": "0x9999999999999999999999999999999999999999999999999999999999999999"
+            },
+            {
+              "kind": "byte",
+              "data": 153,
+              "span": "0x9999999999999999999999999999999999999999999999999999999999999999"
+            },
+            {
+              "kind": "byte",
+              "data": 153,
+              "span": "0x9999999999999999999999999999999999999999999999999999999999999999"
+            },
+            {
+              "kind": "byte",
+              "data": 153,
+              "span": "0x9999999999999999999999999999999999999999999999999999999999999999"
+            },
+            {
+              "kind": "byte",
+              "data": 153,
+              "span": "0x9999999999999999999999999999999999999999999999999999999999999999"
+            }
+          ],
+          "span": "0x9999999999999999999999999999999999999999999999999999999999999999"
+        },
+        "span": "byte[32] new_root = 0x9999999999999999999999999999999999999999999999999999999999999999;",
+        "type_span": "byte[32]",
+        "name_span": "new_root"
+      },
+      {
+        "type_ref": {
+          "base": "byte",
+          "array_dims": [
+            {
+              "kind": "fixed",
+              "value": 32
+            }
+          ]
+        },
+        "name": "certificate_id",
+        "expr": {
+          "kind": "array",
+          "data": [
+            {
+              "kind": "byte",
+              "data": 170,
+              "span": "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+            },
+            {
+              "kind": "byte",
+              "data": 170,
+              "span": "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+            },
+            {
+              "kind": "byte",
+              "data": 170,
+              "span": "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+            },
+            {
+              "kind": "byte",
+              "data": 170,
+              "span": "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+            },
+            {
+              "kind": "byte",
+              "data": 170,
+              "span": "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+            },
+            {
+              "kind": "byte",
+              "data": 170,
+              "span": "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+            },
+            {
+              "kind": "byte",
+              "data": 170,
+              "span": "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+            },
+            {
+              "kind": "byte",
+              "data": 170,
+              "span": "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+            },
+            {
+              "kind": "byte",
+              "data": 170,
+              "span": "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+            },
+            {
+              "kind": "byte",
+              "data": 170,
+              "span": "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+            },
+            {
+              "kind": "byte",
+              "data": 170,
+              "span": "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+            },
+            {
+              "kind": "byte",
+              "data": 170,
+              "span": "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+            },
+            {
+              "kind": "byte",
+              "data": 170,
+              "span": "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+            },
+            {
+              "kind": "byte",
+              "data": 170,
+              "span": "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+            },
+            {
+              "kind": "byte",
+              "data": 170,
+              "span": "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+            },
+            {
+              "kind": "byte",
+              "data": 170,
+              "span": "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+            },
+            {
+              "kind": "byte",
+              "data": 170,
+              "span": "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+            },
+            {
+              "kind": "byte",
+              "data": 170,
+              "span": "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+            },
+            {
+              "kind": "byte",
+              "data": 170,
+              "span": "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+            },
+            {
+              "kind": "byte",
+              "data": 170,
+              "span": "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+            },
+            {
+              "kind": "byte",
+              "data": 170,
+              "span": "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+            },
+            {
+              "kind": "byte",
+              "data": 170,
+              "span": "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+            },
+            {
+              "kind": "byte",
+              "data": 170,
+              "span": "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+            },
+            {
+              "kind": "byte",
+              "data": 170,
+              "span": "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+            },
+            {
+              "kind": "byte",
+              "data": 170,
+              "span": "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+            },
+            {
+              "kind": "byte",
+              "data": 170,
+              "span": "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+            },
+            {
+              "kind": "byte",
+              "data": 170,
+              "span": "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+            },
+            {
+              "kind": "byte",
+              "data": 170,
+              "span": "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+            },
+            {
+              "kind": "byte",
+              "data": 170,
+              "span": "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+            },
+            {
+              "kind": "byte",
+              "data": 170,
+              "span": "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+            },
+            {
+              "kind": "byte",
+              "data": 170,
+              "span": "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+            },
+            {
+              "kind": "byte",
+              "data": 170,
+              "span": "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+            }
+          ],
+          "span": "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+        },
+        "span": "byte[32] certificate_id = 0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa;",
+        "type_span": "byte[32]",
+        "name_span": "certificate_id"
+      },
+      {
+        "type_ref": {
+          "base": "byte",
+          "array_dims": [
+            {
+              "kind": "fixed",
+              "value": 32
+            }
+          ]
+        },
+        "name": "state_digest",
+        "expr": {
+          "kind": "array",
+          "data": [
+            {
+              "kind": "byte",
+              "data": 187,
+              "span": "0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+            },
+            {
+              "kind": "byte",
+              "data": 187,
+              "span": "0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+            },
+            {
+              "kind": "byte",
+              "data": 187,
+              "span": "0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+            },
+            {
+              "kind": "byte",
+              "data": 187,
+              "span": "0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+            },
+            {
+              "kind": "byte",
+              "data": 187,
+              "span": "0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+            },
+            {
+              "kind": "byte",
+              "data": 187,
+              "span": "0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+            },
+            {
+              "kind": "byte",
+              "data": 187,
+              "span": "0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+            },
+            {
+              "kind": "byte",
+              "data": 187,
+              "span": "0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+            },
+            {
+              "kind": "byte",
+              "data": 187,
+              "span": "0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+            },
+            {
+              "kind": "byte",
+              "data": 187,
+              "span": "0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+            },
+            {
+              "kind": "byte",
+              "data": 187,
+              "span": "0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+            },
+            {
+              "kind": "byte",
+              "data": 187,
+              "span": "0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+            },
+            {
+              "kind": "byte",
+              "data": 187,
+              "span": "0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+            },
+            {
+              "kind": "byte",
+              "data": 187,
+              "span": "0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+            },
+            {
+              "kind": "byte",
+              "data": 187,
+              "span": "0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+            },
+            {
+              "kind": "byte",
+              "data": 187,
+              "span": "0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+            },
+            {
+              "kind": "byte",
+              "data": 187,
+              "span": "0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+            },
+            {
+              "kind": "byte",
+              "data": 187,
+              "span": "0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+            },
+            {
+              "kind": "byte",
+              "data": 187,
+              "span": "0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+            },
+            {
+              "kind": "byte",
+              "data": 187,
+              "span": "0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+            },
+            {
+              "kind": "byte",
+              "data": 187,
+              "span": "0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+            },
+            {
+              "kind": "byte",
+              "data": 187,
+              "span": "0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+            },
+            {
+              "kind": "byte",
+              "data": 187,
+              "span": "0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+            },
+            {
+              "kind": "byte",
+              "data": 187,
+              "span": "0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+            },
+            {
+              "kind": "byte",
+              "data": 187,
+              "span": "0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+            },
+            {
+              "kind": "byte",
+              "data": 187,
+              "span": "0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+            },
+            {
+              "kind": "byte",
+              "data": 187,
+              "span": "0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+            },
+            {
+              "kind": "byte",
+              "data": 187,
+              "span": "0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+            },
+            {
+              "kind": "byte",
+              "data": 187,
+              "span": "0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+            },
+            {
+              "kind": "byte",
+              "data": 187,
+              "span": "0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+            },
+            {
+              "kind": "byte",
+              "data": 187,
+              "span": "0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+            },
+            {
+              "kind": "byte",
+              "data": 187,
+              "span": "0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+            }
+          ],
+          "span": "0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+        },
+        "span": "byte[32] state_digest = 0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb;",
+        "type_span": "byte[32]",
+        "name_span": "state_digest"
+      }
+    ],
+    "constants": [],
+    "functions": [
+      {
+        "name": "__covenant_policy_attach_certificate",
+        "params": [
+          {
+            "type_ref": {
+              "base": "State"
+            },
+            "name": "prev_state",
+            "span": "State prev_state",
+            "type_span": "State ",
+            "name_span": "prev_state"
+          },
+          {
+            "type_ref": {
+              "base": "State"
+            },
+            "name": "new_state",
+            "span": "State new_state",
+            "type_span": "State ",
+            "name_span": "new_state"
+          },
+          {
+            "type_ref": {
+              "base": "byte",
+              "array_dims": [
+                {
+                  "kind": "fixed",
+                  "value": 32
+                }
+              ]
+            },
+            "name": "verified_certificate_id",
+            "span": "byte[32] verified_certificate_id",
+            "type_span": "byte[32]",
+            "name_span": "verified_certificate_id"
+          },
+          {
+            "type_ref": {
+              "base": "byte",
+              "array_dims": [
+                {
+                  "kind": "fixed",
+                  "value": 32
+                }
+              ]
+            },
+            "name": "bundle_root",
+            "span": "byte[32] bundle_root",
+            "type_span": "byte[32]",
+            "name_span": "bundle_root"
+          }
+        ],
+        "entrypoint": false,
+        "return_types": [],
+        "returns_tuple": false,
+        "body": [
+          {
+            "kind": "require",
+            "data": {
+              "expr": {
+                "kind": "binary",
+                "data": {
+                  "op": "eq",
+                  "left": {
+                    "kind": "field_access",
+                    "data": {
+                      "source": {
+                        "kind": "identifier",
+                        "data": "prev_state",
+                        "span": "prev_state"
+                      },
+                      "field": "amount",
+                      "field_span": "amount"
+                    },
+                    "span": "prev_state.amount"
+                  },
+                  "right": {
+                    "kind": "field_access",
+                    "data": {
+                      "source": {
+                        "kind": "identifier",
+                        "data": "new_state",
+                        "span": "new_state"
+                      },
+                      "field": "amount",
+                      "field_span": "amount"
+                    },
+                    "span": "new_state.amount"
+                  }
+                },
+                "span": "prev_state.amount == new_state.amount"
+              },
+              "message": null,
+              "span": "require(prev_state.amount == new_state.amount);",
+              "message_span": null
+            }
+          },
+          {
+            "kind": "require",
+            "data": {
+              "expr": {
+                "kind": "binary",
+                "data": {
+                  "op": "eq",
+                  "left": {
+                    "kind": "field_access",
+                    "data": {
+                      "source": {
+                        "kind": "identifier",
+                        "data": "prev_state",
+                        "span": "prev_state"
+                      },
+                      "field": "asset_id",
+                      "field_span": "asset_id"
+                    },
+                    "span": "prev_state.asset_id"
+                  },
+                  "right": {
+                    "kind": "field_access",
+                    "data": {
+                      "source": {
+                        "kind": "identifier",
+                        "data": "new_state",
+                        "span": "new_state"
+                      },
+                      "field": "asset_id",
+                      "field_span": "asset_id"
+                    },
+                    "span": "new_state.asset_id"
+                  }
+                },
+                "span": "prev_state.asset_id == new_state.asset_id"
+              },
+              "message": null,
+              "span": "require(prev_state.asset_id == new_state.asset_id);",
+              "message_span": null
+            }
+          },
+          {
+            "kind": "require",
+            "data": {
+              "expr": {
+                "kind": "binary",
+                "data": {
+                  "op": "ne",
+                  "left": {
+                    "kind": "field_access",
+                    "data": {
+                      "source": {
+                        "kind": "identifier",
+                        "data": "prev_state",
+                        "span": "prev_state"
+                      },
+                      "field": "spent_root",
+                      "field_span": "spent_root"
+                    },
+                    "span": "prev_state.spent_root"
+                  },
+                  "right": {
+                    "kind": "field_access",
+                    "data": {
+                      "source": {
+                        "kind": "identifier",
+                        "data": "new_state",
+                        "span": "new_state"
+                      },
+                      "field": "spent_root",
+                      "field_span": "spent_root"
+                    },
+                    "span": "new_state.spent_root"
+                  }
+                },
+                "span": "prev_state.spent_root != new_state.spent_root"
+              },
+              "message": null,
+              "span": "require(prev_state.spent_root != new_state.spent_root);",
+              "message_span": null
+            }
+          },
+          {
+            "kind": "require",
+            "data": {
+              "expr": {
+                "kind": "binary",
+                "data": {
+                  "op": "ne",
+                  "left": {
+                    "kind": "field_access",
+                    "data": {
+                      "source": {
+                        "kind": "identifier",
+                        "data": "prev_state",
+                        "span": "prev_state"
+                      },
+                      "field": "new_root",
+                      "field_span": "new_root"
+                    },
+                    "span": "prev_state.new_root"
+                  },
+                  "right": {
+                    "kind": "field_access",
+                    "data": {
+                      "source": {
+                        "kind": "identifier",
+                        "data": "new_state",
+                        "span": "new_state"
+                      },
+                      "field": "new_root",
+                      "field_span": "new_root"
+                    },
+                    "span": "new_state.new_root"
+                  }
+                },
+                "span": "prev_state.new_root != new_state.new_root"
+              },
+              "message": null,
+              "span": "require(prev_state.new_root != new_state.new_root);",
+              "message_span": null
+            }
+          },
+          {
+            "kind": "require",
+            "data": {
+              "expr": {
+                "kind": "binary",
+                "data": {
+                  "op": "eq",
+                  "left": {
+                    "kind": "field_access",
+                    "data": {
+                      "source": {
+                        "kind": "identifier",
+                        "data": "new_state",
+                        "span": "new_state"
+                      },
+                      "field": "certificate_id",
+                      "field_span": "certificate_id"
+                    },
+                    "span": "new_state.certificate_id"
+                  },
+                  "right": {
+                    "kind": "identifier",
+                    "data": "verified_certificate_id",
+                    "span": "verified_certificate_id"
+                  }
+                },
+                "span": "new_state.certificate_id == verified_certificate_id"
+              },
+              "message": null,
+              "span": "require(new_state.certificate_id == verified_certificate_id);",
+              "message_span": null
+            }
+          },
+          {
+            "kind": "require",
+            "data": {
+              "expr": {
+                "kind": "binary",
+                "data": {
+                  "op": "ne",
+                  "left": {
+                    "kind": "identifier",
+                    "data": "bundle_root",
+                    "span": "bundle_root"
+                  },
+                  "right": {
+                    "kind": "field_access",
+                    "data": {
+                      "source": {
+                        "kind": "identifier",
+                        "data": "prev_state",
+                        "span": "prev_state"
+                      },
+                      "field": "state_digest",
+                      "field_span": "state_digest"
+                    },
+                    "span": "prev_state.state_digest"
+                  }
+                },
+                "span": "bundle_root != prev_state.state_digest"
+              },
+              "message": null,
+              "span": "require(bundle_root != prev_state.state_digest);",
+              "message_span": null
+            }
+          },
+          {
+            "kind": "require",
+            "data": {
+              "expr": {
+                "kind": "binary",
+                "data": {
+                  "op": "ne",
+                  "left": {
+                    "kind": "field_access",
+                    "data": {
+                      "source": {
+                        "kind": "identifier",
+                        "data": "prev_state",
+                        "span": "prev_state"
+                      },
+                      "field": "state_digest",
+                      "field_span": "state_digest"
+                    },
+                    "span": "prev_state.state_digest"
+                  },
+                  "right": {
+                    "kind": "field_access",
+                    "data": {
+                      "source": {
+                        "kind": "identifier",
+                        "data": "new_state",
+                        "span": "new_state"
+                      },
+                      "field": "state_digest",
+                      "field_span": "state_digest"
+                    },
+                    "span": "new_state.state_digest"
+                  }
+                },
+                "span": "prev_state.state_digest != new_state.state_digest"
+              },
+              "message": null,
+              "span": "require(prev_state.state_digest != new_state.state_digest);",
+              "message_span": null
+            }
+          }
+        ],
+        "return_type_spans": [],
+        "span": "#[covenant.singleton(mode = verification)]\n    function attach_certificate(\n        State prev_state,\n        State new_state,\n        byte[32] verified_certificate_id,\n        byte[32] bundle_root\n    ) {\n        require(prev_state.amount == new_state.amount);\n        require(prev_state.asset_id == new_state.asset_id);\n        require(prev_state.spent_root != new_state.spent_root);\n        require(prev_state.new_root != new_state.new_root);\n        require(new_state.certificate_id == verified_certificate_id);\n        require(bundle_root != prev_state.state_digest);\n        require(prev_state.state_digest != new_state.state_digest);\n    }",
+        "name_span": "attach_certificate",
+        "body_span": "require(prev_state.amount == new_state.amount);\n        require(prev_state.asset_id == new_state.asset_id);\n        require(prev_state.spent_root != new_state.spent_root);\n        require(prev_state.new_root != new_state.new_root);\n        require(new_state.certificate_id == verified_certificate_id);\n        require(bundle_root != prev_state.state_digest);\n        require(prev_state.state_digest != new_state.state_digest);"
+      },
+      {
+        "name": "__covenant_entrypoint_auth_attach_certificate",
+        "params": [
+          {
+            "type_ref": {
+              "base": "State"
+            },
+            "name": "new_state",
+            "span": "State new_state",
+            "type_span": "State ",
+            "name_span": "new_state"
+          },
+          {
+            "type_ref": {
+              "base": "byte",
+              "array_dims": [
+                {
+                  "kind": "fixed",
+                  "value": 32
+                }
+              ]
+            },
+            "name": "verified_certificate_id",
+            "span": "byte[32] verified_certificate_id",
+            "type_span": "byte[32]",
+            "name_span": "verified_certificate_id"
+          },
+          {
+            "type_ref": {
+              "base": "byte",
+              "array_dims": [
+                {
+                  "kind": "fixed",
+                  "value": 32
+                }
+              ]
+            },
+            "name": "bundle_root",
+            "span": "byte[32] bundle_root",
+            "type_span": "byte[32]",
+            "name_span": "bundle_root"
+          }
+        ],
+        "entrypoint": true,
+        "return_types": [],
+        "returns_tuple": false,
+        "body": [
+          {
+            "kind": "variable_definition",
+            "data": {
+              "type_ref": {
+                "base": "int"
+              },
+              "modifiers": [],
+              "name": "__auth_out_count",
+              "expr": {
+                "kind": "call",
+                "data": {
+                  "name": "OpAuthOutputCount",
+                  "args": [
+                    {
+                      "kind": "nullary",
+                      "data": "active_input_index",
+                      "span": "<synthetic>"
+                    }
+                  ],
+                  "name_span": "<synthetic>"
+                },
+                "span": "<synthetic>"
+              },
+              "span": "<synthetic>",
+              "type_span": "<synthetic>",
+              "modifier_spans": [],
+              "name_span": "<synthetic>"
+            }
+          },
+          {
+            "kind": "variable_definition",
+            "data": {
+              "type_ref": {
+                "base": "State"
+              },
+              "modifiers": [],
+              "name": "prev_state",
+              "expr": {
+                "kind": "state_object",
+                "data": [
+                  {
+                    "name": "amount",
+                    "expr": {
+                      "kind": "identifier",
+                      "data": "amount",
+                      "span": "<synthetic>"
+                    },
+                    "span": "<synthetic>",
+                    "name_span": "<synthetic>"
+                  },
+                  {
+                    "name": "asset_id",
+                    "expr": {
+                      "kind": "identifier",
+                      "data": "asset_id",
+                      "span": "<synthetic>"
+                    },
+                    "span": "<synthetic>",
+                    "name_span": "<synthetic>"
+                  },
+                  {
+                    "name": "spent_root",
+                    "expr": {
+                      "kind": "identifier",
+                      "data": "spent_root",
+                      "span": "<synthetic>"
+                    },
+                    "span": "<synthetic>",
+                    "name_span": "<synthetic>"
+                  },
+                  {
+                    "name": "new_root",
+                    "expr": {
+                      "kind": "identifier",
+                      "data": "new_root",
+                      "span": "<synthetic>"
+                    },
+                    "span": "<synthetic>",
+                    "name_span": "<synthetic>"
+                  },
+                  {
+                    "name": "certificate_id",
+                    "expr": {
+                      "kind": "identifier",
+                      "data": "certificate_id",
+                      "span": "<synthetic>"
+                    },
+                    "span": "<synthetic>",
+                    "name_span": "<synthetic>"
+                  },
+                  {
+                    "name": "state_digest",
+                    "expr": {
+                      "kind": "identifier",
+                      "data": "state_digest",
+                      "span": "<synthetic>"
+                    },
+                    "span": "<synthetic>",
+                    "name_span": "<synthetic>"
+                  }
+                ],
+                "span": "<synthetic>"
+              },
+              "span": "<synthetic>",
+              "type_span": "<synthetic>",
+              "modifier_spans": [],
+              "name_span": "<synthetic>"
+            }
+          },
+          {
+            "kind": "function_call",
+            "data": {
+              "name": "__covenant_policy_attach_certificate",
+              "args": [
+                {
+                  "kind": "identifier",
+                  "data": "prev_state",
+                  "span": "<synthetic>"
+                },
+                {
+                  "kind": "identifier",
+                  "data": "new_state",
+                  "span": "<synthetic>"
+                },
+                {
+                  "kind": "identifier",
+                  "data": "verified_certificate_id",
+                  "span": "<synthetic>"
+                },
+                {
+                  "kind": "identifier",
+                  "data": "bundle_root",
+                  "span": "<synthetic>"
+                }
+              ],
+              "span": "<synthetic>",
+              "name_span": "<synthetic>"
+            }
+          },
+          {
+            "kind": "require",
+            "data": {
+              "expr": {
+                "kind": "binary",
+                "data": {
+                  "op": "eq",
+                  "left": {
+                    "kind": "identifier",
+                    "data": "__auth_out_count",
+                    "span": "<synthetic>"
+                  },
+                  "right": {
+                    "kind": "int",
+                    "data": 1,
+                    "span": "<synthetic>"
+                  }
+                },
+                "span": "<synthetic>"
+              },
+              "message": null,
+              "span": "<synthetic>",
+              "message_span": null
+            }
+          },
+          {
+            "kind": "variable_definition",
+            "data": {
+              "type_ref": {
+                "base": "int"
+              },
+              "modifiers": [],
+              "name": "__cov_out_idx",
+              "expr": {
+                "kind": "call",
+                "data": {
+                  "name": "OpAuthOutputIdx",
+                  "args": [
+                    {
+                      "kind": "nullary",
+                      "data": "active_input_index",
+                      "span": "<synthetic>"
+                    },
+                    {
+                      "kind": "int",
+                      "data": 0,
+                      "span": "<synthetic>"
+                    }
+                  ],
+                  "name_span": "<synthetic>"
+                },
+                "span": "<synthetic>"
+              },
+              "span": "<synthetic>",
+              "type_span": "<synthetic>",
+              "modifier_spans": [],
+              "name_span": "<synthetic>"
+            }
+          },
+          {
+            "kind": "function_call",
+            "data": {
+              "name": "validateOutputState",
+              "args": [
+                {
+                  "kind": "identifier",
+                  "data": "__cov_out_idx",
+                  "span": "<synthetic>"
+                },
+                {
+                  "kind": "identifier",
+                  "data": "new_state",
+                  "span": "<synthetic>"
+                }
+              ],
+              "span": "<synthetic>",
+              "name_span": "<synthetic>"
+            }
+          }
+        ],
+        "return_type_spans": [],
+        "span": "#[covenant.singleton(mode = verification)]\n    function attach_certificate(\n        State prev_state,\n        State new_state,\n        byte[32] verified_certificate_id,\n        byte[32] bundle_root\n    ) {\n        require(prev_state.amount == new_state.amount);\n        require(prev_state.asset_id == new_state.asset_id);\n        require(prev_state.spent_root != new_state.spent_root);\n        require(prev_state.new_root != new_state.new_root);\n        require(new_state.certificate_id == verified_certificate_id);\n        require(bundle_root != prev_state.state_digest);\n        require(prev_state.state_digest != new_state.state_digest);\n    }",
+        "name_span": "attach_certificate",
+        "body_span": "require(prev_state.amount == new_state.amount);\n        require(prev_state.asset_id == new_state.asset_id);\n        require(prev_state.spent_root != new_state.spent_root);\n        require(prev_state.new_root != new_state.new_root);\n        require(new_state.certificate_id == verified_certificate_id);\n        require(bundle_root != prev_state.state_digest);\n        require(prev_state.state_digest != new_state.state_digest);"
+      }
+    ],
+    "span": "contract RGKAllocationAuditCertificateRecovery() {\n    int amount = 1000;\n    byte[32] asset_id = 0x1111111111111111111111111111111111111111111111111111111111111111;\n    byte[32] spent_root = 0x8888888888888888888888888888888888888888888888888888888888888888;\n    byte[32] new_root = 0x9999999999999999999999999999999999999999999999999999999999999999;\n    byte[32] certificate_id = 0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa;\n    byte[32] state_digest = 0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb;\n\n    #[covenant.singleton(mode = verification)]\n    function attach_certificate(\n        State prev_state,\n        State new_state,\n        byte[32] verified_certificate_id,\n        byte[32] bundle_root\n    ) {\n        require(prev_state.amount == new_state.amount);\n        require(prev_state.asset_id == new_state.asset_id);\n        require(prev_state.spent_root != new_state.spent_root);\n        require(prev_state.new_root != new_state.new_root);\n        require(new_state.certificate_id == verified_certificate_id);\n        require(bundle_root != prev_state.state_digest);\n        require(prev_state.state_digest != new_state.state_digest);\n    }\n}",
+    "name_span": "RGKAllocationAuditCertificateRecovery"
+  },
+  "abi": [
+    {
+      "name": "__covenant_entrypoint_auth_attach_certificate",
+      "inputs": [
+        {
+          "name": "new_state",
+          "type_name": "State"
+        },
+        {
+          "name": "verified_certificate_id",
+          "type_name": "byte[32]"
+        },
+        {
+          "name": "bundle_root",
+          "type_name": "byte[32]"
+        }
+      ]
+    }
+  ],
+  "without_selector": true,
+  "state_layout": {
+    "start": 0,
+    "len": 174
+  },
+  "debug_info": null
+}

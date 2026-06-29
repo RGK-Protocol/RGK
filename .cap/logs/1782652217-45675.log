@@ -1,0 +1,18 @@
+== stdout ==
+.rgk-devnet/kaspad.log:2:2026-06-28 21:10:00.384+08:00 [INFO ] Application directory: /Users/arthur/RustroverProjects/rgk/.rgk-devnet
+.rgk-devnet/kaspad.log:3:2026-06-28 21:10:00.384+08:00 [INFO ] Data directory: /Users/arthur/RustroverProjects/rgk/.rgk-devnet/kaspa-devnet/datadir
+.rgk-devnet/kaspad.log:4:2026-06-28 21:10:00.384+08:00 [INFO ] Logs directory: /Users/arthur/RustroverProjects/rgk/.rgk-devnet/kaspa-devnet/logs
+.rgk-devnet/kaspad.log:5:2026-06-28 21:10:00.384+08:00 [INFO ] Utxoindex Data directory /Users/arthur/RustroverProjects/rgk/.rgk-devnet/kaspa-devnet/datadir/utxoindex
+scripts/devnet-toccata-overrides.json:2:  "skip_proof_of_work": true,
+scripts/devnet-toccata-overrides.json:3:  "toccata_activation": 0
+target/rgk-devnet-evidence/latest.txt:1:RGK devnet evidence
+target/rgk-devnet-evidence/latest.txt:3:url=ws://127.0.0.1:19111/v2/kaspa/devnet/no-tls/wrpc/borsh
+target/rgk-devnet-evidence/latest.txt:4:override_params=/Users/arthur/RustroverProjects/rgk/scripts/devnet-toccata-overrides.json
+target/rgk-devnet-evidence/latest.txt:7:     Running tests/live_devnet.rs (target/debug/deps/live_devnet-d43234cb10a29b66)
+target/rgk-devnet-evidence/latest.txt:10:live-devnet: server_version=1.2.2-toc.4 network_id=devnet is_synced=false has_utxo_index=true
+target/rgk-devnet-evidence/latest.txt:11:test live_devnet_reports_toccata_node_identity ... ok
+target/rgk-devnet-evidence/latest.txt:12:live-devnet: scan cursor initialised chain=KaspaDevnet daa=0 hash_prefix=4cb48d0b2073b802
+target/rgk-devnet-evidence/latest.txt:13:test live_devnet_initialises_persistent_scan_cursor ... ok
+target/rgk-devnet-evidence/latest.txt:21:     Running `target/debug/rgk-sync --url 'ws://127.0.0.1:19111/v2/kaspa/devnet/no-tls/wrpc/borsh' --network devnet --db /Users/arthur/RustroverProjects/rgk/target/rgk-devnet-evidence/sled --once`
+
+== stderr ==

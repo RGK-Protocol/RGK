@@ -1,0 +1,8 @@
+== stdout ==
+
+== stderr ==
+    Blocking waiting for file lock on package cache
+    Blocking waiting for file lock on package cache
+    Blocking waiting for file lock on package cache
+    Blocking waiting for file lock on build directory
+    Finished `dev` profile [optimized + debuginfo] target(s) in 22.10s

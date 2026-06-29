@@ -1,0 +1,333 @@
+== stdout ==
+
+running 27 tests
+test native::tests::continuation_duplicate_output_shape_is_rejected ... ok
+test native::tests::continuation_phase1_commitment_is_stable_without_future_txid ... ok
+test native::tests::continuation_finalization_closes_old_seal_and_creates_new_seal ... ok
+test native::tests::continuation_phase2_binds_actual_txid ... ok
+test native::tests::native_issue_digest_stable ... ok
+test native::tests::continuation_wrong_commitment_is_rejected ... ok
+test native::tests::continuation_replay_reusing_closed_seal_is_rejected ... ok
+test native::tests::native_issue_digest_is_allocation_order_stable ... ok
+test native::tests::native_issue_rejects_duplicate_seal_outpoint ... ok
+test native::tests::native_issue_rejects_mismatched_seal_chain ... ok
+test native::tests::native_issue_rejects_supply_mismatch ... ok
+test native::tests::native_negative_vectors_fail_expected_digest ... ok
+test native::tests::native_transition_digest_stable ... ok
+test native::tests::native_transition_digest_binds_mutations ... ok
+test native::tests::native_transition_rejects_closed_seal_reuse ... ok
+test native::tests::native_transition_rejects_no_op ... ok
+test native::tests::native_transition_rejects_previous_state_mismatch ... ok
+test native::tests::native_transition_rejects_supply_inflation_and_deflation ... ok
+test native::tests::nullifier_is_stable_but_unlinked_to_lane_id ... ok
+test native::tests::private_lane_discovery_and_tags_behave_as_commitments ... ok
+test native::tests::production_zk_allocation_shape_policy_is_native_and_exact ... ok
+test native::tests::production_zk_continuation_rejects_unsupported_shape_before_finalization ... ok
+test native::tests::production_zk_issue_rejects_unprovable_initial_state ... ok
+test native::tests::public_and_private_lane_policies_have_different_visibility ... ok
+test native::tests::production_zk_transition_rejects_unsupported_shape_only_on_zk_path ... ok
+test native::tests::unconstrained_image_id_is_rejected ... ok
+test tests::schema_id_is_native_rgk_text ... ok
+
+test result: ok. 27 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+
+running 25 tests
+test tests::bad_magic_rejected ... ok
+test tests::chain_domain_strings_stable ... ok
+test tests::contract_id_change_rejected ... ok
+test tests::cross_chain_structural_rejected ... ok
+test tests::contract_ref_roundtrips ... ok
+test tests::domain_tags_are_distinct ... ok
+test tests::eof_rejected ... ok
+test tests::frozen_receipt_vector_anchor ... ok
+test tests::frozen_state_commitment_vector ... ok
+test tests::hex_rejects_bad ... ok
+test tests::hex_round_trip ... ok
+test tests::no_op_transition_rejected ... ok
+test tests::outpoint_roundtrips ... ok
+test tests::policy_admits_table ... ok
+test tests::policy_migration_builder_binds_all_fields ... ok
+test tests::policy_mode_mismatch_rejected ... ok
+test tests::receipt_id_is_deterministic_and_payload_sensitive ... ok
+test tests::receipt_roundtrips ... ok
+test tests::replay_nonce_binds_inputs ... ok
+test tests::state_commitment_is_deterministic ... ok
+test tests::state_commitment_roundtrips ... ok
+test tests::trailing_bytes_rejected ... ok
+test tests::unknown_chain_rejected ... ok
+test tests::unknown_proof_mode_rejected ... ok
+test tests::unknown_version_rejected ... ok
+
+test result: ok. 25 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+
+running 18 tests
+test tests::advance_produces_new_state ... ok
+test tests::advance_rejects_no_op ... ok
+test tests::commitment_is_deterministic ... ok
+test tests::covenant_id_is_deterministic ... ok
+test tests::covenant_id_changes_with_outputs ... ok
+test tests::expected_payload_hash_is_deterministic ... ok
+test tests::expected_payload_len_is_stable ... ok
+test tests::frozen_covenant_id_vector ... ok
+test tests::lineage_id_binds_outpoint_and_contract ... ok
+test tests::opcode_values_match_toccata_checkout ... ok
+test tests::payload_rejects_bad_tag ... ok
+test tests::payload_rejects_truncated ... ok
+test tests::payload_roundtrip ... ok
+test tests::push_data_picks_correct_opcode ... ok
+test tests::push_script_i64_matches_upstream_builder_vectors ... ok
+test tests::push_var_int_compact ... ok
+test tests::spec_script_is_non_empty_and_starts_with_valid_opcode ... ok
+test tests::covenant_state_advance_sequences_preserve_static_fields ... ok
+
+test result: ok. 18 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+
+running 4 tests
+test generic_library_live_dispatch_is_disabled ... ok
+test e2e_summary_renders_all_fields ... ok
+test canonical_state_digest_is_deterministic ... ok
+test fixture_e2e_passes ... ok
+
+test result: ok. 4 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+
+running 25 tests
+test tests::apply_spend_records_receipt_policy_change_for_resolver_classification ... ok
+test tests::apply_spend_records_receipt_and_state ... ok
+test tests::apply_spend_with_continuation_records_proof ... ok
+test tests::apply_spend_with_policy_migration_rejects_bad_commitment ... ok
+test tests::apply_spend_with_policy_migration_records_explicit_proof ... ok
+test tests::chain_mismatch_in_open_rejected ... ok
+test tests::apply_spend_with_continuation_rejects_incomplete_proof ... ok
+test tests::empty_scan_cursor_name_rejected ... ok
+test tests::no_op_state_rejected ... ok
+test tests::open_then_lookup ... ok
+test tests::open_twice_rejected ... ok
+test tests::rebuild_from_verified_source_applies_spend_plan ... ok
+test tests::rebuild_from_verified_source_is_idempotent ... ok
+test tests::rebuild_rejects_chain_mismatch ... ok
+test tests::rebuild_rejects_missing_spend_evidence ... ok
+test tests::rebuild_rejects_unconfirmed_spend ... ok
+test tests::rebuild_rejects_unexpected_spending_txid ... ok
+test tests::register_lane_rejects_wrong_asset_state ... ok
+test tests::register_lane_supports_exact_scan_tag_and_public_lookup ... ok
+test tests::replay_rejected ... ok
+test tests::rollback_restores_previous_receipt_policy ... ok
+test tests::rollback_restores_previous_state ... ok
+test tests::rollback_too_deep_rejected ... ok
+test tests::scan_cursor_store_round_trips_in_memory ... ok
+test tests::apply_spend_and_rollback_preserve_replay_prefix ... ok
+
+test result: ok. 25 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+
+running 6 tests
+test tests::error_classify_distinguishes_paths ... ok
+test tests::fixture_basics ... ok
+test tests::fixture_failure_mode_propagates ... ok
+test tests::fixture_utxo_lookup ... ok
+test tests::fixture_spend_marks_utxo ... ok
+test tests::submit_transaction_in_fixture_is_invariant ... ok
+
+test result: ok. 6 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+
+running 16 tests
+test tests::batch_err_string_renders ... ok
+test tests::build_rejects_missing_continuation_commitment ... ok
+test tests::build_rejects_missing_nonce ... ok
+test tests::build_rejects_missing_transition ... ok
+test tests::contract_id_change_rejected ... ok
+test tests::derive_replay_nonce_is_deterministic ... ok
+test tests::no_op_transition_rejected ... ok
+test tests::build_round_trips_id_and_bytes ... ok
+test tests::receipt_id_hex_format ... ok
+test tests::replay_set_accepts_once ... ok
+test tests::verifier_rejects_chain_mismatch ... ok
+test tests::verifier_rejects_covenant_mismatch ... ok
+test tests::verifier_rejects_old_state_mismatch ... ok
+test tests::verifier_rejects_policy_mode_mismatch ... ok
+test tests::verifier_summary_is_stable ... ok
+test tests::receipt_round_trip_holds_for_random_admitted_fields ... ok
+
+test result: ok. 16 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+
+running 15 tests
+test tests::node_down_propagates ... ok
+test tests::open_when_indexed_and_utxo_present ... ok
+test tests::competing_branch_when_observed_spend_disagrees_with_indexed_transition ... ok
+test tests::competing_branch_when_continuation_txid_does_not_match_observed_spend ... ok
+test tests::resolve_lane_returns_registered_lane_state ... ok
+test tests::reorg_risk_when_spent_below_safety_depth ... ok
+test tests::policy_migration_required_when_indexed_transition_changes_receipt_policy ... ok
+test tests::resolve_by_view_key_discovers_only_matching_private_lane ... ok
+test tests::resolve_public_lineage_returns_only_public_lanes_for_asset ... ok
+test tests::transitioned_invalid_when_continuation_proof_is_missing ... ok
+test tests::transitioned_valid_uses_latest_indexed_spent_outpoint ... ok
+test tests::unknown_when_not_indexed ... ok
+test tests::valid_policy_migration_proof_allows_explicit_policy_change ... ok
+test tests::verify_receipt_against_indexer_rejects_mismatch ... ok
+test tests::verify_receipt_against_indexer_rejects_replay_before_old_state_mismatch ... ok
+
+test result: ok. 15 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+
+running 6 tests
+test tests::first_tick_initialises_missing_cursor ... ok
+test tests::kaspa_rebuild_source_reads_fixture_spend_evidence ... ok
+test tests::run_until_idle_accumulates_batches ... ok
+test tests::tick_advances_cursor_after_added_blocks ... ok
+test tests::tick_rejects_cursor_chain_mismatch ... ok
+test tests::tick_rejects_removed_chain_blocks ... ok
+
+test result: ok. 6 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+
+running 10 tests
+test tests::build_genesis_output_rejects_empty_spk ... ok
+test tests::build_genesis_output_rejects_zero_covenant ... ok
+test tests::build_transition_outputs_balanced ... ok
+test tests::build_transition_outputs_overflow_rejected ... ok
+test tests::encode_output_roundtrip_structure ... ok
+test tests::encode_input_has_expected_layout ... ok
+test tests::encode_unsigned_tx ... ok
+test tests::spec_from_state_round_trips ... ok
+test tests::spk_from_redeem_script_starts_with_version_zero ... ok
+test tests::validate_balanced_rejects_underfunded ... ok
+
+test result: ok. 10 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+
+running 14 tests
+test tests::chain_id_in_public_inputs_is_pinned ... ok
+test tests::proof_encode_for_precompile ... ok
+test tests::proof_rejects_empty ... ok
+test tests::proof_rejects_oversize ... ok
+test tests::semantic_transition_statement_binds_native_reports ... ok
+test tests::semantic_transition_statement_matches_receipt_statement ... ok
+test tests::semantic_transition_statement_rejects_noop_digest ... ok
+test tests::semantic_transition_statement_rejects_report_mismatch ... ok
+test tests::public_inputs_length_is_pinned ... ok
+test tests::statement_matches_receipt_round_trip ... ok
+test tests::tag_bytes_match_upstream ... ok
+test tests::zk_receipt_local_verify_succeeds ... ok
+test tests::zk_receipt_local_verify_catches_statement_mismatch ... ok
+test tests::zk_receipt_rejects_wrong_mode ... ok
+
+test result: ok. 14 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+
+== stderr ==
+   Compiling rgk-e2e v0.1.0 (/Users/arthur/RustroverProjects/rgk/tests/rgk-e2e)
+    Finished `test` profile [optimized + debuginfo] target(s) in 0.79s
+     Running unittests src/lib.rs (target/debug/deps/rgk_asset-38e633acadd3d3d5)
+     Running unittests src/lib.rs (target/debug/deps/rgk_core-fbe61feaab450c9f)
+     Running unittests src/lib.rs (target/debug/deps/rgk_covenant-2354709c436a804c)
+     Running unittests src/lib.rs (target/debug/deps/rgk_e2e-b3ffece9f65bb9e4)
+     Running tests/covenant_script_vm.rs (target/debug/deps/covenant_script_vm-a221e324181406b9)
+     Running tests/live_covenant.rs (target/debug/deps/live_covenant-23046968b3009609)
+     Running tests/live_devnet.rs (target/debug/deps/live_devnet-9cbd0f0b883720d1)
+     Running tests/live_kaspa.rs (target/debug/deps/live_kaspa-3a061eb5e70f9c96)
+     Running tests/zk_precompile_vm.rs (target/debug/deps/zk_precompile_vm-b9a98ec24e0ef3cc)
+     Running unittests src/lib.rs (target/debug/deps/rgk_indexer-86ed00e8105b3959)
+     Running unittests src/lib.rs (target/debug/deps/rgk_kaspa-fb1e3a3792096ebb)
+     Running unittests src/lib.rs (target/debug/deps/rgk_receipt-cc8f9389fbed1ee6)
+     Running unittests src/lib.rs (target/debug/deps/rgk_resolver-2fe08b8f73b110b7)
+     Running unittests src/lib.rs (target/debug/deps/rgk_sync-1bc42ab2addb8737)
+     Running unittests src/lib.rs (target/debug/deps/rgk_tx-293684aa3cc20259)
+     Running unittests src/lib.rs (target/debug/deps/rgk_zk-e6c6555a8e388af3)
+   Doc-tests rgk_asset
+   Doc-tests rgk_core
+   Doc-tests rgk_covenant
+   Doc-tests rgk_e2e
+   Doc-tests rgk_indexer
+   Doc-tests rgk_kaspa
+   Doc-tests rgk_receipt
+   Doc-tests rgk_resolver
+   Doc-tests rgk_sync
+   Doc-tests rgk_tx
+   Doc-tests rgk_zk

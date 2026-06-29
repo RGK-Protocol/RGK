@@ -1,0 +1,24 @@
+== stdout ==
+
+== stderr ==
+    Checking rgk-core v0.1.0 (/Users/arthur/RustroverProjects/rgk/crates/rgk-core)
+ Documenting rgk-core v0.1.0 (/Users/arthur/RustroverProjects/rgk/crates/rgk-core)
+    Checking rgk-receipt v0.1.0 (/Users/arthur/RustroverProjects/rgk/crates/rgk-receipt)
+ Documenting rgk-receipt v0.1.0 (/Users/arthur/RustroverProjects/rgk/crates/rgk-receipt)
+    Checking rgk-covenant v0.1.0 (/Users/arthur/RustroverProjects/rgk/crates/rgk-covenant)
+ Documenting rgk-covenant v0.1.0 (/Users/arthur/RustroverProjects/rgk/crates/rgk-covenant)
+    Checking rgk-indexer v0.1.0 (/Users/arthur/RustroverProjects/rgk/crates/rgk-indexer)
+    Checking rgk-rgb v0.1.0 (/Users/arthur/RustroverProjects/rgk/crates/rgk-rgb)
+    Checking rgk-kaspa v0.1.0 (/Users/arthur/RustroverProjects/rgk/crates/rgk-kaspa)
+    Checking rgk-zk v0.1.0 (/Users/arthur/RustroverProjects/rgk/crates/rgk-zk)
+    Checking rgk-tx v0.1.0 (/Users/arthur/RustroverProjects/rgk/crates/rgk-tx)
+ Documenting rgk-tx v0.1.0 (/Users/arthur/RustroverProjects/rgk/crates/rgk-tx)
+ Documenting rgk-zk v0.1.0 (/Users/arthur/RustroverProjects/rgk/crates/rgk-zk)
+ Documenting rgk-kaspa v0.1.0 (/Users/arthur/RustroverProjects/rgk/crates/rgk-kaspa)
+ Documenting rgk-indexer v0.1.0 (/Users/arthur/RustroverProjects/rgk/crates/rgk-indexer)
+ Documenting rgk-rgb v0.1.0 (/Users/arthur/RustroverProjects/rgk/crates/rgk-rgb)
+    Checking rgk-resolver v0.1.0 (/Users/arthur/RustroverProjects/rgk/crates/rgk-resolver)
+ Documenting rgk-resolver v0.1.0 (/Users/arthur/RustroverProjects/rgk/crates/rgk-resolver)
+ Documenting rgk-e2e v0.1.0 (/Users/arthur/RustroverProjects/rgk/tests/rgk-e2e)
+    Finished `dev` profile [optimized + debuginfo] target(s) in 1.99s
+   Generated /Users/arthur/RustroverProjects/rgk/target/doc/rgk_core/index.html and 9 other files

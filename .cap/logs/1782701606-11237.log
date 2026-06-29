@@ -1,0 +1,42 @@
+== stdout ==
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+
+== stderr ==
+    Blocking waiting for file lock on package cache
+    Blocking waiting for file lock on package cache
+   Compiling zerocopy v0.8.52
+   Compiling serde v1.0.228
+   Compiling rgk-asset v0.1.0 (/Users/arthur/RustroverProjects/rgk/crates/rgk-asset)
+   Compiling rgk-indexer v0.1.0 (/Users/arthur/RustroverProjects/rgk/crates/rgk-indexer)
+   Compiling rgk-kaspa v0.1.0 (/Users/arthur/RustroverProjects/rgk/crates/rgk-kaspa)
+   Compiling rgk-tx v0.1.0 (/Users/arthur/RustroverProjects/rgk/crates/rgk-tx)
+   Compiling rgk-sync v0.1.0 (/Users/arthur/RustroverProjects/rgk/crates/rgk-sync)
+   Compiling tinytemplate v1.2.1
+   Compiling ppv-lite86 v0.2.21
+   Compiling ahash v0.8.12
+   Compiling half v2.7.1
+   Compiling rand_chacha v0.3.1
+   Compiling ciborium-ll v0.2.2
+   Compiling rand v0.8.6
+   Compiling ciborium v0.2.2
+   Compiling criterion v0.7.0
+   Compiling ark-std v0.5.0
+   Compiling ark-serialize v0.5.0
+   Compiling ark-ff v0.5.0
+   Compiling ark-poly v0.5.0
+   Compiling ark-relations v0.5.1
+   Compiling ark-snark v0.5.1
+   Compiling ark-ec v0.5.0
+   Compiling ark-r1cs-std v0.5.0
+   Compiling ark-bn254 v0.5.0
+   Compiling ark-crypto-primitives v0.5.0
+   Compiling ark-groth16 v0.5.0
+   Compiling rgk-zk v0.1.0 (/Users/arthur/RustroverProjects/rgk/crates/rgk-zk)
+   Compiling rgk-resolver v0.1.0 (/Users/arthur/RustroverProjects/rgk/crates/rgk-resolver)
+   Compiling rgk-e2e v0.1.0 (/Users/arthur/RustroverProjects/rgk/tests/rgk-e2e)
+    Finished `test` profile [optimized + debuginfo] target(s) in 18.74s
+     Running tests/zk_precompile_vm.rs (target/debug/deps/zk_precompile_vm-080d495b7f81a0cf)

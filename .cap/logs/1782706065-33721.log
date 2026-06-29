@@ -1,0 +1,8 @@
+== stdout ==
+
+== stderr ==
+error: unexpected argument 'native::tests::production_zk_issue_rejects_unprovable_initial_state' found
+
+Usage: cargo test [OPTIONS] [TESTNAME] [-- [ARGS]...]
+
+For more information, try '--help'.

@@ -1,0 +1,75 @@
+pragma silverscript ^0.1.0;
+
+contract RGKOwnerControlPolicyShapes() {
+    byte[32] asset_id = 0x1111111111111111111111111111111111111111111111111111111111111111;
+    byte[32] lane_id = 0x2222222222222222222222222222222222222222222222222222222222222222;
+    byte[32] owner_key_hash = 0x3131313131313131313131313131313131313131313131313131313131313131;
+    byte[32] rotated_owner_key_hash = 0x3232323232323232323232323232323232323232323232323232323232323232;
+    byte[32] script_hash_owner = 0x4141414141414141414141414141414141414141414141414141414141414141;
+    byte[32] covenant_id_owner = 0x5151515151515151515151515151515151515151515151515151515151515151;
+    byte[32] key_rotation_authorization = 0x6161616161616161616161616161616161616161616161616161616161616161;
+    byte[32] script_owner_authorization = 0x6262626262626262626262626262626262626262626262626262626262626262;
+    byte[32] covenant_owner_authorization = 0x6363636363636363636363636363636363636363636363636363636363636363;
+    byte[32] previous_owner_commitment = 0x3131313131313131313131313131313131313131313131313131313131313131;
+    byte[32] new_owner_commitment = 0x3232323232323232323232323232323232323232323232323232323232323232;
+    byte[32] ownership_authorization_commitment = 0x6161616161616161616161616161616161616161616161616161616161616161;
+    byte[32] state_digest = 0x7171717171717171717171717171717171717171717171717171717171717171;
+
+    #[covenant.singleton(mode = verification)]
+    function rotate_owner_key(
+        State prev_state,
+        State new_state,
+        byte[32] previous_owner,
+        byte[32] next_owner,
+        byte[32] authorization
+    ) {
+        require(prev_state.asset_id == asset_id);
+        require(new_state.asset_id == asset_id);
+        require(prev_state.lane_id == lane_id);
+        require(new_state.lane_id == lane_id);
+        require(previous_owner == owner_key_hash);
+        require(next_owner == rotated_owner_key_hash);
+        require(previous_owner != next_owner);
+        require(authorization == key_rotation_authorization);
+        require(prev_state.previous_owner_commitment == previous_owner);
+        require(new_state.new_owner_commitment == next_owner);
+        require(new_state.ownership_authorization_commitment == authorization);
+        require(prev_state.state_digest != new_state.state_digest);
+    }
+
+    #[covenant.singleton(mode = verification)]
+    function transfer_to_script_hash_owner(
+        State prev_state,
+        State new_state,
+        byte[32] previous_owner,
+        byte[32] next_owner,
+        byte[32] authorization
+    ) {
+        require(prev_state.asset_id == new_state.asset_id);
+        require(prev_state.lane_id == new_state.lane_id);
+        require(previous_owner == rotated_owner_key_hash);
+        require(next_owner == script_hash_owner);
+        require(authorization == script_owner_authorization);
+        require(prev_state.previous_owner_commitment == previous_owner);
+        require(new_state.new_owner_commitment == next_owner);
+        require(new_state.ownership_authorization_commitment == authorization);
+    }
+
+    #[covenant.singleton(mode = verification)]
+    function transfer_to_covenant_id_owner(
+        State prev_state,
+        State new_state,
+        byte[32] previous_owner,
+        byte[32] next_owner,
+        byte[32] authorization
+    ) {
+        require(prev_state.asset_id == new_state.asset_id);
+        require(prev_state.lane_id == new_state.lane_id);
+        require(previous_owner == script_hash_owner);
+        require(next_owner == covenant_id_owner);
+        require(authorization == covenant_owner_authorization);
+        require(prev_state.previous_owner_commitment == previous_owner);
+        require(new_state.new_owner_commitment == next_owner);
+        require(new_state.ownership_authorization_commitment == authorization);
+    }
+}

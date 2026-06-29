@@ -1,0 +1,40 @@
+== stdout ==
+Diff in /Users/arthur/RustroverProjects/rgk/tests/rgk-e2e/tests/live_covenant.rs:1394:
+                 &allocation_audit_certificate_bytes,
+             )
+             .expect("decode allocation audit certificate");
+-        assert_eq!(decoded_allocation_audit_certificate, allocation_audit_certificate);
++        assert_eq!(
++            decoded_allocation_audit_certificate,
++            allocation_audit_certificate
++        );
+         let decoded_allocation_audit_certificate_report =
+             real_zk::verify_allocation_audit_certificate(
+                 &decoded_allocation_audit_certificate,
+Diff in /Users/arthur/RustroverProjects/rgk/tests/rgk-e2e/tests/live_covenant.rs:1401:
+                 &allocation_audit_bundle,
+             )
+             .expect("decoded allocation audit certificate verification");
+-        assert_eq!(decoded_allocation_audit_certificate_report, allocation_audit_report);
++        assert_eq!(
++            decoded_allocation_audit_certificate_report,
++            allocation_audit_report
++        );
+         eprintln!(
+             "live: allocation audit certificate verified certificate_id=0x{} proof_cells={} vk_bytes_total={} proof_bytes_total={} canonical_bytes={}",
+             to_hex(&allocation_audit_certificate.certificate_id),
+
+== stderr ==
+error: unexpected closing delimiter: `}`
+    --> /Users/arthur/RustroverProjects/rgk/crates/rgk-zk/src/real_zk.rs:2187:1
+     |
+2183 | fn allocation_audit_certificate_decode_err(e: DecodeError) -> String {
+     |                                                                      - this opening brace...
+2184 |     format!("allocation audit certificate decode: {e}")
+2185 | }
+     | - ...matches this closing brace
+2186 |     Ok(())
+2187 | }
+     | ^ unexpected closing delimiter
+
+Error writing files: failed to resolve mod `real_zk`: cannot parse /Users/arthur/RustroverProjects/rgk/crates/rgk-zk/src/real_zk.rs

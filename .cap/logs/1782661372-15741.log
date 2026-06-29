@@ -1,0 +1,156 @@
+== stdout ==
+[run-kaspa-devnet] launching /Users/arthur/RustroverProjects/rgk/external/rusty-kaspa-toccata/target/release/kaspad in background
+[run-kaspa-devnet] pid: 15790
+[run-kaspa-devnet] log: /Users/arthur/RustroverProjects/rgk/.rgk-devnet/kaspad.log
+[run-kaspa-devnet] waiting for wRPC at ws://127.0.0.1:19111
+[run-kaspa-devnet] wRPC ready after 2s
+[e2e-devnet] live devnet RPC: ws://127.0.0.1:19111/v2/kaspa/devnet/no-tls/wrpc/borsh
+[e2e-devnet] running live_devnet test
+   Compiling workflow-core v0.18.0
+   Compiling kaspa-utils v1.2.2-toc.4 (/Users/arthur/RustroverProjects/rusty-kaspa/utils)
+   Compiling ark-ff v0.6.0
+   Compiling kaspa-core v1.2.2-toc.4 (/Users/arthur/RustroverProjects/rusty-kaspa/core)
+   Compiling rgk-receipt v0.1.0 (/Users/arthur/RustroverProjects/rgk/crates/rgk-receipt)
+   Compiling half v2.7.1
+   Compiling rgk-covenant v0.1.0 (/Users/arthur/RustroverProjects/rgk/crates/rgk-covenant)
+   Compiling ciborium-ll v0.2.2
+   Compiling rgk-indexer v0.1.0 (/Users/arthur/RustroverProjects/rgk/crates/rgk-indexer)
+   Compiling rgk-rgb v0.1.0 (/Users/arthur/RustroverProjects/rgk/crates/rgk-rgb)
+   Compiling rgk-zk v0.1.0 (/Users/arthur/RustroverProjects/rgk/crates/rgk-zk)
+   Compiling rgk-tx v0.1.0 (/Users/arthur/RustroverProjects/rgk/crates/rgk-tx)
+   Compiling ciborium v0.2.2
+   Compiling criterion v0.7.0
+   Compiling workflow-wasm v0.18.0
+   Compiling workflow-task v0.18.0
+   Compiling workflow-http v0.18.0
+   Compiling kaspa-hashes v1.2.2-toc.4 (/Users/arthur/RustroverProjects/rusty-kaspa/crypto/hashes)
+   Compiling kaspa-math v1.2.2-toc.4 (/Users/arthur/RustroverProjects/rusty-kaspa/math)
+   Compiling kaspa-addresses v1.2.2-toc.4 (/Users/arthur/RustroverProjects/rusty-kaspa/crypto/addresses)
+   Compiling kaspa-wasm-core v1.2.2-toc.4 (/Users/arthur/RustroverProjects/rusty-kaspa/wasm/core)
+   Compiling workflow-websocket v0.18.0
+   Compiling workflow-dom v0.18.0
+   Compiling kaspa-merkle v1.2.2-toc.4 (/Users/arthur/RustroverProjects/rusty-kaspa/crypto/merkle)
+   Compiling kaspa-txscript-errors v1.2.2-toc.4 (/Users/arthur/RustroverProjects/rusty-kaspa/crypto/txscript/errors)
+   Compiling kaspa-smt v1.2.2-toc.4 (/Users/arthur/RustroverProjects/rusty-kaspa/crypto/smt)
+   Compiling kaspa-muhash v1.2.2-toc.4 (/Users/arthur/RustroverProjects/rusty-kaspa/crypto/muhash)
+   Compiling kaspa-consensus-core v1.2.2-toc.4 (/Users/arthur/RustroverProjects/rusty-kaspa/consensus/core)
+   Compiling workflow-rpc v0.18.0
+   Compiling ark-poly v0.6.0
+   Compiling kaspa-mining-errors v1.2.2-toc.4 (/Users/arthur/RustroverProjects/rusty-kaspa/mining/errors)
+   Compiling ark-relations v0.6.0
+   Compiling ark-ec v0.6.0
+   Compiling ark-snark v0.6.0
+   Compiling ark-crypto-primitives v0.6.0
+   Compiling ark-bn254 v0.6.0
+   Compiling ark-groth16 v0.6.0
+   Compiling kaspa-txscript v1.2.2-toc.4 (/Users/arthur/RustroverProjects/rusty-kaspa/crypto/txscript)
+   Compiling kaspa-notify v1.2.2-toc.4 (/Users/arthur/RustroverProjects/rusty-kaspa/notify)
+   Compiling kaspa-consensus-client v1.2.2-toc.4 (/Users/arthur/RustroverProjects/rusty-kaspa/consensus/client)
+   Compiling kaspa-index-core v1.2.2-toc.4 (/Users/arthur/RustroverProjects/rusty-kaspa/indexes/core)
+   Compiling kaspa-consensus-notify v1.2.2-toc.4 (/Users/arthur/RustroverProjects/rusty-kaspa/consensus/notify)
+   Compiling kaspa-consensus-wasm v1.2.2-toc.4 (/Users/arthur/RustroverProjects/rusty-kaspa/consensus/wasm)
+   Compiling kaspa-rpc-core v1.2.2-toc.4 (/Users/arthur/RustroverProjects/rusty-kaspa/rpc/core)
+   Compiling kaspa-wrpc-client v1.2.2-toc.4 (/Users/arthur/RustroverProjects/rusty-kaspa/rpc/wrpc/client)
+   Compiling rgk-kaspa v0.1.0 (/Users/arthur/RustroverProjects/rgk/crates/rgk-kaspa)
+   Compiling rgk-sync v0.1.0 (/Users/arthur/RustroverProjects/rgk/crates/rgk-sync)
+   Compiling rgk-resolver v0.1.0 (/Users/arthur/RustroverProjects/rgk/crates/rgk-resolver)
+   Compiling rgk-e2e v0.1.0 (/Users/arthur/RustroverProjects/rgk/tests/rgk-e2e)
+    Finished `test` profile [optimized + debuginfo] target(s) in 25.98s
+     Running tests/live_devnet.rs (target/debug/deps/live_devnet-3134cedc7dcb5512)
+
+running 2 tests
+live-devnet: server_version=1.2.2-toc.4 network_id=devnet is_synced=false has_utxo_index=true
+test live_devnet_reports_toccata_node_identity ... ok
+live-devnet: scan cursor initialised chain=KaspaDevnet daa=4006 hash_prefix=121833fbe70f7f00
+test live_devnet_initialises_persistent_scan_cursor ... ok
+
+test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.07s
+
+[e2e-devnet] running full covenant lifecycle on devnet
+   Compiling ark-crypto-primitives v0.6.0
+   Compiling ark-crypto-primitives v0.5.0
+   Compiling ark-groth16 v0.6.0
+   Compiling kaspa-txscript v1.2.2-toc.4 (/Users/arthur/RustroverProjects/rusty-kaspa/crypto/txscript)
+   Compiling ark-groth16 v0.5.0
+   Compiling rgk-zk v0.1.0 (/Users/arthur/RustroverProjects/rgk/crates/rgk-zk)
+   Compiling kaspa-notify v1.2.2-toc.4 (/Users/arthur/RustroverProjects/rusty-kaspa/notify)
+   Compiling kaspa-consensus-client v1.2.2-toc.4 (/Users/arthur/RustroverProjects/rusty-kaspa/consensus/client)
+   Compiling kaspa-consensus-notify v1.2.2-toc.4 (/Users/arthur/RustroverProjects/rusty-kaspa/consensus/notify)
+   Compiling kaspa-index-core v1.2.2-toc.4 (/Users/arthur/RustroverProjects/rusty-kaspa/indexes/core)
+   Compiling kaspa-consensus-wasm v1.2.2-toc.4 (/Users/arthur/RustroverProjects/rusty-kaspa/consensus/wasm)
+   Compiling kaspa-rpc-core v1.2.2-toc.4 (/Users/arthur/RustroverProjects/rusty-kaspa/rpc/core)
+   Compiling kaspa-wrpc-client v1.2.2-toc.4 (/Users/arthur/RustroverProjects/rusty-kaspa/rpc/wrpc/client)
+   Compiling rgk-kaspa v0.1.0 (/Users/arthur/RustroverProjects/rgk/crates/rgk-kaspa)
+   Compiling rgk-resolver v0.1.0 (/Users/arthur/RustroverProjects/rgk/crates/rgk-resolver)
+   Compiling rgk-sync v0.1.0 (/Users/arthur/RustroverProjects/rgk/crates/rgk-sync)
+   Compiling rgk-e2e v0.1.0 (/Users/arthur/RustroverProjects/rgk/tests/rgk-e2e)
+    Finished `test` profile [optimized + debuginfo] target(s) in 21.25s
+     Running tests/live_covenant.rs (target/debug/deps/live_covenant-5589b327c6e5ade8)
+
+running 1 test
+live: connected to devnet wRPC (chain_id=KaspaDevnet)
+live: fixed keypair address = kaspadev:qzzt7atzyc4m662qppt53ua7dta99t33w923s8kwxxmxx5wvl7jtq0ahp67m9
+live: fixed pubkey x-only = [84, bf, 75, 62, 26, 2b, bd, 69, 40, 08, 57, 48, f3, be, 6a, fa, 52, ae, 31, 71, 55, 18, 1e, ce, 31, b6, 63, 51, cc, ff, a4, b0]
+live: generated keypair, devnet address: kaspadev:qzzt7atzyc4m662qppt53ua7dta99t33w923s8kwxxmxx5wvl7jtq0ahp67m9
+live: mined block, report: accepted=Success
+live: reached DAA score 4007 (target 1)
+live: coinbase block 1 mined; mining 2000 more so the FIRST coinbase UTXO matures (need DAA >= 1001 to spend it)...
+live: mined 100/2000 blocks (0.1s)
+live: mined 200/2000 blocks (0.2s)
+live: mined 300/2000 blocks (0.2s)
+live: mined 400/2000 blocks (0.3s)
+live: mined 500/2000 blocks (0.4s)
+live: mined 600/2000 blocks (0.4s)
+live: mined 700/2000 blocks (0.5s)
+live: mined 800/2000 blocks (0.6s)
+live: mined 900/2000 blocks (0.6s)
+live: mined 1000/2000 blocks (0.7s)
+live: mined 1100/2000 blocks (0.8s)
+live: mined 1200/2000 blocks (0.9s)
+live: mined 1300/2000 blocks (0.9s)
+live: mined 1400/2000 blocks (1.0s)
+live: mined 1500/2000 blocks (1.1s)
+live: mined 1600/2000 blocks (1.2s)
+live: mined 1700/2000 blocks (1.2s)
+live: mined 1800/2000 blocks (1.3s)
+live: mined 1900/2000 blocks (1.4s)
+live: mined 2000/2000 blocks (1.5s)
+live: mined 2000 blocks in 1.5s
+live: reached DAA score 6007 (target 2001)
+live: oldest coinbase UTXO is now mature (DAA >= 2001)
+live: selected coinbase UTXO at DAA 4 (oldest, mature)
+live: fetched coinbase UTXO txid=[b4, 60, 07, 01, 4e, c2, 7d, a6, 45, 6a, b8, 4e, c9, 89, 2b, c4, 10, 9b, e8, af, 6c, 1e, 0b, 25, e9, 35, 64, 4b, 6c, fb, 73, 72] index=0 value=4400000000
+live: computed covenant_id = [09, cb, 05, ed, aa, 1e, 5e, 57, f9, ab, 55, 81, 77, aa, 51, fa, e4, 27, e8, 65, d7, ba, f0, 16, 30, cc, b2, 22, b2, d0, 64, 6f] for the genesis output (value=4396000000, fee=4000000)
+live: signed covenant tx, txid = [a3, ab, 74, 33, b3, 79, 89, 09, f0, 10, 82, 29, 16, 97, e5, c1, 0d, cc, 5e, 77, 8e, a2, 0b, 8f, 35, 58, b5, a2, 1b, fe, 2c, 62]
+live: covenant tx ACCEPTED by node: txid=[a3, ab, 74, 33, b3, 79, 89, 09, f0, 10, 82, 29, 16, 97, e5, c1, 0d, cc, 5e, 77, 8e, a2, 0b, 8f, 35, 58, b5, a2, 1b, fe, 2c, 62]
+live: mined block, report: accepted=Success
+live: reached DAA score 6008 (target 2)
+live: confirmation block 2 mined
+live: covenant output confirmed at DAA score 6008 with covenant_id=[09, cb, 05, ed, aa, 1e, 5e, 57, f9, ab, 55, 81, 77, aa, 51, fa, e4, 27, e8, 65, d7, ba, f0, 16, 30, cc, b2, 22, b2, d0, 64, 6f]
+live: ZK covenant spend enabled, public_inputs=25 vk_bytes=1064 proof_bytes=128
+live: built P2SH covenant spend, txid = [75, 56, 90, 96, c5, 25, d4, d9, 91, 47, 0f, 83, ee, 96, cc, 68, 44, 16, 3a, 70, fe, cc, 44, da, 80, 1c, 7d, c0, 94, 50, dc, 64]
+live: P2SH covenant spend ACCEPTED by node: txid=[75, 56, 90, 96, c5, 25, d4, d9, 91, 47, 0f, 83, ee, 96, cc, 68, 44, 16, 3a, 70, fe, cc, 44, da, 80, 1c, 7d, c0, 94, 50, dc, 64]
+live: mined block, report: accepted=Success
+live: reached DAA score 6009 (target 6009)
+live: P2SH covenant spend confirmation block mined
+live: continuation covenant output confirmed at DAA score 6009
+live: resolver state = TransitionedValid { covenant: [9, 203, 5, 237, 170, 30, 94, 87, 249, 171, 85, 129, 119, 170, 81, 250, 228, 39, 232, 101, 215, 186, 240, 22, 48, 204, 178, 34, 178, 208, 100, 111], spent_outpoint: KaspaOutpoint { transaction_id: [163, 171, 116, 51, 179, 121, 137, 9, 240, 16, 130, 41, 22, 151, 229, 193, 13, 204, 94, 119, 142, 162, 11, 143, 53, 88, 181, 162, 27, 254, 44, 98], index: 0 }, new_outpoint: KaspaOutpoint { transaction_id: [117, 86, 144, 150, 197, 37, 212, 217, 145, 71, 15, 131, 238, 150, 204, 104, 68, 22, 58, 112, 254, 204, 68, 218, 128, 28, 125, 192, 148, 80, 220, 100], index: 0 }, receipt_id: [21, 11, 28, 252, 136, 128, 89, 2, 41, 1, 21, 166, 252, 192, 231, 181, 240, 95, 38, 193, 222, 43, 147, 62, 60, 195, 158, 255, 206, 100, 36, 252], new_state: RgkStateCommitment { version: 0, chain_id: KaspaDevnet, covenant_id: [9, 203, 5, 237, 170, 30, 94, 87, 249, 171, 85, 129, 119, 170, 81, 250, 228, 39, 232, 101, 215, 186, 240, 22, 48, 204, 178, 34, 178, 208, 100, 111], rgb_contract_id: [66, 66, 66, 66, 66, 66, 66, 66, 66, 66, 66, 66, 66, 66, 66, 66, 66, 66, 66, 66, 66, 66, 66, 66, 66, 66, 66, 66, 66, 66, 66, 66], state_digest: [176, 176, 176, 176, 176, 176, 176, 176, 176, 176, 176, 176, 176, 176, 176, 176, 176, 176, 176, 176, 176, 176, 176, 176, 176, 176, 176, 176, 176, 176, 176, 176], receipt_policy: ZkOrVerifier }, confirmation_depth: 1 }
+live: covenant transition classified as TransitionedValid from the confirmed live Kaspa Toccata devnet spend (covenant_id=[09, cb, 05, ed, aa, 1e, 5e, 57, f9, ab, 55, 81, 77, aa, 51, fa, e4, 27, e8, 65, d7, ba, f0, 16, 30, cc, b2, 22, b2, d0, 64, 6f])
+test live_toccata_full_covenant_lifecycle ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 13.21s
+
+[e2e-devnet] running rgk-sync scanner smoke (initialise cursor)
+   Compiling kaspa-wrpc-client v1.2.2-toc.4 (/Users/arthur/RustroverProjects/rusty-kaspa/rpc/wrpc/client)
+   Compiling rgk-kaspa v0.1.0 (/Users/arthur/RustroverProjects/rgk/crates/rgk-kaspa)
+   Compiling rgk-sync v0.1.0 (/Users/arthur/RustroverProjects/rgk/crates/rgk-sync)
+    Finished `dev` profile [optimized + debuginfo] target(s) in 2.55s
+     Running `target/debug/rgk-sync --url 'ws://127.0.0.1:19111/v2/kaspa/devnet/no-tls/wrpc/borsh' --network devnet --db /Users/arthur/RustroverProjects/rgk/target/rgk-devnet-evidence/sled --once`
+tick initialised=true added_chain_blocks=0 observed_spends=0 start_daa=6009 end_daa=6009 end_hash_prefix=94ea6e4f39cb5170
+[e2e-devnet] running rgk-sync scanner smoke (reload cursor)
+    Finished `dev` profile [optimized + debuginfo] target(s) in 0.23s
+     Running `target/debug/rgk-sync --url 'ws://127.0.0.1:19111/v2/kaspa/devnet/no-tls/wrpc/borsh' --network devnet --db /Users/arthur/RustroverProjects/rgk/target/rgk-devnet-evidence/sled --once`
+tick initialised=false added_chain_blocks=0 observed_spends=0 start_daa=6009 end_daa=6009 end_hash_prefix=94ea6e4f39cb5170
+[e2e-devnet] evidence: /Users/arthur/RustroverProjects/rgk/target/rgk-devnet-evidence/latest.txt
+
+== stderr ==

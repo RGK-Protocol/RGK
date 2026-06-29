@@ -1,0 +1,32 @@
+== stdout ==
+
+running 14 tests
+test tests::chain_id_in_public_inputs_is_pinned ... ok
+test real_zk::tests::public_inputs_as_fr_layout_is_deterministic ... ok
+test tests::proof_encode_for_precompile ... ok
+test tests::proof_rejects_empty ... ok
+test tests::proof_rejects_oversize ... ok
+test tests::public_inputs_length_is_pinned ... ok
+test tests::statement_matches_receipt_round_trip ... ok
+test tests::tag_bytes_match_upstream ... ok
+test tests::zk_receipt_local_verify_catches_statement_mismatch ... ok
+test tests::zk_receipt_local_verify_succeeds ... ok
+test tests::zk_receipt_rejects_wrong_mode ... ok
+test real_zk::tests::same_receipt_id_different_body_cannot_prove ... ok
+test real_zk::tests::prove_then_verify_zk_receipt ... ok
+test real_zk::tests::tampered_proof_rejected ... ok
+
+test result: ok. 14 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 12.72s
+
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+
+== stderr ==
+   Compiling rgk-zk v0.1.0 (/Users/arthur/RustroverProjects/rgk/crates/rgk-zk)
+    Finished `test` profile [optimized + debuginfo] target(s) in 2.26s
+     Running unittests src/lib.rs (target/debug/deps/rgk_zk-59c9df7f9170f138)
+[real-zk] proof size: 129 bytes
+   Doc-tests rgk_zk

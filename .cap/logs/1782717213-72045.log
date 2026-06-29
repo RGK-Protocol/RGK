@@ -1,0 +1,175 @@
+== stdout ==
+CHANGELOG.md:24:* Added fungible transfer-shape example coverage for production-ZK-supported
+CHANGELOG.md:51:  constructs a migration proof, reopens `SledIndexer`, and resolves the
+CHANGELOG.md:71:  current production allocation-proof strategy. Wallet/prover callers now get
+CHANGELOG.md:76:* Moved the production allocation-proof shape contract into native asset
+CHANGELOG.md:77:  semantics with `RgkAllocationProofShape` and `validate_for_production_zk`
+CHANGELOG.md:83:  production allocation-vector burn proof, and a checked
+CHANGELOG.md:86:  for production-ZK transfers. It certifies the exact allocation proof shape
+CHANGELOG.md:94:* Added a public testnet staging harness and report verifier. The live covenant
+CHANGELOG.md:96:  real pre-funded non-coinbase public testnet UTXO, wait for real confirmations
+CHANGELOG.md:97:  instead of mining, and produce a machine-checked staging report. The staging
+CHANGELOG.md:123:* Stage on public testnet with restart recovery evidence.
+CHANGELOG.md:125:* Stage the bounded production allocation-vector arity strategy publicly, and
+CHANGELOG.md:126:  implement wallet-side full-state bounded flows or recursive aggregation if
+CHANGELOG.md:127:  arbitrary one-step unbounded allocation proofs become a product requirement.
+examples/contract-matrix.tsv:1:example_id	category	capabilities	local_evidence	devnet_markers	contract_source	silverscript_status	compile_artifact_status	public_staging_status	argent_equivalence_status
+examples/contract-matrix.tsv:2:private_lane_asset_lifecycle	native_asset_lifecycle	issue;private_lane;encrypted_note_commitment;proof_policy_commitment;receipt_validation;one_input_one_output_transfer;covenant_continuation;resolver_valid	fixture_e2e_passes;native_asset_state_report;native_asset_transition_report	covenant funding accepted;native issue digest;native transition digest;production-ZK shape guard;resolver classification;view-key resolver classification	silverscript_and_rust_toccata_fixture	silverscript_source_compiles	checked_silverscript_json_artifact	pending_public_staging	argent_external_scope
+examples/contract-matrix.tsv:3:burn_authorised_lifecycle	native_asset_burn	burn_proof;authorised_deflation;supply_delta;continuation_burn;production_zk_burn_proof	native_transition_rejects_supply_inflation_and_deflation;continuation_accepts_explicit_burn_for_supported_production_zk_shape;prove_then_verify_allocation_1x1_burn_transition	native burn transition test pass;native burn continuation test pass;native burn allocation Groth16 proof;production-ZK burn proof	silverscript_and_rust_toccata_fixture	silverscript_source_compiles	checked_silverscript_json_artifact	pending_public_staging	argent_external_scope
+examples/contract-matrix.tsv:4:policy_migration_recovery	policy_migration	proof_policy_migration;continuation_metadata;receipt_policy_change;sled_recovery;resolver_valid	policy_migration_recovery_fixture_survives_reopen	policy migration fixture;policy migration resolver recovery;live policy migration recovery	silverscript_and_rust_toccata_fixture	silverscript_source_compiles	checked_silverscript_json_artifact	pending_public_staging	argent_external_scope
+examples/contract-matrix.tsv:5:allocation_audit_certificate_recovery	zk_allocation_audit	allocation_audit_bundle;canonical_certificate;self_contained_certificate;certificate_indexing;resolver_metadata;sled_recovery;groth16_stack_material	allocation_audit_certificate_canonical_encoding_round_trips;allocation_audit_certificate_canonical_self_contained_verifies;allocation_audit_certificate_record_attaches_to_spend;transitioned_valid_uses_latest_indexed_spent_outpoint	allocation audit bundle;allocation audit certificate;self-contained allocation audit certificate;indexed allocation audit certificate;persistent allocation audit certificate recovery	silverscript_and_rust_toccata_fixture	silverscript_source_compiles	checked_silverscript_json_artifact	pending_public_staging	argent_external_scope
+examples/contract-matrix.tsv:6:fungible_batch_transfer_shapes	fungible_asset_shapes	multi_output_fanout_2x2;multi_input_merge_3x2;batch_transfer_4x4;production_zk_supported_shapes	fungible_multi_output_fanout_2x2_is_production_zk_supported;fungible_multi_input_merge_3x2_is_production_zk_supported;fungible_batch_transfer_4x4_is_production_zk_supported	fungible fanout 2x2 test pass;fungible merge 3x2 test pass;fungible batch 4x4 test pass;4x4 allocation-vector VM proof;production-ZK 4x4 proof	silverscript_and_rust_toccata_fixture	silverscript_source_compiles	checked_silverscript_json_artifact	pending_public_staging	argent_external_scope
+examples/contract-matrix.tsv:7:metadata_ownership_guardrails	native_metadata_ownership	metadata_commitment;owner_commitment;ownership_handoff_authorization;semantic_owner_binding	native_issue_digest_binds_metadata_and_owner_commitments;native_transition_binds_authorized_ownership_handoff;native_transition_rejects_ownership_handoff_without_authorization	metadata owner digest test pass;ownership handoff test pass;ownership auth rejection test pass;native metadata commitment;native owner commitment;native transition owner commitments;semantic transition owner commitments	silverscript_and_rust_toccata_fixture	silverscript_source_compiles	checked_silverscript_json_artifact	pending_public_staging	argent_external_scope
+examples/contract-matrix.tsv:8:private_lane_graph_discovery	private_lane_discovery	lane_discovery;lane_graph;segmented_lane_graph;scan_tag;view_key_resolver	prove_then_verify_lane_discovery;prove_then_verify_lane_graph_discovery;prove_then_verify_lane_graph_segment	lane-discovery Groth16 proof;lane-graph Groth16 proof;segmented lane-graph Groth16 proof chain;view-key resolver classification	silverscript_and_rust_toccata_fixture	silverscript_source_compiles	checked_silverscript_json_artifact	pending_public_staging	argent_external_scope
+examples/contract-matrix.tsv:9:proof_policy_guardrails	native_proof_policy	proof_policy_commitment;image_id_policy;downgrade_rejection;semantic_policy_binding	proof_policy_downgrade_is_rejected_by_state_digest;unconstrained_image_id_is_rejected	native proof policy commitment;native transition policy commitment;semantic transition policy commitment	silverscript_and_rust_toccata_fixture	silverscript_source_compiles	checked_silverscript_json_artifact	pending_public_staging	argent_external_scope
+README.md:16:   covenant seals, opens new allocations, and binds old state, new state,
+README.md:82:| Policy-migration construction | Live in `rgk-core`; public staging open |
+README.md:83:| Policy-migration recovery evidence | Live in persistent fixture and local devnet recovery against a confirmed spend; public staging open |
+README.md:84:| Semantic and fixed allocation-vector circuits | Supported-shape registry for 1x1, 2x2, const-generic 3x2, and const-generic 4x4 evidence live in `rgk-zk`; unbounded arity open |
+README.md:85:| Examples coverage matrix | Live for the current evidence-backed examples in `examples/contract-matrix.tsv`, including proof-policy guardrails, metadata/ownership guardrails, and fungible 2x2/3x2/4x4 transfer shapes; Silverscript sources and checked JSON artifacts are pinned to the upstream Testnet-12 compiler, while public staging remains open |
+README.md:90:| Public testnet/mainnet staging | Public testnet harness, funding-address helper, and report verifier live; funded public run and verified report still open |
+scripts/e2e-devnet.sh:82:cargo test -p rgk-e2e --features persistent-indexer --lib policy_migration_recovery_fixture_survives_reopen -- --nocapture \
+scripts/e2e-devnet.sh:88:cargo test -p rgk-asset native::tests::continuation_accepts_explicit_burn_for_supported_production_zk_shape -- --exact --nocapture \
+scripts/e2e-devnet.sh:92:echo "native burn: production-ZK burn proof supported for shape=1x1" | tee -a "${REPORT}"
+scripts/e2e-devnet.sh:103:cargo test -p rgk-asset native::tests::fungible_multi_output_fanout_2x2_is_production_zk_supported -- --exact --nocapture \
+scripts/e2e-devnet.sh:105:cargo test -p rgk-asset native::tests::fungible_multi_input_merge_3x2_is_production_zk_supported -- --exact --nocapture \
+scripts/e2e-devnet.sh:107:cargo test -p rgk-asset native::tests::fungible_batch_transfer_4x4_is_production_zk_supported -- --exact --nocapture \
+scripts/e2e-devnet.sh:113:echo "native allocation: production-ZK proof supported for shape=4x4" | tee -a "${REPORT}"
+scripts/e2e-testnet-staging.sh:2:# RGK: public Kaspa testnet staging harness.
+scripts/e2e-testnet-staging.sh:5:# on public testnet, then run this script with a real public Borsh wRPC endpoint:
+scripts/e2e-testnet-staging.sh:7:#   RGK_LIVE_KASPA_URL="wss://..." bash scripts/e2e-testnet-staging.sh
+scripts/e2e-testnet-staging.sh:9:# Override RGK_LIVE_KASPA_NETWORK=testnet-10 only when staging explicitly
+scripts/e2e-testnet-staging.sh:14:#   bash scripts/e2e-testnet-staging.sh --print-address
+scripts/e2e-testnet-staging.sh:19:EVIDENCE_DIR="${RGK_TESTNET_STAGING_EVIDENCE_DIR:-${ROOT}/target/rgk-testnet-staging-evidence}"
+scripts/e2e-testnet-staging.sh:23:    cargo run -p rgk-e2e --features live-kaspa-wrpc --bin rgk-testnet-staging-address -- \
+scripts/e2e-testnet-staging.sh:31:    echo "[e2e-testnet-staging] set RGK_LIVE_KASPA_URL to a public testnet Borsh wRPC endpoint" >&2
+scripts/e2e-testnet-staging.sh:45:        echo "[e2e-testnet-staging] expected ws:// or wss:// URL: ${LIVE_URL}" >&2
+scripts/e2e-testnet-staging.sh:58:    echo "[e2e-testnet-staging] testnet node unreachable at ${LIVE_HOST}:${LIVE_PORT}" >&2
+scripts/e2e-testnet-staging.sh:64:    echo "RGK public testnet staging evidence"
+scripts/e2e-testnet-staging.sh:69:echo "[e2e-testnet-staging] public testnet RPC: ${LIVE_URL}"
+scripts/e2e-testnet-staging.sh:70:echo "[e2e-testnet-staging] running full covenant lifecycle on public testnet"
+scripts/e2e-testnet-staging.sh:76:bash "${ROOT}/scripts/verify-testnet-staging-evidence.sh" "${REPORT}" 2>&1 | tee -a "${REPORT}"
+scripts/e2e-testnet-staging.sh:78:echo "[e2e-testnet-staging] evidence: ${REPORT}"
+docs/SECURITY.md:41:* Public testnet or mainnet operation. `scripts/e2e-testnet-staging.sh` is the
+docs/SECURITY.md:42:  public testnet evidence path, but a funded public run and verified report are
+docs/SECURITY.md:44:* Arbitrary one-step unbounded allocation-vector transition proof inside
+docs/SECURITY.md:45:  Groth16. The production ZK strategy is bounded to evidenced 1x1, 2x2,
+docs/SECURITY.md:49:  future recursive/aggregated strategy is added. Segmented transcript,
+docs/SECURITY.md:53:* Public staging evidence for continuation enforcement outside local devnet.
+docs/SECURITY.md:54:* Public staging evidence for policy-migration proof flows.
+docs/SECURITY.md:101:testnet staging is still required before any production-network claim.
+docs/ZK-BOUNDARY.md:125:sequence of bounded segment proofs, not one recursive graph proof, and it does
+docs/ZK-BOUNDARY.md:218:circuit opens the spent and new final commitments to the same private total.
+docs/ZK-BOUNDARY.md:221:still a proof chain, not a single recursive allocation-vector transition proof.
+docs/ZK-BOUNDARY.md:241:same transcript roots. This is still not a single recursive allocation-vector
+docs/ZK-BOUNDARY.md:246:`AllocationAuditBundle` is the production verifier glue for segmented
+docs/ZK-BOUNDARY.md:286:still a proof bundle, not a single recursive proof.
+docs/ZK-BOUNDARY.md:298:production strategy. A single allocation-vector ZK proof is produced only for
+docs/ZK-BOUNDARY.md:301:dispatch to that policy. Wallets should call `validate_for_production_zk` on
+docs/ZK-BOUNDARY.md:303:material. Larger logical transfers can only stay in production ZK when every
+docs/ZK-BOUNDARY.md:307:allocation proofs, that requires a new recursive, aggregated, or otherwise
+docs/ZK-BOUNDARY.md:308:unbounded strategy with its own devnet and VM evidence.
+docs/ZK-BOUNDARY.md:319:* single recursive proof for arbitrary-size allocation conservation
+docs/ZK-BOUNDARY.md:320:* single recursive proof for arbitrary-size closed-seal reuse rejection
+docs/ZK-BOUNDARY.md:321:* single recursive proof for arbitrary-size private-lane graph discovery
+docs/ZK-BOUNDARY.md:322:* arbitrary one-step unbounded two-phase continuation consistency in-circuit
+docs/INTEGRATION.md:11:5. If the wallet is issuing into the production ZK path, call
+docs/INTEGRATION.md:12:   `validate_for_production_zk` so the initial state can later be spent by an
+docs/INTEGRATION.md:23:   `RgkContinuationPlan::into_production_zk_transfer_plan`. The planner
+docs/INTEGRATION.md:31:   keep each intermediate full state inside the production-ZK shape policy.
+scripts/verify-example-matrix.sh:19:expected_header=$'example_id\tcategory\tcapabilities\tlocal_evidence\tdevnet_markers\tcontract_source\tsilverscript_status\tcompile_artifact_status\tpublic_staging_status\targent_equivalence_status'
+scripts/verify-example-matrix.sh:30:while IFS=$'\t' read -r example_id category capabilities local_evidence devnet_markers contract_source silverscript_status compile_artifact_status public_staging_status argent_equivalence_status extra; do
+scripts/verify-example-matrix.sh:38:    for value in "${example_id}" "${category}" "${capabilities}" "${local_evidence}" "${devnet_markers}" "${contract_source}" "${silverscript_status}" "${compile_artifact_status}" "${public_staging_status}" "${argent_equivalence_status}"; do
+scripts/verify-example-matrix.sh:68:    case "${public_staging_status}" in
+scripts/verify-example-matrix.sh:69:        pending_public_staging) ;;
+scripts/verify-example-matrix.sh:71:            echo "[verify-example-matrix] unsupported public_staging_status for ${example_id}: ${public_staging_status}" >&2
+docs/LANE-CALCULUS.md:95:4-node chain; a single recursive graph proof is still not claimed.
+docs/LANE-CALCULUS.md:141:The remaining production work is no longer basic phase-1 persistence, local
+docs/LANE-CALCULUS.md:144:arbitrary-size graph proof chains. It is public staging and extending the
+docs/LANE-CALCULUS.md:145:bounded production allocation-vector ZK strategy beyond the evidenced fixed
+scripts/verify-testnet-staging-evidence.sh:2:# RGK: verify that a public testnet staging report contains the required live
+scripts/verify-testnet-staging-evidence.sh:3:# production-staging markers. This proves only the supplied report; it does not
+scripts/verify-testnet-staging-evidence.sh:9:REPORT="${1:-${RGK_TESTNET_STAGING_EVIDENCE_REPORT:-${ROOT}/target/rgk-testnet-staging-evidence/latest.txt}}"
+scripts/verify-testnet-staging-evidence.sh:12:    echo "[verify-testnet-staging-evidence] missing report: ${REPORT}" >&2
+scripts/verify-testnet-staging-evidence.sh:20:        echo "[verify-testnet-staging-evidence] missing ${label}: ${pattern}" >&2
+scripts/verify-testnet-staging-evidence.sh:25:require_regex "evidence header" '^RGK public testnet staging evidence$'
+scripts/verify-testnet-staging-evidence.sh:30:require_regex "public funding address" 'live: public testnet staging funding address = kaspatest:[a-z0-9]+ required_min_value=[0-9]+ sompi'
+scripts/verify-testnet-staging-evidence.sh:33:require_regex "public covenant confirmation wait" 'live: waiting for public testnet confirmation of covenant tx'
+scripts/verify-testnet-staging-evidence.sh:39:require_regex "public covenant spend confirmation wait" 'live: waiting for public testnet confirmation of covenant spend'
+scripts/verify-testnet-staging-evidence.sh:53:require_regex "policy migration recovery" 'live: policy migration proof recovered after Sled reopen \(previous_policy=verifier-only new_policy=zk-or-verifier migration=0x[0-9a-f]{64} state_digest=0x[0-9a-f]{64} resolver=NativeTransitionedValid\)'
+scripts/verify-testnet-staging-evidence.sh:58:echo "[verify-testnet-staging-evidence] ok: ${REPORT}"
+docs/E2E.md:53:* policy-migration proof construction, persistent indexer reopen, and resolver
+docs/E2E.md:83:bash scripts/e2e-testnet-staging.sh --print-address
+docs/E2E.md:86:Fund the printed `kaspatest:` address on public testnet with at least
+docs/E2E.md:88:testnet-only staging key and must not be used for mainnet funds. Then run:
+docs/E2E.md:92:  bash scripts/e2e-testnet-staging.sh
+docs/E2E.md:95:The script writes `target/rgk-testnet-staging-evidence/latest.txt`, runs the
+docs/E2E.md:99:`scripts/verify-testnet-staging-evidence.sh`.
+docs/E2E.md:101:Until that report exists from a real public endpoint, public staging remains
+docs/E2E.md:102:open.
+docs/E2E.md:156:`policy_migration_recovery_fixture_survives_reopen`. It builds a
+docs/E2E.md:158:spend to `SledIndexer`, flushes and reopens the database, then resolves the
+docs/E2E.md:162:It is not a substitute for public testnet staging.
+docs/E2E.md:186:* Public testnet or mainnet staging. `scripts/e2e-testnet-staging.sh` is the
+docs/E2E.md:188:  funded public endpoint and produce verified staging evidence.
+docs/E2E.md:189:* Public staging evidence for continuation enforcement outside local devnet.
+docs/E2E.md:190:* Public staging evidence for policy-migration proof flows.
+docs/E2E.md:191:* Arbitrary one-step unbounded allocation-vector transition proof inside ZK.
+docs/E2E.md:192:  The production ZK strategy is bounded to fixed 1x1, 2x2, const-generic 3x2,
+scripts/verify-devnet-evidence.sh:2:# RGK: verify that a devnet evidence report contains the required production
+scripts/verify-devnet-evidence.sh:36:require_regex "policy migration test pass" 'test policy_migration_recovery_fixture_survives_reopen \.\.\. ok'
+scripts/verify-devnet-evidence.sh:38:require_regex "native burn continuation test pass" 'test native::tests::continuation_accepts_explicit_burn_for_supported_production_zk_shape \.\.\. ok'
+scripts/verify-devnet-evidence.sh:40:require_regex "production-ZK burn proof" 'native burn: production-ZK burn proof supported for shape=1x1'
+scripts/verify-devnet-evidence.sh:41:require_regex "fungible fanout 2x2 test pass" 'test native::tests::fungible_multi_output_fanout_2x2_is_production_zk_supported \.\.\. ok'
+scripts/verify-devnet-evidence.sh:42:require_regex "fungible merge 3x2 test pass" 'test native::tests::fungible_multi_input_merge_3x2_is_production_zk_supported \.\.\. ok'
+scripts/verify-devnet-evidence.sh:43:require_regex "fungible batch 4x4 test pass" 'test native::tests::fungible_batch_transfer_4x4_is_production_zk_supported \.\.\. ok'
+scripts/verify-devnet-evidence.sh:48:require_regex "production-ZK 4x4 proof" 'native allocation: production-ZK proof supported for shape=4x4'
+scripts/verify-devnet-evidence.sh:58:require_regex "production-ZK shape guard" 'live: native production-ZK allocation guard accepted shape=1x1 spent_allocations=1 new_allocations=1'
+scripts/verify-devnet-evidence.sh:83:require_regex "live policy migration recovery" 'live: policy migration proof recovered after Sled reopen \(previous_policy=verifier-only new_policy=zk-or-verifier migration=0x[0-9a-f]{64} state_digest=0x[0-9a-f]{64} resolver=NativeTransitionedValid\)'
+docs/MAINNET-LAUNCH.md:17:  reopen, and resolver acceptance after restart.
+docs/MAINNET-LAUNCH.md:20:* Public testnet staging path is executable through
+docs/MAINNET-LAUNCH.md:21:  `scripts/e2e-testnet-staging.sh` and its report verifier, using a real
+docs/MAINNET-LAUNCH.md:22:  pre-funded public testnet UTXO rather than local mining. The deterministic
+docs/MAINNET-LAUNCH.md:23:  funding address is printed by `scripts/e2e-testnet-staging.sh --print-address`.
+docs/MAINNET-LAUNCH.md:24:* Public testnet staging demonstrates funding, continuation spend, indexing,
+docs/MAINNET-LAUNCH.md:26:* Public testnet staging demonstrates policy-migration proof flows if policy
+docs/MAINNET-LAUNCH.md:27:  changes are enabled for that staging scope.
+docs/MAINNET-LAUNCH.md:45:* policy-migration recovery fixture with reopened persistent indexer
+docs/MAINNET-LAUNCH.md:65:* mainnet readiness before public staging
+docs/MAINNET-LAUNCH.md:66:* arbitrary one-step unbounded allocation-vector ZK transition proof before a
+docs/MAINNET-LAUNCH.md:67:  recursive, aggregated, or otherwise unbounded strategy has evidence
+scripts/verify-silverscript-artifacts.sh:44:with open(sys.argv[1], "r", encoding="utf-8") as handle:
+docs/ARCHITECTURE.md:58:   The transition closes spent `RgkCovenantSeal`s, opens new allocations, and
+docs/ARCHITECTURE.md:122:constants; wallet and public staging flows must construct migration proofs
+docs/ARCHITECTURE.md:154:  recursive allocation-vector proof.
+docs/ROADMAP.md:64:| Policy-migration recovery evidence | Persistent fixture and local devnet recovery live; public staging open |
+docs/ROADMAP.md:65:| Lane policy and proof-policy capability coverage | Maintained examples matrix live for the current evidenced surface, including proof-policy guardrails and fungible 2x2/3x2/4x4 transfer shapes; broad coverage remains open |
+docs/ROADMAP.md:66:| Canonical Silverscript examples | Live for current matrix rows with pinned Testnet-12 compiler artifacts; public staging remains open |
+docs/ROADMAP.md:68:| Public testnet staging | Harness and report verifier live; funded public run open |
+docs/ROADMAP.md:140:  the confirmed transition digest, persists it through Sled reopen, and has the
+docs/ROADMAP.md:171:exclusion proofs live as supplemental audit evidence; bounded production arity
+docs/ROADMAP.md:172:strategy selected; arbitrary one-step unbounded allocation-vector ZK remains
+docs/ROADMAP.md:208:new running-total commitments open to the same private amount. Complete spent
+docs/ROADMAP.md:224:the current production strategy: bounded supported shapes 1x1, 2x2, 3x2, and
+docs/ROADMAP.md:228:fail before native production-ZK validation and before setup/proving. A larger
+docs/ROADMAP.md:229:logical transfer can only stay in production ZK if every full-state intermediate
+docs/ROADMAP.md:231:recursive/aggregated strategy before it can claim arbitrary one-step
+docs/ROADMAP.md:250:  local devnet evidence proves sled recovery after reopen.
+docs/ROADMAP.md:278:* DONE: The production allocation-proof strategy is explicitly bounded to the
+docs/ROADMAP.md:281:* DONE: Native wallet-facing validation exposes `validate_for_production_zk`
+docs/ROADMAP.md:284:* DONE: Native wallet-facing production-ZK transfer planning exposes
+docs/ROADMAP.md:305:* OPEN: Single-proof arbitrary-size allocation conservation, unbounded two-phase
+docs/ROADMAP.md:307:  reconstructed from private allocation vectors inside one recursive or
+docs/ROADMAP.md:308:  otherwise unbounded circuit strategy.
+docs/ROADMAP.md:312:**Status**: Local evidence live, public staging open.
+docs/ROADMAP.md:320:  compiler evidence, not a public-staging claim.
+docs/ROADMAP.md:325:  new supported examples are added, then pair them with public testnet/devnet
+docs/ROADMAP.md:330:* Stage on public testnet with persistent indexer recovery.
+docs/ROADMAP.md:331:  `scripts/e2e-testnet-staging.sh` now runs the live covenant lifecycle against
+docs/ROADMAP.md:333:  non-coinbase public testnet UTXO, waits for real confirmations instead of
+docs/ROADMAP.md:335:  `scripts/verify-testnet-staging-evidence.sh`. Its `--print-address` mode
+docs/ROADMAP.md:339:  local persistent and devnet recovery evidence is live, public evidence remains open.
+docs/ROADMAP.md:347:  digest path; broader lane-policy examples remain open.
+docs/ROADMAP.md:377:  against native RGK semantics; public testnet evidence remains open.
+
+== stderr ==

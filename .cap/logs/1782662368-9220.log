@@ -1,0 +1,101 @@
+== stdout ==
+[run-kaspa-devnet] launching /Users/arthur/RustroverProjects/rgk/external/rusty-kaspa-toccata/target/release/kaspad in background
+[run-kaspa-devnet] pid: 9240
+[run-kaspa-devnet] log: /Users/arthur/RustroverProjects/rgk/.rgk-devnet/kaspad.log
+[run-kaspa-devnet] waiting for wRPC at ws://127.0.0.1:19111
+[run-kaspa-devnet] wRPC ready after 2s
+[e2e-devnet] live devnet RPC: ws://127.0.0.1:19111/v2/kaspa/devnet/no-tls/wrpc/borsh
+[e2e-devnet] running live_devnet test
+   Compiling rgk-rgb v0.1.0 (/Users/arthur/RustroverProjects/rgk/crates/rgk-rgb)
+   Compiling kaspa-wrpc-client v1.2.2-toc.4 (/Users/arthur/RustroverProjects/rusty-kaspa/rpc/wrpc/client)
+   Compiling rgk-kaspa v0.1.0 (/Users/arthur/RustroverProjects/rgk/crates/rgk-kaspa)
+   Compiling rgk-sync v0.1.0 (/Users/arthur/RustroverProjects/rgk/crates/rgk-sync)
+   Compiling rgk-resolver v0.1.0 (/Users/arthur/RustroverProjects/rgk/crates/rgk-resolver)
+   Compiling rgk-e2e v0.1.0 (/Users/arthur/RustroverProjects/rgk/tests/rgk-e2e)
+    Finished `test` profile [optimized + debuginfo] target(s) in 3.51s
+     Running tests/live_devnet.rs (target/debug/deps/live_devnet-3134cedc7dcb5512)
+
+running 2 tests
+live-devnet: server_version=1.2.2-toc.4 network_id=devnet is_synced=false has_utxo_index=true
+test live_devnet_reports_toccata_node_identity ... ok
+live-devnet: scan cursor initialised chain=KaspaDevnet daa=6009 hash_prefix=94ea6e4f39cb5170
+test live_devnet_initialises_persistent_scan_cursor ... ok
+
+test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.06s
+
+[e2e-devnet] running full covenant lifecycle on devnet
+   Compiling kaspa-wrpc-client v1.2.2-toc.4 (/Users/arthur/RustroverProjects/rusty-kaspa/rpc/wrpc/client)
+   Compiling rgk-kaspa v0.1.0 (/Users/arthur/RustroverProjects/rgk/crates/rgk-kaspa)
+   Compiling rgk-sync v0.1.0 (/Users/arthur/RustroverProjects/rgk/crates/rgk-sync)
+   Compiling rgk-resolver v0.1.0 (/Users/arthur/RustroverProjects/rgk/crates/rgk-resolver)
+   Compiling rgk-e2e v0.1.0 (/Users/arthur/RustroverProjects/rgk/tests/rgk-e2e)
+    Finished `test` profile [optimized + debuginfo] target(s) in 2.49s
+     Running tests/live_covenant.rs (target/debug/deps/live_covenant-5589b327c6e5ade8)
+
+running 1 test
+live: connected to devnet wRPC (chain_id=KaspaDevnet)
+live: fixed keypair address = kaspadev:qzzt7atzyc4m662qppt53ua7dta99t33w923s8kwxxmxx5wvl7jtq0ahp67m9
+live: fixed pubkey x-only = [84, bf, 75, 62, 26, 2b, bd, 69, 40, 08, 57, 48, f3, be, 6a, fa, 52, ae, 31, 71, 55, 18, 1e, ce, 31, b6, 63, 51, cc, ff, a4, b0]
+live: generated keypair, devnet address: kaspadev:qzzt7atzyc4m662qppt53ua7dta99t33w923s8kwxxmxx5wvl7jtq0ahp67m9
+live: mined block, report: accepted=Success
+live: reached DAA score 6010 (target 1)
+live: coinbase block 1 mined; mining 2000 more so the FIRST coinbase UTXO matures (need DAA >= 1001 to spend it)...
+live: mined 100/2000 blocks (0.1s)
+live: mined 200/2000 blocks (0.1s)
+live: mined 300/2000 blocks (0.2s)
+live: mined 400/2000 blocks (0.2s)
+live: mined 500/2000 blocks (0.3s)
+live: mined 600/2000 blocks (0.3s)
+live: mined 700/2000 blocks (0.4s)
+live: mined 800/2000 blocks (0.4s)
+live: mined 900/2000 blocks (0.5s)
+live: mined 1000/2000 blocks (0.5s)
+live: mined 1100/2000 blocks (0.6s)
+live: mined 1200/2000 blocks (0.7s)
+live: mined 1300/2000 blocks (0.7s)
+live: mined 1400/2000 blocks (0.8s)
+live: mined 1500/2000 blocks (0.9s)
+live: mined 1600/2000 blocks (1.0s)
+live: mined 1700/2000 blocks (1.0s)
+live: mined 1800/2000 blocks (1.1s)
+live: mined 1900/2000 blocks (1.2s)
+live: mined 2000/2000 blocks (1.2s)
+live: mined 2000 blocks in 1.2s
+live: reached DAA score 8010 (target 2001)
+live: oldest coinbase UTXO is now mature (DAA >= 2001)
+live: selected coinbase UTXO at DAA 5 (oldest, mature)
+live: fetched coinbase UTXO txid=[44, f5, 8a, 4d, de, d1, 7e, ec, 4e, 93, 4e, 35, bc, 0d, 7b, 2d, b7, b6, ec, aa, 1a, 4e, 9f, 8f, d4, 1c, 44, 27, e6, 7f, b9, 3a] index=0 value=4400000000
+live: computed covenant_id = [33, f0, 2c, 34, fa, 9f, fb, 6b, a9, ad, fa, 0a, c1, 9e, a9, 48, c4, 5f, e5, 46, 4a, c7, 11, 5d, 04, 5a, 42, b9, fa, d9, 50, 15] for the genesis output (value=4396000000, fee=4000000)
+live: signed covenant tx, txid = [22, 4d, e3, 5f, 88, ff, 4d, 7e, 94, b5, 66, f0, 9b, de, 75, b4, a2, d1, 71, 87, c7, 0c, 37, a3, 33, 24, a4, 76, 51, 15, 3f, 98]
+live: covenant tx ACCEPTED by node: txid=[22, 4d, e3, 5f, 88, ff, 4d, 7e, 94, b5, 66, f0, 9b, de, 75, b4, a2, d1, 71, 87, c7, 0c, 37, a3, 33, 24, a4, 76, 51, 15, 3f, 98]
+live: mined block, report: accepted=Success
+live: reached DAA score 8011 (target 2)
+live: confirmation block 2 mined
+live: covenant output confirmed at DAA score 8011 with covenant_id=[33, f0, 2c, 34, fa, 9f, fb, 6b, a9, ad, fa, 0a, c1, 9e, a9, 48, c4, 5f, e5, 46, 4a, c7, 11, 5d, 04, 5a, 42, b9, fa, d9, 50, 15]
+live: ZK covenant spend enabled, public_inputs=25 vk_bytes=1064 proof_bytes=128
+live: built P2SH covenant spend, txid = [ef, 2e, 90, 9c, 83, 80, 36, 75, 02, 8b, a5, 13, b9, 06, de, f1, 31, ff, b9, fc, 6b, 5f, a5, ab, b1, 1e, ea, 39, 40, 4e, a5, 33]
+live: P2SH covenant spend ACCEPTED by node: txid=[ef, 2e, 90, 9c, 83, 80, 36, 75, 02, 8b, a5, 13, b9, 06, de, f1, 31, ff, b9, fc, 6b, 5f, a5, ab, b1, 1e, ea, 39, 40, 4e, a5, 33]
+live: mined block, report: accepted=Success
+live: reached DAA score 8012 (target 8012)
+live: P2SH covenant spend confirmation block mined
+live: continuation covenant output confirmed at DAA score 8012
+live: resolver state = TransitionedValid { covenant: [51, 240, 44, 52, 250, 159, 251, 107, 169, 173, 250, 10, 193, 158, 169, 72, 196, 95, 229, 70, 74, 199, 17, 93, 4, 90, 66, 185, 250, 217, 80, 21], spent_outpoint: KaspaOutpoint { transaction_id: [34, 77, 227, 95, 136, 255, 77, 126, 148, 181, 102, 240, 155, 222, 117, 180, 162, 209, 113, 135, 199, 12, 55, 163, 51, 36, 164, 118, 81, 21, 63, 152], index: 0 }, new_outpoint: KaspaOutpoint { transaction_id: [239, 46, 144, 156, 131, 128, 54, 117, 2, 139, 165, 19, 185, 6, 222, 241, 49, 255, 185, 252, 107, 95, 165, 171, 177, 30, 234, 57, 64, 78, 165, 51], index: 0 }, receipt_id: [60, 153, 56, 48, 153, 13, 84, 42, 103, 2, 131, 209, 250, 191, 44, 133, 50, 149, 187, 222, 202, 158, 6, 241, 201, 101, 63, 208, 183, 18, 110, 198], new_state: RgkStateCommitment { version: 0, chain_id: KaspaDevnet, covenant_id: [51, 240, 44, 52, 250, 159, 251, 107, 169, 173, 250, 10, 193, 158, 169, 72, 196, 95, 229, 70, 74, 199, 17, 93, 4, 90, 66, 185, 250, 217, 80, 21], rgb_contract_id: [66, 66, 66, 66, 66, 66, 66, 66, 66, 66, 66, 66, 66, 66, 66, 66, 66, 66, 66, 66, 66, 66, 66, 66, 66, 66, 66, 66, 66, 66, 66, 66], state_digest: [176, 176, 176, 176, 176, 176, 176, 176, 176, 176, 176, 176, 176, 176, 176, 176, 176, 176, 176, 176, 176, 176, 176, 176, 176, 176, 176, 176, 176, 176, 176, 176], receipt_policy: ZkOrVerifier }, confirmation_depth: 1 }
+live: covenant transition classified as TransitionedValid from the confirmed live Kaspa Toccata devnet spend (covenant_id=[33, f0, 2c, 34, fa, 9f, fb, 6b, a9, ad, fa, 0a, c1, 9e, a9, 48, c4, 5f, e5, 46, 4a, c7, 11, 5d, 04, 5a, 42, b9, fa, d9, 50, 15])
+test live_toccata_full_covenant_lifecycle ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 12.81s
+
+[e2e-devnet] running rgk-sync scanner smoke (initialise cursor)
+   Compiling kaspa-wrpc-client v1.2.2-toc.4 (/Users/arthur/RustroverProjects/rusty-kaspa/rpc/wrpc/client)
+   Compiling rgk-kaspa v0.1.0 (/Users/arthur/RustroverProjects/rgk/crates/rgk-kaspa)
+   Compiling rgk-sync v0.1.0 (/Users/arthur/RustroverProjects/rgk/crates/rgk-sync)
+    Finished `dev` profile [optimized + debuginfo] target(s) in 2.77s
+     Running `target/debug/rgk-sync --url 'ws://127.0.0.1:19111/v2/kaspa/devnet/no-tls/wrpc/borsh' --network devnet --db /Users/arthur/RustroverProjects/rgk/target/rgk-devnet-evidence/sled --once`
+tick initialised=true added_chain_blocks=0 observed_spends=0 start_daa=8012 end_daa=8012 end_hash_prefix=070c7dc9902e0276
+[e2e-devnet] running rgk-sync scanner smoke (reload cursor)
+    Finished `dev` profile [optimized + debuginfo] target(s) in 0.20s
+     Running `target/debug/rgk-sync --url 'ws://127.0.0.1:19111/v2/kaspa/devnet/no-tls/wrpc/borsh' --network devnet --db /Users/arthur/RustroverProjects/rgk/target/rgk-devnet-evidence/sled --once`
+tick initialised=false added_chain_blocks=0 observed_spends=0 start_daa=8012 end_daa=8012 end_hash_prefix=070c7dc9902e0276
+[e2e-devnet] evidence: /Users/arthur/RustroverProjects/rgk/target/rgk-devnet-evidence/latest.txt
+
+== stderr ==

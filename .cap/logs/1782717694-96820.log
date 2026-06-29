@@ -1,0 +1,11 @@
+== stdout ==
+exit: 0
+file effects: 1
+  modified crates/rgk-asset/src/lib.rs (unknown, source)
+summary:
+  source files changed: yes
+  lockfiles touched: no
+  ignored files changed: no
+  git available: no
+
+== stderr ==

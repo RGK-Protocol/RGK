@@ -1,0 +1,18 @@
+== stdout ==
+
+== stderr ==
+    Blocking waiting for file lock on package cache
+    Blocking waiting for file lock on package cache
+    Blocking waiting for file lock on package cache
+    Checking rgk-core v0.1.0 (/Users/arthur/RustroverProjects/rgk/crates/rgk-core)
+    Checking rgk-receipt v0.1.0 (/Users/arthur/RustroverProjects/rgk/crates/rgk-receipt)
+    Checking rgk-covenant v0.1.0 (/Users/arthur/RustroverProjects/rgk/crates/rgk-covenant)
+    Checking rgk-asset v0.1.0 (/Users/arthur/RustroverProjects/rgk/crates/rgk-asset)
+    Checking rgk-kaspa v0.1.0 (/Users/arthur/RustroverProjects/rgk/crates/rgk-kaspa)
+    Checking rgk-indexer v0.1.0 (/Users/arthur/RustroverProjects/rgk/crates/rgk-indexer)
+    Checking rgk-tx v0.1.0 (/Users/arthur/RustroverProjects/rgk/crates/rgk-tx)
+    Checking rgk-zk v0.1.0 (/Users/arthur/RustroverProjects/rgk/crates/rgk-zk)
+    Checking rgk-sync v0.1.0 (/Users/arthur/RustroverProjects/rgk/crates/rgk-sync)
+    Checking rgk-resolver v0.1.0 (/Users/arthur/RustroverProjects/rgk/crates/rgk-resolver)
+    Checking rgk-e2e v0.1.0 (/Users/arthur/RustroverProjects/rgk/tests/rgk-e2e)
+    Finished `dev` profile [optimized + debuginfo] target(s) in 7.79s

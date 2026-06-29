@@ -1,0 +1,16 @@
+== stdout ==
+
+running 5 tests
+test real_zk::tests::allocation_audit_bundle_verifies_complete_statement_grid ... ok
+test real_zk::tests::allocation_audit_bundle_rejects_missing_exclusion_cell ... ok
+test real_zk::tests::allocation_audit_bundle_rejects_final_conservation_mismatch ... ok
+test real_zk::tests::allocation_audit_bundle_rejects_duplicate_exclusion_cell ... ok
+test real_zk::tests::allocation_audit_bundle_rejects_broken_transcript_chain_link ... ok
+
+test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 72 filtered out; finished in 0.00s
+
+
+== stderr ==
+   Compiling rgk-zk v0.1.0 (/Users/arthur/RustroverProjects/rgk/crates/rgk-zk)
+    Finished `test` profile [optimized + debuginfo] target(s) in 4.99s
+     Running unittests src/lib.rs (target/debug/deps/rgk_zk-2d7d6e784de2143c)

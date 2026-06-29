@@ -1,0 +1,24 @@
+== stdout ==
+
+running 4 tests
+test canonical_state_digest_is_deterministic ... ok
+test generic_library_live_dispatch_is_disabled ... ok
+test e2e_summary_renders_all_fields ... ok
+test fixture_e2e_passes ... ok
+
+test result: ok. 4 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+
+== stderr ==
+    Blocking waiting for file lock on package cache
+    Blocking waiting for file lock on package cache
+    Blocking waiting for file lock on package cache
+    Blocking waiting for file lock on build directory
+   Compiling rgk-zk v0.1.0 (/Users/arthur/RustroverProjects/rgk/crates/rgk-zk)
+   Compiling rgk-rgb v0.1.0 (/Users/arthur/RustroverProjects/rgk/crates/rgk-rgb)
+   Compiling rgk-kaspa v0.1.0 (/Users/arthur/RustroverProjects/rgk/crates/rgk-kaspa)
+   Compiling rgk-sync v0.1.0 (/Users/arthur/RustroverProjects/rgk/crates/rgk-sync)
+   Compiling rgk-resolver v0.1.0 (/Users/arthur/RustroverProjects/rgk/crates/rgk-resolver)
+   Compiling rgk-e2e v0.1.0 (/Users/arthur/RustroverProjects/rgk/tests/rgk-e2e)
+    Finished `test` profile [optimized + debuginfo] target(s) in 10.18s
+     Running unittests src/lib.rs (target/debug/deps/rgk_e2e-75c4f72348d4bce3)

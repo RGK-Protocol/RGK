@@ -1,0 +1,31 @@
+pragma silverscript ^0.1.0;
+
+contract RGKPublicLineageOptIn() {
+    int public_lineage = 1;
+    int private_lineage = 0;
+    byte[32] asset_id = 0x1111111111111111111111111111111111111111111111111111111111111111;
+    byte[32] public_lane_id = 0x2424242424242424242424242424242424242424242424242424242424242424;
+    byte[32] private_lane_id = 0x2525252525252525252525252525252525252525252525252525252525252525;
+    byte[32] public_scan_tag = 0x3434343434343434343434343434343434343434343434343434343434343434;
+    byte[32] private_scan_tag = 0x3535353535353535353535353535353535353535353535353535353535353535;
+    byte[32] state_digest = 0x3636363636363636363636363636363636363636363636363636363636363636;
+
+    #[covenant.singleton(mode = verification)]
+    function publish_lineage(
+        State prev_state,
+        State new_state,
+        int lineage_mode,
+        byte[32] lane_id,
+        byte[32] scan_tag
+    ) {
+        require(lineage_mode == public_lineage);
+        require(lineage_mode != private_lineage);
+        require(prev_state.asset_id == asset_id);
+        require(new_state.asset_id == asset_id);
+        require(lane_id == public_lane_id);
+        require(lane_id != private_lane_id);
+        require(scan_tag == public_scan_tag);
+        require(scan_tag != private_scan_tag);
+        require(prev_state.state_digest != new_state.state_digest);
+    }
+}

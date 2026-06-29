@@ -1,0 +1,29 @@
+pragma silverscript ^0.1.0;
+
+contract RGKPrivateLaneAssetLifecycle() {
+    int amount = 1000;
+    byte[32] asset_id = 0x1111111111111111111111111111111111111111111111111111111111111111;
+    byte[32] lane_id = 0x2222222222222222222222222222222222222222222222222222222222222222;
+    byte[32] state_digest = 0x3333333333333333333333333333333333333333333333333333333333333333;
+    byte[32] proof_policy = 0x4444444444444444444444444444444444444444444444444444444444444444;
+    byte[32] note_commitment = 0x5555555555555555555555555555555555555555555555555555555555555555;
+
+    #[covenant.singleton(mode = verification)]
+    function transfer(
+        State prev_state,
+        State new_state,
+        byte[32] transition_digest,
+        byte[32] continuation_commitment,
+        byte[32] receipt_id
+    ) {
+        require(prev_state.amount == new_state.amount);
+        require(prev_state.asset_id == new_state.asset_id);
+        require(prev_state.lane_id == new_state.lane_id);
+        require(prev_state.proof_policy == new_state.proof_policy);
+        require(prev_state.state_digest != new_state.state_digest);
+        require(prev_state.note_commitment != new_state.note_commitment);
+        require(transition_digest != prev_state.state_digest);
+        require(continuation_commitment != prev_state.state_digest);
+        require(receipt_id != prev_state.state_digest);
+    }
+}

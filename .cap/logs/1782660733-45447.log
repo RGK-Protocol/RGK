@@ -1,0 +1,93 @@
+== stdout ==
+
+running 18 tests
+test tests::advance_rejects_no_op ... ok
+test tests::advance_produces_new_state ... ok
+test tests::commitment_is_deterministic ... ok
+test tests::covenant_id_changes_with_outputs ... ok
+test tests::covenant_id_is_deterministic ... ok
+test tests::expected_payload_hash_is_deterministic ... ok
+test tests::frozen_covenant_id_vector ... ok
+test tests::expected_payload_len_is_stable ... ok
+test tests::lineage_id_binds_outpoint_and_contract ... ok
+test tests::opcode_values_match_toccata_checkout ... ok
+test tests::payload_rejects_bad_tag ... ok
+test tests::payload_rejects_truncated ... ok
+test tests::payload_roundtrip ... ok
+test tests::push_data_picks_correct_opcode ... ok
+test tests::push_script_i64_matches_upstream_builder_vectors ... ok
+test tests::push_var_int_compact ... ok
+test tests::spec_script_is_non_empty_and_starts_with_valid_opcode ... ok
+test tests::covenant_state_advance_sequences_preserve_static_fields ... ok
+
+test result: ok. 18 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+
+running 17 tests
+test tests::chain_mismatch_in_open_rejected ... ok
+test tests::empty_scan_cursor_name_rejected ... ok
+test tests::no_op_state_rejected ... ok
+test tests::apply_spend_records_receipt_and_state ... ok
+test tests::open_then_lookup ... ok
+test tests::open_twice_rejected ... ok
+test tests::rebuild_from_verified_source_applies_spend_plan ... ok
+test tests::rebuild_from_verified_source_is_idempotent ... ok
+test tests::rebuild_rejects_chain_mismatch ... ok
+test tests::rebuild_rejects_missing_spend_evidence ... ok
+test tests::rebuild_rejects_unconfirmed_spend ... ok
+test tests::rebuild_rejects_unexpected_spending_txid ... ok
+test tests::replay_rejected ... ok
+test tests::rollback_restores_previous_state ... ok
+test tests::rollback_too_deep_rejected ... ok
+test tests::scan_cursor_store_round_trips_in_memory ... ok
+test tests::apply_spend_and_rollback_preserve_replay_prefix ... ok
+
+test result: ok. 17 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+
+running 15 tests
+test tests::build_rejects_missing_transition ... ok
+test tests::build_rejects_missing_nonce ... ok
+test tests::contract_id_change_rejected ... ok
+test tests::batch_err_string_renders ... ok
+test tests::build_round_trips_id_and_bytes ... ok
+test tests::derive_replay_nonce_is_deterministic ... ok
+test tests::no_op_transition_rejected ... ok
+test tests::receipt_id_hex_format ... ok
+test tests::replay_set_accepts_once ... ok
+test tests::verifier_rejects_chain_mismatch ... ok
+test tests::verifier_rejects_covenant_mismatch ... ok
+test tests::verifier_rejects_old_state_mismatch ... ok
+test tests::verifier_rejects_policy_mode_mismatch ... ok
+test tests::verifier_summary_is_stable ... ok
+test tests::receipt_round_trip_holds_for_random_admitted_fields ... ok
+
+test result: ok. 15 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+
+== stderr ==
+   Compiling rgk-receipt v0.1.0 (/Users/arthur/RustroverProjects/rgk/crates/rgk-receipt)
+   Compiling rgk-covenant v0.1.0 (/Users/arthur/RustroverProjects/rgk/crates/rgk-covenant)
+   Compiling rgk-indexer v0.1.0 (/Users/arthur/RustroverProjects/rgk/crates/rgk-indexer)
+    Finished `test` profile [optimized + debuginfo] target(s) in 0.94s
+     Running unittests src/lib.rs (target/debug/deps/rgk_covenant-2354709c436a804c)
+     Running unittests src/lib.rs (target/debug/deps/rgk_indexer-86ed00e8105b3959)
+     Running unittests src/lib.rs (target/debug/deps/rgk_receipt-cc8f9389fbed1ee6)
+   Doc-tests rgk_covenant
+   Doc-tests rgk_indexer
+   Doc-tests rgk_receipt

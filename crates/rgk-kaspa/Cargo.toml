@@ -1,0 +1,34 @@
+[package]
+name = "rgk-kaspa"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+description = "RGK Kaspa chain backend trait, local-node adapter, and typed errors"
+
+[dependencies]
+rgk-core.workspace = true
+rgk-receipt.workspace = true
+rgk-covenant.workspace = true
+thiserror.workspace = true
+sha2.workspace = true
+
+# Optional HTTP backend (sync, minimal). Default off so the rest of the
+# workspace compiles without a network dep.
+ureq = { version = "2", default-features = false, features = ["json"], optional = true }
+serde_json = { version = "1", optional = true }
+hex.workspace = true
+
+# Optional wRPC backend against a live Toccata-capable kaspad. Kept behind a
+# feature because it pulls in the upstream rusty-kaspa RPC stack.
+kaspa-wrpc-client = { path = "../../../rusty-kaspa/rpc/wrpc/client", default-features = false, optional = true }
+kaspa-rpc-core = { path = "../../../rusty-kaspa/rpc/core", default-features = false, optional = true }
+tokio = { version = "1", features = ["rt", "rt-multi-thread", "time"], optional = true }
+
+[features]
+default = ["std"]
+std = []
+http = ["dep:ureq", "dep:serde_json"]
+wrpc = ["std", "dep:kaspa-wrpc-client", "dep:kaspa-rpc-core", "dep:tokio"]
+fixture = []

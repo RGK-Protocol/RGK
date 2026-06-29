@@ -1,0 +1,54 @@
+== stdout ==
+
+running 35 tests
+test tests::apply_spend_records_receipt_and_state ... ok
+test tests::allocation_audit_certificate_record_attaches_to_spend ... ok
+test tests::apply_spend_records_receipt_policy_change_for_resolver_classification ... ok
+test tests::allocation_audit_certificate_record_rejects_bad_envelopes_and_replacement ... ok
+test tests::apply_spend_with_continuation_records_proof ... ok
+test tests::apply_spend_with_continuation_rejects_incomplete_proof ... ok
+test tests::apply_spend_with_policy_migration_records_explicit_proof ... ok
+test tests::apply_spend_with_policy_migration_rejects_bad_commitment ... ok
+test tests::chain_mismatch_in_open_rejected ... ok
+test tests::empty_scan_cursor_name_rejected ... ok
+test tests::no_op_state_rejected ... ok
+test tests::open_then_lookup ... ok
+test tests::open_twice_rejected ... ok
+test tests::rebuild_from_verified_source_applies_spend_plan ... ok
+test tests::rebuild_from_verified_source_is_idempotent ... ok
+test tests::rebuild_rejects_chain_mismatch ... ok
+test tests::rebuild_rejects_missing_spend_evidence ... ok
+test tests::rebuild_rejects_unconfirmed_spend ... ok
+test tests::rebuild_rejects_unexpected_spending_txid ... ok
+test tests::register_lane_rejects_wrong_asset_state ... ok
+test tests::register_lane_supports_exact_scan_tag_and_public_lookup ... ok
+test tests::replay_rejected ... ok
+test tests::rollback_restores_previous_receipt_policy ... ok
+test tests::rollback_restores_previous_state ... ok
+test tests::rollback_too_deep_rejected ... ok
+test tests::scan_cursor_store_round_trips_in_memory ... ok
+test tests::apply_spend_and_rollback_preserve_replay_prefix ... ok
+test tests::sled_scan_cursor_survives_reopen ... ok
+test tests::sled_indexer_persists_spend_receipt_policy_after_reopen ... ok
+test tests::sled_indexer_persists_policy_migration_proof_after_reopen ... ok
+test tests::sled_indexer_persists_continuation_proof_after_reopen ... ok
+test tests::sled_indexer_persists_lane_records_after_reopen ... ok
+test tests::sled_indexer_persists_allocation_audit_certificate_after_reopen ... ok
+test tests::sled_indexer_persists_rebuild_result_after_reopen ... ok
+test tests::sled_indexer_recovers_100_covenants_after_reopen ... ok
+
+test result: ok. 35 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 1.18s
+
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+
+== stderr ==
+    Blocking waiting for file lock on package cache
+    Blocking waiting for file lock on package cache
+    Blocking waiting for file lock on package cache
+    Finished `test` profile [optimized + debuginfo] target(s) in 0.17s
+     Running unittests src/lib.rs (target/debug/deps/rgk_indexer-bd3e0967f38b1002)
+   Doc-tests rgk_indexer

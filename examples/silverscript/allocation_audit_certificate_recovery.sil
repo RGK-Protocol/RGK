@@ -1,0 +1,26 @@
+pragma silverscript ^0.1.0;
+
+contract RGKAllocationAuditCertificateRecovery() {
+    int amount = 1000;
+    byte[32] asset_id = 0x1111111111111111111111111111111111111111111111111111111111111111;
+    byte[32] spent_root = 0x8888888888888888888888888888888888888888888888888888888888888888;
+    byte[32] new_root = 0x9999999999999999999999999999999999999999999999999999999999999999;
+    byte[32] certificate_id = 0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa;
+    byte[32] state_digest = 0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb;
+
+    #[covenant.singleton(mode = verification)]
+    function attach_certificate(
+        State prev_state,
+        State new_state,
+        byte[32] verified_certificate_id,
+        byte[32] bundle_root
+    ) {
+        require(prev_state.amount == new_state.amount);
+        require(prev_state.asset_id == new_state.asset_id);
+        require(prev_state.spent_root != new_state.spent_root);
+        require(prev_state.new_root != new_state.new_root);
+        require(new_state.certificate_id == verified_certificate_id);
+        require(bundle_root != prev_state.state_digest);
+        require(prev_state.state_digest != new_state.state_digest);
+    }
+}

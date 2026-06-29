@@ -1,0 +1,9 @@
+== stdout ==
+25:pub enum NetworkTypeError {
+34:pub enum NetworkType {
+198:pub struct NetworkId {
+205:impl NetworkId {
+206:    pub const fn new(network_type: NetworkType) -> Self {
+367:impl NetworkId {
+
+== stderr ==

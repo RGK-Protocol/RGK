@@ -1,0 +1,25 @@
+== stdout ==
+
+running 2 tests
+test rgk_allocation_conservation_final_groth16_proof_executes_in_upstream_toccata_vm ... ok
+test rgk_allocation_conservation_segment_groth16_proof_executes_in_upstream_toccata_vm ... ok
+
+test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 11 filtered out; finished in 26.94s
+
+
+== stderr ==
+    Blocking waiting for file lock on package cache
+    Blocking waiting for file lock on package cache
+    Blocking waiting for file lock on package cache
+    Blocking waiting for file lock on package cache
+    Blocking waiting for file lock on build directory
+   Compiling kaspa-wrpc-client v1.2.2-toc.4 (/Users/arthur/RustroverProjects/rusty-kaspa/rpc/wrpc/client)
+   Compiling rgk-zk v0.1.0 (/Users/arthur/RustroverProjects/rgk/crates/rgk-zk)
+   Compiling rgk-kaspa v0.1.0 (/Users/arthur/RustroverProjects/rgk/crates/rgk-kaspa)
+   Compiling rgk-sync v0.1.0 (/Users/arthur/RustroverProjects/rgk/crates/rgk-sync)
+   Compiling rgk-resolver v0.1.0 (/Users/arthur/RustroverProjects/rgk/crates/rgk-resolver)
+   Compiling rgk-e2e v0.1.0 (/Users/arthur/RustroverProjects/rgk/tests/rgk-e2e)
+    Finished `test` profile [optimized + debuginfo] target(s) in 6.84s
+     Running tests/zk_precompile_vm.rs (target/debug/deps/zk_precompile_vm-d80893c784f18fe4)
+[zk-precompile-vm] allocation_conservation_final public_inputs=10 vk_bytes=584 proof_bytes=128 script_bytes=1051
+[zk-precompile-vm] allocation_conservation_segment public_inputs=24 vk_bytes=1032 proof_bytes=128 script_bytes=1962

@@ -1,0 +1,137 @@
+== stdout ==
+/Users/arthur/RustroverProjects/rusty-kaspa/consensus/src/model/services/seq_commit_accessor.rs:19:    pub toccata_activation: ForkActivation,
+/Users/arthur/RustroverProjects/rusty-kaspa/consensus/src/model/services/seq_commit_accessor.rs:27:        toccata_activation: ForkActivation,
+/Users/arthur/RustroverProjects/rusty-kaspa/consensus/src/model/services/seq_commit_accessor.rs:30:        Self { threshold, selected_parent, reachability_service, headers_store, toccata_activation }
+/Users/arthur/RustroverProjects/rusty-kaspa/consensus/src/model/services/seq_commit_accessor.rs:41:        if !self.toccata_activation.is_active(header.daa_score) {
+/Users/arthur/RustroverProjects/rusty-kaspa/consensus/src/processes/transaction_validator/tx_validation_in_isolation.rs:357:        forked_params.toccata_activation = ForkActivation::new(100);
+/Users/arthur/RustroverProjects/rusty-kaspa/consensus/src/consensus/services.rs:130:            params.toccata_activation,
+/Users/arthur/RustroverProjects/rusty-kaspa/consensus/src/consensus/services.rs:146:            params.toccata_activation,
+/Users/arthur/RustroverProjects/rusty-kaspa/consensus/src/consensus/services.rs:184:            params.skip_proof_of_work,
+/Users/arthur/RustroverProjects/rusty-kaspa/consensus/src/consensus/services.rs:185:            params.toccata_activation,
+/Users/arthur/RustroverProjects/rusty-kaspa/consensus/src/processes/transaction_validator/tx_validation_in_utxo_context.rs:171:        let covenants_enabled = self.toccata_activation.is_active(block_daa_score);
+/Users/arthur/RustroverProjects/rusty-kaspa/consensus/src/processes/transaction_validator/tx_validation_in_utxo_context.rs:178:        if !self.toccata_activation.is_active(block_daa_score) {
+/Users/arthur/RustroverProjects/rusty-kaspa/consensus/src/processes/transaction_validator/tx_validation_in_utxo_context.rs:361:            ForkActivation::always(),
+/Users/arthur/RustroverProjects/rusty-kaspa/consensus/src/processes/transaction_validator/tx_validation_in_header_context.rs:97:        if self.toccata_activation.is_active(block_daa_score) {
+/Users/arthur/RustroverProjects/rusty-kaspa/consensus/src/consensus/test_consensus.rs:130:    pub fn params(&self) -> &Params {
+/Users/arthur/RustroverProjects/rusty-kaspa/consensus/src/processes/transaction_validator/mod.rs:28:    toccata_activation: ForkActivation,
+/Users/arthur/RustroverProjects/rusty-kaspa/consensus/src/processes/transaction_validator/mod.rs:46:        toccata_activation: ForkActivation,
+/Users/arthur/RustroverProjects/rusty-kaspa/consensus/src/processes/transaction_validator/mod.rs:59:            toccata_activation,
+/Users/arthur/RustroverProjects/rusty-kaspa/consensus/src/processes/transaction_validator/mod.rs:84:            toccata_activation: ForkActivation::never(),
+/Users/arthur/RustroverProjects/rusty-kaspa/consensus/src/pipeline/body_processor/body_validation_in_isolation.rs:542:        let config = ConfigBuilder::new(MAINNET_PARAMS).skip_proof_of_work().build();
+/Users/arthur/RustroverProjects/rusty-kaspa/consensus/src/pipeline/body_processor/body_validation_in_context.rs:107:            .skip_proof_of_work()
+/Users/arthur/RustroverProjects/rusty-kaspa/consensus/src/pipeline/pruning_processor/processor.rs:586:        if self.config.toccata_activation.is_active(pp_header.daa_score) {
+/Users/arthur/RustroverProjects/rusty-kaspa/consensus/src/processes/pruning_proof/validate.rs:193:                if !ppm.skip_proof_of_work && !pow_passes {
+/Users/arthur/RustroverProjects/rusty-kaspa/consensus/src/processes/pruning_proof/apply.rs:302:        if self.toccata_activation.is_active(pruning_point_header.daa_score) {
+/Users/arthur/RustroverProjects/rusty-kaspa/consensus/src/processes/pruning_proof/apply.rs:325:                if !self.toccata_activation.is_active(current_header.daa_score) {
+/Users/arthur/RustroverProjects/rusty-kaspa/consensus/src/processes/pruning_proof/mod.rs:121:    skip_proof_of_work: bool,
+/Users/arthur/RustroverProjects/rusty-kaspa/consensus/src/processes/pruning_proof/mod.rs:122:    toccata_activation: ForkActivation,
+/Users/arthur/RustroverProjects/rusty-kaspa/consensus/src/processes/pruning_proof/mod.rs:143:        skip_proof_of_work: bool,
+/Users/arthur/RustroverProjects/rusty-kaspa/consensus/src/processes/pruning_proof/mod.rs:144:        toccata_activation: ForkActivation,
+/Users/arthur/RustroverProjects/rusty-kaspa/consensus/src/processes/pruning_proof/mod.rs:179:            skip_proof_of_work,
+/Users/arthur/RustroverProjects/rusty-kaspa/consensus/src/processes/pruning_proof/mod.rs:180:            toccata_activation,
+/Users/arthur/RustroverProjects/rusty-kaspa/consensus/src/processes/pruning_proof/mod.rs:342:        if self.toccata_activation.is_active(self.headers_store.get_daa_score(pruning_point).unwrap()) {
+/Users/arthur/RustroverProjects/rusty-kaspa/consensus/src/processes/pruning_proof/mod.rs:372:                if !self.toccata_activation.is_active(current_header.daa_score) {
+/Users/arthur/RustroverProjects/rusty-kaspa/consensus/src/pipeline/header_processor/pre_ghostdag_validation.rs:105:        if passed || self.skip_proof_of_work { Ok(calc_level_from_pow(pow, self.max_block_level)) } else { Err(RuleError::InvalidPoW) }
+/Users/arthur/RustroverProjects/rusty-kaspa/consensus/src/processes/coinbase.rs:35:    toccata_activation: ForkActivation,
+/Users/arthur/RustroverProjects/rusty-kaspa/consensus/src/processes/coinbase.rs:44:    crescendo_activation_daa_score: u64,
+/Users/arthur/RustroverProjects/rusty-kaspa/consensus/src/processes/coinbase.rs:72:        toccata_activation: ForkActivation,
+/Users/arthur/RustroverProjects/rusty-kaspa/consensus/src/processes/coinbase.rs:87:            toccata_activation,
+/Users/arthur/RustroverProjects/rusty-kaspa/consensus/src/processes/coinbase.rs:90:            crescendo_activation_daa_score: bps_history.activation().daa_score(),
+/Users/arthur/RustroverProjects/rusty-kaspa/consensus/src/processes/coinbase.rs:142:            if self.toccata_activation.is_active(daa_score) { constants::TX_VERSION_TOCCATA } else { constants::TX_VERSION };
+/Users/arthur/RustroverProjects/rusty-kaspa/consensus/src/processes/coinbase.rs:246:        let seconds_since_deflationary_phase_started = if self.crescendo_activation_daa_score < self.deflationary_phase_daa_score {
+/Users/arthur/RustroverProjects/rusty-kaspa/consensus/src/processes/coinbase.rs:247:            // crescendo_activation < deflationary_phase <= daa_score (activated before deflation)
+/Users/arthur/RustroverProjects/rusty-kaspa/consensus/src/processes/coinbase.rs:249:        } else if daa_score < self.crescendo_activation_daa_score {
+/Users/arthur/RustroverProjects/rusty-kaspa/consensus/src/processes/coinbase.rs:250:            // deflationary_phase <= daa_score < crescendo_activation (pre activation)
+/Users/arthur/RustroverProjects/rusty-kaspa/consensus/src/processes/coinbase.rs:253:            // Else - deflationary_phase <= crescendo_activation <= daa_score.
+/Users/arthur/RustroverProjects/rusty-kaspa/consensus/src/processes/coinbase.rs:255:            (self.crescendo_activation_daa_score - self.deflationary_phase_daa_score) / self.bps_history.before()
+/Users/arthur/RustroverProjects/rusty-kaspa/consensus/src/processes/coinbase.rs:256:                + (daa_score - self.crescendo_activation_daa_score) / self.bps_history.after()
+/Users/arthur/RustroverProjects/rusty-kaspa/consensus/src/processes/coinbase.rs:376:            params.crescendo_activation = ForkActivation::never();
+/Users/arthur/RustroverProjects/rusty-kaspa/consensus/src/processes/coinbase.rs:382:                let activation = Params::from(network_id).crescendo_activation;
+/Users/arthur/RustroverProjects/rusty-kaspa/consensus/src/processes/coinbase.rs:383:                if activation != ForkActivation::never() && activation != ForkActivation::always() {
+/Users/arthur/RustroverProjects/rusty-kaspa/consensus/src/processes/coinbase.rs:390:                params.crescendo_activation = ForkActivation::new(activation);
+/Users/arthur/RustroverProjects/rusty-kaspa/consensus/src/processes/coinbase.rs:441:            if params.crescendo_activation != ForkActivation::always() {
+/Users/arthur/RustroverProjects/rusty-kaspa/consensus/src/processes/coinbase.rs:443:                params.crescendo_activation = ForkActivation::never();
+/Users/arthur/RustroverProjects/rusty-kaspa/consensus/src/processes/coinbase.rs:599:    fn expected_coinbase_transaction_selects_version_by_toccata_activation() {
+/Users/arthur/RustroverProjects/rusty-kaspa/consensus/src/processes/coinbase.rs:601:        params.toccata_activation = ForkActivation::new(100);
+/Users/arthur/RustroverProjects/rusty-kaspa/consensus/src/processes/coinbase.rs:624:            params.toccata_activation,
+/Users/arthur/RustroverProjects/rusty-kaspa/consensus/src/processes/coinbase.rs:630:        CoinbaseManager::new(150, 204, 15778800 - 259200, 50000000000, ForkedParam::new_const(1), ForkActivation::never())
+/Users/arthur/RustroverProjects/rusty-kaspa/consensus/src/pipeline/header_processor/processor.rs:115:    pub(super) skip_proof_of_work: bool,
+/Users/arthur/RustroverProjects/rusty-kaspa/consensus/src/pipeline/header_processor/processor.rs:117:    pub(crate) toccata_activation: ForkActivation,
+/Users/arthur/RustroverProjects/rusty-kaspa/consensus/src/pipeline/header_processor/processor.rs:204:            skip_proof_of_work: params.skip_proof_of_work,
+/Users/arthur/RustroverProjects/rusty-kaspa/consensus/src/pipeline/header_processor/processor.rs:206:            toccata_activation: params.toccata_activation,
+/Users/arthur/RustroverProjects/rusty-kaspa/consensus/src/pipeline/header_processor/processor.rs:308:        if self.toccata_activation.is_within_range_from_activation(header.daa_score, 10_000) {
+/Users/arthur/RustroverProjects/rusty-kaspa/consensus/src/pipeline/virtual_processor/tests.rs:161:    let config = ConfigBuilder::new(MAINNET_PARAMS).skip_proof_of_work().build();
+/Users/arthur/RustroverProjects/rusty-kaspa/consensus/src/pipeline/virtual_processor/tests.rs:180:        .skip_proof_of_work()
+/Users/arthur/RustroverProjects/rusty-kaspa/consensus/src/pipeline/virtual_processor/tests.rs:181:        .edit_consensus_params(|p| p.toccata_activation = ForkActivation::new(activation))
+/Users/arthur/RustroverProjects/rusty-kaspa/consensus/src/pipeline/virtual_processor/tests.rs:214:        .skip_proof_of_work()
+/Users/arthur/RustroverProjects/rusty-kaspa/consensus/src/pipeline/virtual_processor/tests.rs:242:        .skip_proof_of_work()
+/Users/arthur/RustroverProjects/rusty-kaspa/consensus/src/pipeline/virtual_processor/tests.rs:274:        .skip_proof_of_work()
+/Users/arthur/RustroverProjects/rusty-kaspa/consensus/src/pipeline/virtual_processor/tests.rs:348:        .skip_proof_of_work()
+/Users/arthur/RustroverProjects/rusty-kaspa/consensus/src/pipeline/virtual_processor/tests.rs:351:            p.toccata_activation = ForkActivation::always();
+/Users/arthur/RustroverProjects/rusty-kaspa/consensus/src/pipeline/virtual_processor/utxo_validation.rs:210:        let (expected_accepted_id_merkle_root, smt_build) = if self.toccata_activation.is_active(header.daa_score) {
+/Users/arthur/RustroverProjects/rusty-kaspa/consensus/src/pipeline/virtual_processor/utxo_validation.rs:249:        if self.toccata_activation.is_active(header.daa_score) {
+/Users/arthur/RustroverProjects/rusty-kaspa/consensus/src/pipeline/virtual_processor/utxo_validation.rs:387:        let seq_commit_accessor = if self.toccata_activation.is_active(pov_daa_score) {
+/Users/arthur/RustroverProjects/rusty-kaspa/consensus/src/pipeline/virtual_processor/utxo_validation.rs:392:                self.toccata_activation,
+/Users/arthur/RustroverProjects/rusty-kaspa/consensus/src/pipeline/virtual_processor/utxo_validation.rs:468:        let seq_commit_accessor = if self.toccata_activation.is_active(pov_daa_score) {
+/Users/arthur/RustroverProjects/rusty-kaspa/consensus/src/pipeline/virtual_processor/utxo_validation.rs:473:                self.toccata_activation,
+/Users/arthur/RustroverProjects/rusty-kaspa/consensus/core/src/config/mod.rs:115:    fn as_ref(&self) -> &Params {
+/Users/arthur/RustroverProjects/rusty-kaspa/consensus/core/src/config/mod.rs:163:    pub fn skip_proof_of_work(mut self) -> Self {
+/Users/arthur/RustroverProjects/rusty-kaspa/consensus/core/src/config/mod.rs:164:        self.config.params.skip_proof_of_work = true;
+/Users/arthur/RustroverProjects/rusty-kaspa/consensus/src/pipeline/virtual_processor/processor.rs:177:    pub(crate) toccata_activation: ForkActivation,
+/Users/arthur/RustroverProjects/rusty-kaspa/consensus/src/pipeline/virtual_processor/processor.rs:252:            toccata_activation: params.toccata_activation,
+/Users/arthur/RustroverProjects/rusty-kaspa/consensus/src/pipeline/virtual_processor/processor.rs:585:        if self.toccata_activation.is_within_range_from_activation(virtual_daa_window.daa_score, 10_000) {
+/Users/arthur/RustroverProjects/rusty-kaspa/consensus/src/pipeline/virtual_processor/processor.rs:590:        let accepted_id_digests = if self.toccata_activation.is_active(virtual_daa_window.daa_score) {
+/Users/arthur/RustroverProjects/rusty-kaspa/consensus/src/pipeline/virtual_processor/processor.rs:666:        if !self.toccata_activation.is_active(self.genesis.daa_score) {
+/Users/arthur/RustroverProjects/rusty-kaspa/consensus/src/pipeline/virtual_processor/processor.rs:856:        if !self.toccata_activation.is_active(header.daa_score) {
+/Users/arthur/RustroverProjects/rusty-kaspa/consensus/src/pipeline/virtual_processor/processor.rs:1464:        let accepted_id_merkle_root = if self.toccata_activation.is_active(virtual_state.daa_score) {
+/Users/arthur/RustroverProjects/rusty-kaspa/consensus/core/src/config/constants.rs:124:    pub struct PerfParams {
+/Users/arthur/RustroverProjects/rusty-kaspa/consensus/core/src/config/constants.rs:154:    pub const PERF_PARAMS: PerfParams = PerfParams {
+/Users/arthur/RustroverProjects/rusty-kaspa/consensus/core/src/config/constants.rs:163:    impl PerfParams {
+/Users/arthur/RustroverProjects/rusty-kaspa/consensus/core/src/config/params.rs:100:        Self { pre: val, post: val, activation: ForkActivation::never() }
+/Users/arthur/RustroverProjects/rusty-kaspa/consensus/core/src/config/params.rs:182:pub struct BlockrateParams {
+/Users/arthur/RustroverProjects/rusty-kaspa/consensus/core/src/config/params.rs:195:impl BlockrateParams {
+/Users/arthur/RustroverProjects/rusty-kaspa/consensus/core/src/config/params.rs:221:pub struct OverrideParams {
+/Users/arthur/RustroverProjects/rusty-kaspa/consensus/core/src/config/params.rs:256:    pub skip_proof_of_work: Option<bool>,
+/Users/arthur/RustroverProjects/rusty-kaspa/consensus/core/src/config/params.rs:267:    pub crescendo_activation: Option<ForkActivation>,
+/Users/arthur/RustroverProjects/rusty-kaspa/consensus/core/src/config/params.rs:269:    pub toccata_activation: Option<ForkActivation>,
+/Users/arthur/RustroverProjects/rusty-kaspa/consensus/core/src/config/params.rs:272:impl From<Params> for OverrideParams {
+/Users/arthur/RustroverProjects/rusty-kaspa/consensus/core/src/config/params.rs:296:            skip_proof_of_work: Some(p.skip_proof_of_work),
+/Users/arthur/RustroverProjects/rusty-kaspa/consensus/core/src/config/params.rs:300:            crescendo_activation: Some(p.crescendo_activation),
+/Users/arthur/RustroverProjects/rusty-kaspa/consensus/core/src/config/params.rs:301:            toccata_activation: Some(p.toccata_activation),
+/Users/arthur/RustroverProjects/rusty-kaspa/consensus/core/src/config/params.rs:310:pub struct Params {
+/Users/arthur/RustroverProjects/rusty-kaspa/consensus/core/src/config/params.rs:356:    pub skip_proof_of_work: bool,
+/Users/arthur/RustroverProjects/rusty-kaspa/consensus/core/src/config/params.rs:368:    pub crescendo_activation: ForkActivation,
+/Users/arthur/RustroverProjects/rusty-kaspa/consensus/core/src/config/params.rs:370:    pub toccata_activation: ForkActivation,
+/Users/arthur/RustroverProjects/rusty-kaspa/consensus/core/src/config/params.rs:373:impl Params {
+/Users/arthur/RustroverProjects/rusty-kaspa/consensus/core/src/config/params.rs:410:            self.crescendo_activation,
+/Users/arthur/RustroverProjects/rusty-kaspa/consensus/core/src/config/params.rs:420:        ForkedParam::new(self.prior_block_mass_limits, new_block_mass_limits, self.toccata_activation)
+/Users/arthur/RustroverProjects/rusty-kaspa/consensus/core/src/config/params.rs:473:        ForkedParam::new(self.prior_max_signature_script_len, self.new_max_signature_script_len, self.toccata_activation)
+/Users/arthur/RustroverProjects/rusty-kaspa/consensus/core/src/config/params.rs:535:        ForkedParam::new(BLOCK_VERSION, TOCCATA_BLOCK_VERSION, self.toccata_activation)
+/Users/arthur/RustroverProjects/rusty-kaspa/consensus/core/src/config/params.rs:595:            skip_proof_of_work: overrides.skip_proof_of_work.unwrap_or(self.skip_proof_of_work),
+/Users/arthur/RustroverProjects/rusty-kaspa/consensus/core/src/config/params.rs:607:            crescendo_activation: overrides.crescendo_activation.unwrap_or(self.crescendo_activation),
+/Users/arthur/RustroverProjects/rusty-kaspa/consensus/core/src/config/params.rs:608:            toccata_activation: overrides.toccata_activation.unwrap_or(self.toccata_activation),
+/Users/arthur/RustroverProjects/rusty-kaspa/consensus/core/src/config/params.rs:613:impl Deref for Params {
+/Users/arthur/RustroverProjects/rusty-kaspa/consensus/core/src/config/params.rs:621:impl DerefMut for Params {
+/Users/arthur/RustroverProjects/rusty-kaspa/consensus/core/src/config/params.rs:627:impl From<NetworkType> for Params {
+/Users/arthur/RustroverProjects/rusty-kaspa/consensus/core/src/config/params.rs:638:impl From<NetworkId> for Params {
+/Users/arthur/RustroverProjects/rusty-kaspa/consensus/core/src/config/params.rs:653:pub const MAINNET_PARAMS: Params = Params {
+/Users/arthur/RustroverProjects/rusty-kaspa/consensus/core/src/config/params.rs:712:    skip_proof_of_work: false,
+/Users/arthur/RustroverProjects/rusty-kaspa/consensus/core/src/config/params.rs:721:    crescendo_activation: ForkActivation::new(110_165_000),
+/Users/arthur/RustroverProjects/rusty-kaspa/consensus/core/src/config/params.rs:723:    toccata_activation: ForkActivation::never(),
+/Users/arthur/RustroverProjects/rusty-kaspa/consensus/core/src/config/params.rs:726:pub const TESTNET_PARAMS: Params = Params {
+/Users/arthur/RustroverProjects/rusty-kaspa/consensus/core/src/config/params.rs:772:    skip_proof_of_work: false,
+/Users/arthur/RustroverProjects/rusty-kaspa/consensus/core/src/config/params.rs:781:    crescendo_activation: ForkActivation::new(88_657_000),
+/Users/arthur/RustroverProjects/rusty-kaspa/consensus/core/src/config/params.rs:784:    toccata_activation: ForkActivation::new(467_579_632),
+/Users/arthur/RustroverProjects/rusty-kaspa/consensus/core/src/config/params.rs:787:pub const SIMNET_PARAMS: Params = Params {
+/Users/arthur/RustroverProjects/rusty-kaspa/consensus/core/src/config/params.rs:819:    skip_proof_of_work: true, // For simnet only, PoW can be simulated by default
+/Users/arthur/RustroverProjects/rusty-kaspa/consensus/core/src/config/params.rs:828:    crescendo_activation: ForkActivation::always(),
+/Users/arthur/RustroverProjects/rusty-kaspa/consensus/core/src/config/params.rs:829:    toccata_activation: ForkActivation::always(),
+/Users/arthur/RustroverProjects/rusty-kaspa/consensus/core/src/config/params.rs:832:pub const DEVNET_PARAMS: Params = Params {
+/Users/arthur/RustroverProjects/rusty-kaspa/consensus/core/src/config/params.rs:864:    skip_proof_of_work: false,
+/Users/arthur/RustroverProjects/rusty-kaspa/consensus/core/src/config/params.rs:872:    crescendo_activation: ForkActivation::always(),
+/Users/arthur/RustroverProjects/rusty-kaspa/consensus/core/src/config/params.rs:873:    toccata_activation: ForkActivation::never(),
+/Users/arthur/RustroverProjects/rusty-kaspa/consensus/core/src/config/params.rs:881:    fn override_params_deserializes_toccata_activation() {
+/Users/arthur/RustroverProjects/rusty-kaspa/consensus/core/src/config/params.rs:882:        let override_params: OverrideParams = serde_json::from_str(r#"{"toccata_activation":42}"#).unwrap();
+/Users/arthur/RustroverProjects/rusty-kaspa/consensus/core/src/config/params.rs:884:        assert_eq!(override_params.toccata_activation, Some(ForkActivation::new(42)));
+
+== stderr ==

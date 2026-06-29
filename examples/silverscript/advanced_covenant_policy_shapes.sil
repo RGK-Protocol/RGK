@@ -1,0 +1,153 @@
+pragma silverscript ^0.1.0;
+
+contract RGKAdvancedCovenantPolicyShapes() {
+    int amount = 1000;
+    int payment_amount = 100;
+    int unlock_daa_score = 1000000;
+    byte[32] asset_id = 0x1111111111111111111111111111111111111111111111111111111111111111;
+    byte[32] payment_asset_id = 0x1212121212121212121212121212121212121212121212121212121212121212;
+    byte[32] lane_id = 0x2222222222222222222222222222222222222222222222222222222222222222;
+    byte[32] covenant_id = 0x3333333333333333333333333333333333333333333333333333333333333333;
+    byte[32] counterparty_covenant_id = 0x4444444444444444444444444444444444444444444444444444444444444444;
+    byte[32] payment_commitment = 0x5555555555555555555555555555555555555555555555555555555555555555;
+    byte[32] escrow_commitment = 0x5656565656565656565656565656565656565656565656565656565656565656;
+    byte[32] vault_policy_commitment = 0x5757575757575757575757575757575757575757575757575757575757575757;
+    byte[32] atomic_swap_commitment = 0x5858585858585858585858585858585858585858585858585858585858585858;
+    byte[32] covenant_owner_commitment = 0x5959595959595959595959595959595959595959595959595959595959595959;
+    byte[32] owner_commitment = 0x5959595959595959595959595959595959595959595959595959595959595959;
+    byte[32] policy_commitment = 0x6161616161616161616161616161616161616161616161616161616161616161;
+    byte[32] previous_policy_commitment = 0x6060606060606060606060606060606060606060606060606060606060606060;
+    byte[32] new_policy_commitment = 0x6161616161616161616161616161616161616161616161616161616161616161;
+    byte[32] termination_commitment = 0x6262626262626262626262626262626262626262626262626262626262626262;
+    byte[32] authorization_commitment = 0x7171717171717171717171717171717171717171717171717171717171717171;
+    byte[32] execution_commitment = 0x7373737373737373737373737373737373737373737373737373737373737373;
+    byte[32] execution_record_commitment = 0x7474747474747474747474747474747474747474747474747474747474747474;
+    byte[32] state_digest = 0x7272727272727272727272727272727272727272727272727272727272727272;
+
+    #[covenant.singleton(mode = verification)]
+    function payment_gated_transfer(
+        State prev_state,
+        State new_state,
+        byte[32] payment_asset,
+        int paid_amount,
+        byte[32] payment_proof
+    ) {
+        require(prev_state.asset_id == asset_id);
+        require(new_state.asset_id == asset_id);
+        require(prev_state.lane_id == lane_id);
+        require(new_state.lane_id == lane_id);
+        require(payment_asset == payment_asset_id);
+        require(paid_amount >= payment_amount);
+        require(payment_proof == payment_commitment);
+        require(prev_state.state_digest != new_state.state_digest);
+    }
+
+    #[covenant.singleton(mode = verification)]
+    function escrow_release_or_refund(
+        State prev_state,
+        State new_state,
+        byte[32] escrow_proof,
+        byte[32] counterparty
+    ) {
+        require(prev_state.asset_id == new_state.asset_id);
+        require(prev_state.covenant_id == covenant_id);
+        require(new_state.covenant_id == counterparty_covenant_id);
+        require(counterparty == counterparty_covenant_id);
+        require(escrow_proof == escrow_commitment);
+        require(prev_state.state_digest != new_state.state_digest);
+    }
+
+    #[covenant.singleton(mode = verification)]
+    function vault_timelock_release(
+        State prev_state,
+        State new_state,
+        int current_daa_score,
+        byte[32] policy
+    ) {
+        require(prev_state.asset_id == asset_id);
+        require(new_state.asset_id == asset_id);
+        require(current_daa_score >= unlock_daa_score);
+        require(policy == vault_policy_commitment);
+        require(prev_state.state_digest != new_state.state_digest);
+    }
+
+    #[covenant.singleton(mode = verification)]
+    function atomic_swap_shape(
+        State prev_state,
+        State new_state,
+        byte[32] payment_asset,
+        int paid_amount,
+        byte[32] swap_commitment
+    ) {
+        require(prev_state.asset_id == asset_id);
+        require(new_state.asset_id == asset_id);
+        require(prev_state.covenant_id == covenant_id);
+        require(new_state.covenant_id == counterparty_covenant_id);
+        require(payment_asset == payment_asset_id);
+        require(paid_amount == payment_amount);
+        require(swap_commitment == atomic_swap_commitment);
+    }
+
+    #[covenant.singleton(mode = verification)]
+    function covenant_owned_asset_control(
+        State prev_state,
+        State new_state,
+        byte[32] owner,
+        byte[32] authorization
+    ) {
+        require(prev_state.asset_id == new_state.asset_id);
+        require(owner == covenant_owner_commitment);
+        require(new_state.owner_commitment == owner);
+        require(authorization == authorization_commitment);
+        require(prev_state.state_digest != new_state.state_digest);
+    }
+
+    #[covenant.singleton(mode = verification)]
+    function policy_upgrade(
+        State prev_state,
+        State new_state,
+        byte[32] previous_policy,
+        byte[32] next_policy,
+        byte[32] authorization
+    ) {
+        require(prev_state.asset_id == new_state.asset_id);
+        require(previous_policy == previous_policy_commitment);
+        require(next_policy == new_policy_commitment);
+        require(previous_policy != next_policy);
+        require(new_state.policy_commitment == next_policy);
+        require(authorization == authorization_commitment);
+    }
+
+    #[covenant.singleton(mode = verification)]
+    function controlled_termination(
+        State prev_state,
+        State new_state,
+        byte[32] termination_proof,
+        byte[32] authorization
+    ) {
+        require(prev_state.asset_id == new_state.asset_id);
+        require(prev_state.amount == amount);
+        require(new_state.amount == 0);
+        require(termination_proof == termination_commitment);
+        require(authorization == authorization_commitment);
+        require(prev_state.state_digest != new_state.state_digest);
+    }
+
+    #[covenant.singleton(mode = verification)]
+    function execution_record_handoff(
+        State prev_state,
+        State new_state,
+        byte[32] policy,
+        byte[32] execution,
+        byte[32] record,
+        byte[32] authorization
+    ) {
+        require(prev_state.asset_id == new_state.asset_id);
+        require(policy == policy_commitment);
+        require(execution == execution_commitment);
+        require(record == execution_record_commitment);
+        require(record != execution);
+        require(authorization == authorization_commitment);
+        require(prev_state.state_digest != new_state.state_digest);
+    }
+}

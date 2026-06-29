@@ -1,0 +1,30 @@
+== stdout ==
+
+running 1 test
+test real_rgb::tests::validate_with_state_matching_chain_reaches_schema_validation ... FAILED
+
+failures:
+
+failures:
+    real_rgb::tests::validate_with_state_matching_chain_reaches_schema_validation
+
+test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 14 filtered out; finished in 0.00s
+
+
+== stderr ==
+   Compiling rgk-rgb v0.1.0 (/Users/arthur/RustroverProjects/rgk/crates/rgk-rgb)
+    Finished `test` profile [optimized + debuginfo] target(s) in 0.45s
+     Running unittests src/lib.rs (target/debug/deps/rgk_rgb-97175099d49a05b3)
+matching-chain RGB status: Status {
+    failures: [],
+    warnings: [],
+    info: [],
+    validated_opids: {},
+}
+
+thread 'real_rgb::tests::validate_with_state_matching_chain_reaches_schema_validation' (24957373) panicked at crates/rgk-rgb/src/real_rgb.rs:401:9:
+assertion `left == right` failed
+  left: Valid
+ right: Invalid
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+error: test failed, to rerun pass `-p rgk-rgb --lib`

@@ -1,0 +1,83 @@
+== stdout ==
+
+== stderr ==
+    Updating crates.io index
+    Blocking waiting for file lock on package cache
+     Locking 15 packages to latest compatible versions
+      Adding anstream v1.0.0
+      Adding anstyle v1.0.14
+      Adding anstyle-parse v1.0.0
+      Adding anstyle-query v1.1.5
+      Adding anstyle-wincon v3.0.11
+      Adding clap v4.6.1
+      Adding clap_builder v4.6.0
+      Adding clap_derive v4.6.1
+      Adding clap_lex v1.1.0
+      Adding colorchoice v1.0.5
+      Adding is_terminal_polyfill v1.70.2
+      Adding once_cell_polyfill v1.70.2
+      Adding signal-hook-registry v1.4.8
+      Adding strsim v0.11.1
+      Adding utf8parse v0.2.2
+    Blocking waiting for file lock on package cache
+    Blocking waiting for file lock on package cache
+    Blocking waiting for file lock on build directory
+    Checking errno v0.3.14
+    Checking utf8parse v0.2.2
+    Checking anstyle-query v1.1.5
+    Checking is_terminal_polyfill v1.70.2
+    Checking colorchoice v1.0.5
+    Checking anstyle v1.0.14
+    Checking strsim v0.11.1
+    Checking clap_lex v1.1.0
+   Compiling clap_derive v4.6.1
+    Checking signal-hook-registry v1.4.8
+    Checking rustix v1.1.4
+    Checking anstyle-parse v1.0.0
+    Checking tokio v1.52.3
+    Checking anstream v1.0.0
+    Checking clap_builder v4.6.0
+    Checking polling v3.11.0
+    Checking clap v4.6.1
+    Checking async-io v2.6.0
+    Checking async-global-executor v2.4.1
+    Checking async-std v1.13.2
+    Checking kaspa-core v1.2.2-toc.4 (/Users/arthur/RustroverProjects/rusty-kaspa/core)
+    Checking tokio-rustls v0.26.4
+    Checking tokio-util v0.7.18
+    Checking tower v0.5.3
+    Checking tokio-tungstenite v0.23.1
+    Checking workflow-core v0.18.0
+    Checking tower-http v0.6.11
+    Checking h2 v0.4.15
+    Checking workflow-wasm v0.18.0
+    Checking workflow-task v0.18.0
+    Checking kaspa-hashes v1.2.2-toc.4 (/Users/arthur/RustroverProjects/rusty-kaspa/crypto/hashes)
+    Checking kaspa-math v1.2.2-toc.4 (/Users/arthur/RustroverProjects/rusty-kaspa/math)
+    Checking kaspa-addresses v1.2.2-toc.4 (/Users/arthur/RustroverProjects/rusty-kaspa/crypto/addresses)
+    Checking kaspa-wasm-core v1.2.2-toc.4 (/Users/arthur/RustroverProjects/rusty-kaspa/wasm/core)
+    Checking workflow-websocket v0.18.0
+    Checking workflow-dom v0.18.0
+    Checking kaspa-merkle v1.2.2-toc.4 (/Users/arthur/RustroverProjects/rusty-kaspa/crypto/merkle)
+    Checking kaspa-txscript-errors v1.2.2-toc.4 (/Users/arthur/RustroverProjects/rusty-kaspa/crypto/txscript/errors)
+    Checking kaspa-smt v1.2.2-toc.4 (/Users/arthur/RustroverProjects/rusty-kaspa/crypto/smt)
+    Checking kaspa-muhash v1.2.2-toc.4 (/Users/arthur/RustroverProjects/rusty-kaspa/crypto/muhash)
+    Checking workflow-rpc v0.18.0
+    Checking kaspa-consensus-core v1.2.2-toc.4 (/Users/arthur/RustroverProjects/rusty-kaspa/consensus/core)
+    Checking hyper v1.10.1
+    Checking kaspa-txscript v1.2.2-toc.4 (/Users/arthur/RustroverProjects/rusty-kaspa/crypto/txscript)
+    Checking kaspa-mining-errors v1.2.2-toc.4 (/Users/arthur/RustroverProjects/rusty-kaspa/mining/errors)
+    Checking hyper-util v0.1.20
+    Checking hyper-rustls v0.27.9
+    Checking reqwest v0.12.28
+    Checking workflow-http v0.18.0
+    Checking kaspa-notify v1.2.2-toc.4 (/Users/arthur/RustroverProjects/rusty-kaspa/notify)
+    Checking kaspa-consensus-client v1.2.2-toc.4 (/Users/arthur/RustroverProjects/rusty-kaspa/consensus/client)
+    Checking kaspa-index-core v1.2.2-toc.4 (/Users/arthur/RustroverProjects/rusty-kaspa/indexes/core)
+    Checking kaspa-consensus-notify v1.2.2-toc.4 (/Users/arthur/RustroverProjects/rusty-kaspa/consensus/notify)
+    Checking kaspa-consensus-wasm v1.2.2-toc.4 (/Users/arthur/RustroverProjects/rusty-kaspa/consensus/wasm)
+    Checking kaspa-rpc-core v1.2.2-toc.4 (/Users/arthur/RustroverProjects/rusty-kaspa/rpc/core)
+    Checking kaspa-wrpc-client v1.2.2-toc.4 (/Users/arthur/RustroverProjects/rusty-kaspa/rpc/wrpc/client)
+    Checking rgk-kaspa v0.1.0 (/Users/arthur/RustroverProjects/rgk/crates/rgk-kaspa)
+    Checking rgk-sync v0.1.0 (/Users/arthur/RustroverProjects/rgk/crates/rgk-sync)
+    Finished `dev` profile [optimized + debuginfo] target(s) in 20.49s

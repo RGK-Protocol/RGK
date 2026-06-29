@@ -1,0 +1,56 @@
+== stdout ==
+
+== stderr ==
+    Checking kaspa-hashes v1.2.2-toc.4 (/Users/arthur/RustroverProjects/rusty-kaspa/crypto/hashes)
+    Checking kaspa-math v1.2.2-toc.4 (/Users/arthur/RustroverProjects/rusty-kaspa/math)
+    Checking kaspa-txscript-errors v1.2.2-toc.4 (/Users/arthur/RustroverProjects/rusty-kaspa/crypto/txscript/errors)
+    Checking kaspa-smt v1.2.2-toc.4 (/Users/arthur/RustroverProjects/rusty-kaspa/crypto/smt)
+    Checking kaspa-merkle v1.2.2-toc.4 (/Users/arthur/RustroverProjects/rusty-kaspa/crypto/merkle)
+    Checking kaspa-muhash v1.2.2-toc.4 (/Users/arthur/RustroverProjects/rusty-kaspa/crypto/muhash)
+    Checking kaspa-consensus-core v1.2.2-toc.4 (/Users/arthur/RustroverProjects/rusty-kaspa/consensus/core)
+    Checking kaspa-txscript v1.2.2-toc.4 (/Users/arthur/RustroverProjects/rusty-kaspa/crypto/txscript)
+    Checking kaspa-mining-errors v1.2.2-toc.4 (/Users/arthur/RustroverProjects/rusty-kaspa/mining/errors)
+    Checking kaspa-notify v1.2.2-toc.4 (/Users/arthur/RustroverProjects/rusty-kaspa/notify)
+    Checking kaspa-consensus-client v1.2.2-toc.4 (/Users/arthur/RustroverProjects/rusty-kaspa/consensus/client)
+    Checking kaspa-consensus-notify v1.2.2-toc.4 (/Users/arthur/RustroverProjects/rusty-kaspa/consensus/notify)
+    Checking kaspa-index-core v1.2.2-toc.4 (/Users/arthur/RustroverProjects/rusty-kaspa/indexes/core)
+    Checking kaspa-consensus-wasm v1.2.2-toc.4 (/Users/arthur/RustroverProjects/rusty-kaspa/consensus/wasm)
+    Checking kaspa-rpc-core v1.2.2-toc.4 (/Users/arthur/RustroverProjects/rusty-kaspa/rpc/core)
+    Checking kaspa-wrpc-client v1.2.2-toc.4 (/Users/arthur/RustroverProjects/rusty-kaspa/rpc/wrpc/client)
+    Checking rgk-kaspa v0.1.0 (/Users/arthur/RustroverProjects/rgk/crates/rgk-kaspa)
+error: items after a test module
+   --> crates/rgk-kaspa/src/wrpc.rs:289:1
+    |
+289 |   mod tests {
+    |   ^^^^^^^^^
+...
+313 |   impl KaspaChainBackend for WrpcBackend {
+    |   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+...
+386 |   fn rpc_error(e: impl Display) -> KaspaNetworkError {
+    |   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+...
+390 | / fn observed_spends_from_rpc_transaction(
+391 | |     txid: KaspaTxId,
+392 | |     transaction: &RpcTransaction,
+393 | |     block_daa_score: Option<u64>,
+394 | | ) -> Result<Vec<(KaspaOutpoint, SpendingInfo)>, KaspaNetworkError> {
+    | |__________________________________________________________________^
+...
+419 | / fn rpc_transaction_id_from_block(
+420 | |     block: &RpcBlock,
+421 | |     transaction: &RpcTransaction,
+422 | |     transaction_index: usize,
+423 | | ) -> Result<KaspaTxId, KaspaNetworkError> {
+    | |_________________________________________^
+...
+439 |   fn rpc_block_accepting_daa_score(block: &RpcBlock) -> Result<u64, KaspaNetworkError> {
+    |   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/master/index.html#items_after_test_module
+    = note: `-D clippy::items-after-test-module` implied by `-D warnings`
+    = help: to override `-D warnings` add `#[allow(clippy::items_after_test_module)]`
+    = help: move the items to before the test module was defined
+
+error: could not compile `rgk-kaspa` (lib test) due to 1 previous error
+warning: build failed, waiting for other jobs to finish...

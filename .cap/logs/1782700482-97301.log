@@ -1,0 +1,11 @@
+== stdout ==
+
+== stderr ==
+    Checking rgk-kaspa v0.1.0 (/Users/arthur/RustroverProjects/rgk/crates/rgk-kaspa)
+    Checking rgk-resolver v0.1.0 (/Users/arthur/RustroverProjects/rgk/crates/rgk-resolver)
+    Checking rgk-sync v0.1.0 (/Users/arthur/RustroverProjects/rgk/crates/rgk-sync)
+ Documenting rgk-sync v0.1.0 (/Users/arthur/RustroverProjects/rgk/crates/rgk-sync)
+ Documenting rgk-resolver v0.1.0 (/Users/arthur/RustroverProjects/rgk/crates/rgk-resolver)
+ Documenting rgk-e2e v0.1.0 (/Users/arthur/RustroverProjects/rgk/tests/rgk-e2e)
+    Finished `dev` profile [optimized + debuginfo] target(s) in 2.71s
+   Generated /Users/arthur/RustroverProjects/rgk/target/doc/rgk_asset/index.html and 10 other files

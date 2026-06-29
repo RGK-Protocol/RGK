@@ -1,0 +1,27 @@
+== stdout ==
+
+running 1 test
+test real_rgb::tests::validate_with_state_matching_chain_reaches_schema_validation ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 14 filtered out; finished in 0.00s
+
+
+== stderr ==
+   Compiling rgk-rgb v0.1.0 (/Users/arthur/RustroverProjects/rgk/crates/rgk-rgb)
+    Finished `test` profile [optimized + debuginfo] target(s) in 1.12s
+     Running unittests src/lib.rs (target/debug/deps/rgk_rgb-97175099d49a05b3)
+matching-chain RGB status: Status {
+    failures: [
+        SchemaMismatch {
+            expected: SchemaId(
+                Array<32>(0000000000000000000000000000000000000000000000000000000000000000),
+            ),
+            actual: SchemaId(
+                Array<32>(9ca34550ed63848dbe6ecbf3bcd7ec1081b10fdf7b14848cb7c696231d4e5b91),
+            ),
+        },
+    ],
+    warnings: [],
+    info: [],
+    validated_opids: {},
+}

@@ -1,0 +1,7 @@
+== stdout ==
+d25bd3427a093c17327ca3d6b9e1aa5f7688c863	HEAD
+d7393c19f5123bb1bc0e199e30c11041b31ad49c	refs/heads/covid-example
+627c175ed808c46471ee3c4b2907661e24aec9b2	refs/heads/covpp-reset2
+d25bd3427a093c17327ca3d6b9e1aa5f7688c863	refs/heads/master
+
+== stderr ==

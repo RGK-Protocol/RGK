@@ -1,0 +1,46 @@
+== stdout ==
+
+running 13 tests
+test rgk_semantic_groth16_proof_executes_in_upstream_toccata_vm ... ok
+test rgk_allocation_conservation_final_groth16_proof_executes_in_upstream_toccata_vm ... ok
+test rgk_lane_discovery_groth16_proof_executes_in_upstream_toccata_vm ... ok
+test upstream_toccata_vm_rejects_changed_public_input ... ok
+test rgk_receipt_groth16_proof_executes_in_upstream_toccata_vm ... ok
+test rgk_allocation_transcript_segment_groth16_proof_executes_in_upstream_toccata_vm ... ok
+test rgk_lane_graph_discovery_groth16_proof_executes_in_upstream_toccata_vm ... ok
+test rgk_lane_graph_segment_groth16_proof_executes_in_upstream_toccata_vm ... ok
+test rgk_allocation_conservation_segment_groth16_proof_executes_in_upstream_toccata_vm ... ok
+test rgk_allocation_exclusion_segment_pair_groth16_proof_executes_in_upstream_toccata_vm ... ok
+test rgk_allocation_1x1_groth16_proof_executes_in_upstream_toccata_vm has been running for over 60 seconds
+test rgk_allocation_2x2_groth16_proof_executes_in_upstream_toccata_vm has been running for over 60 seconds
+test rgk_allocation_3x2_groth16_proof_executes_in_upstream_toccata_vm has been running for over 60 seconds
+test rgk_allocation_1x1_groth16_proof_executes_in_upstream_toccata_vm ... ok
+test rgk_allocation_2x2_groth16_proof_executes_in_upstream_toccata_vm ... ok
+test rgk_allocation_3x2_groth16_proof_executes_in_upstream_toccata_vm ... ok
+
+test result: ok. 13 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 116.92s
+
+
+== stderr ==
+   Compiling rgk-asset v0.1.0 (/Users/arthur/RustroverProjects/rgk/crates/rgk-asset)
+   Compiling rgk-indexer v0.1.0 (/Users/arthur/RustroverProjects/rgk/crates/rgk-indexer)
+   Compiling kaspa-wrpc-client v1.2.2-toc.4 (/Users/arthur/RustroverProjects/rusty-kaspa/rpc/wrpc/client)
+   Compiling rgk-zk v0.1.0 (/Users/arthur/RustroverProjects/rgk/crates/rgk-zk)
+   Compiling rgk-kaspa v0.1.0 (/Users/arthur/RustroverProjects/rgk/crates/rgk-kaspa)
+   Compiling rgk-sync v0.1.0 (/Users/arthur/RustroverProjects/rgk/crates/rgk-sync)
+   Compiling rgk-resolver v0.1.0 (/Users/arthur/RustroverProjects/rgk/crates/rgk-resolver)
+   Compiling rgk-e2e v0.1.0 (/Users/arthur/RustroverProjects/rgk/tests/rgk-e2e)
+    Finished `test` profile [optimized + debuginfo] target(s) in 12.72s
+     Running tests/zk_precompile_vm.rs (target/debug/deps/zk_precompile_vm-d80893c784f18fe4)
+[zk-precompile-vm] semantic public_inputs=48 vk_bytes=1800 proof_bytes=128 script_bytes=3522
+[zk-precompile-vm] allocation_conservation_final public_inputs=10 vk_bytes=584 proof_bytes=128 script_bytes=1051
+[zk-precompile-vm] lane_discovery public_inputs=9 vk_bytes=552 proof_bytes=128 script_bytes=986
+[zk-precompile-vm] public_inputs=29 vk_bytes=1192 proof_bytes=128 script_bytes=2287
+[zk-precompile-vm] allocation_transcript_segment public_inputs=16 vk_bytes=776 proof_bytes=128 script_bytes=1441
+[zk-precompile-vm] lane_graph_discovery public_inputs=22 vk_bytes=968 proof_bytes=128 script_bytes=1832
+[zk-precompile-vm] lane_graph_segment public_inputs=27 vk_bytes=1128 proof_bytes=128 script_bytes=2157
+[zk-precompile-vm] allocation_conservation_segment public_inputs=24 vk_bytes=1032 proof_bytes=128 script_bytes=1962
+[zk-precompile-vm] allocation_exclusion_segment_pair public_inputs=29 vk_bytes=1192 proof_bytes=128 script_bytes=2287
+[zk-precompile-vm] allocation_1x1 public_inputs=48 vk_bytes=1800 proof_bytes=128 script_bytes=3522
+[zk-precompile-vm] allocation_2x2 public_inputs=48 vk_bytes=1800 proof_bytes=128 script_bytes=3522
+[zk-precompile-vm] allocation_3x2 public_inputs=48 vk_bytes=1800 proof_bytes=128 script_bytes=3522

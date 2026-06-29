@@ -1,0 +1,17 @@
+== stdout ==
+
+== stderr ==
+   Compiling rgk-zk v0.1.0 (/Users/arthur/RustroverProjects/rgk/crates/rgk-zk)
+error: unexpected closing delimiter: `}`
+    --> crates/rgk-zk/src/real_zk.rs:2187:1
+     |
+2183 | fn allocation_audit_certificate_decode_err(e: DecodeError) -> String {
+     |                                                                      - this opening brace...
+2184 |     format!("allocation audit certificate decode: {e}")
+2185 | }
+     | - ...matches this closing brace
+2186 |     Ok(())
+2187 | }
+     | ^ unexpected closing delimiter
+
+error: could not compile `rgk-zk` (lib test) due to 1 previous error

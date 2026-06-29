@@ -1,0 +1,14 @@
+== stdout ==
+Diff in /Users/arthur/RustroverProjects/rgk/crates/rgk-zk/src/real_zk.rs:58:
+ 
+ use rgk_asset::{
+     derive_blinded_lane_id, derive_private_lane_graph_root, extend_allocation_transcript_root,
+-    extend_private_lane_graph_root, RgkAllocation,
+-    RgkAllocationProofShape, RgkAllocationTranscriptSide, RgkLaneGraphNode, RgkScanTag,
++    extend_private_lane_graph_root, RgkAllocation, RgkAllocationProofShape,
++    RgkAllocationTranscriptSide, RgkLaneGraphNode, RgkScanTag,
+     RGK_PRODUCTION_ZK_ALLOCATION_MAX_NEW, RGK_PRODUCTION_ZK_ALLOCATION_MAX_SPENT,
+     RGK_PRODUCTION_ZK_ALLOCATION_SHAPES, RGK_PRODUCTION_ZK_ALLOCATION_SHAPE_LABELS,
+ };
+
+== stderr ==

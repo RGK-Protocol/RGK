@@ -1,0 +1,25 @@
+pragma silverscript ^0.1.0;
+
+contract RGKPrivateLaneGraphDiscovery() {
+    int epoch = 7;
+    byte[32] asset_id = 0x1111111111111111111111111111111111111111111111111111111111111111;
+    byte[32] lane_id = 0x2222222222222222222222222222222222222222222222222222222222222222;
+    byte[32] scan_tag = 0xcccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc;
+    byte[32] graph_root = 0xdddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd;
+
+    #[covenant.singleton(mode = verification)]
+    function advance_scan_window(
+        State prev_state,
+        State new_state,
+        byte[32] lane_discovery_proof,
+        byte[32] lane_graph_proof
+    ) {
+        require(new_state.epoch == prev_state.epoch + 1);
+        require(prev_state.asset_id == new_state.asset_id);
+        require(prev_state.lane_id == new_state.lane_id);
+        require(prev_state.scan_tag != new_state.scan_tag);
+        require(prev_state.graph_root != new_state.graph_root);
+        require(lane_discovery_proof != prev_state.scan_tag);
+        require(lane_graph_proof != prev_state.graph_root);
+    }
+}

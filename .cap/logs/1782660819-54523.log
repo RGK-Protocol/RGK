@@ -1,0 +1,17 @@
+== stdout ==
+
+== stderr ==
+    Finished `release` profile [optimized + debuginfo] target(s) in 0.01s
+    Finished `release` profile [optimized + debuginfo] target(s) in 0.01s
+     Running `fuzz/target/aarch64-apple-darwin/release/receipt_decode -artifact_prefix=/Users/arthur/RustroverProjects/rgk/fuzz/artifacts/receipt_decode/ -runs=1000 /Users/arthur/RustroverProjects/rgk/fuzz/corpus/receipt_decode`
+INFO: Running with entropic power schedule (0xFF, 100).
+INFO: Seed: 284378375
+INFO: Loaded 1 modules   (3794 inline 8-bit counters): 3794 [0x102190520, 0x1021913f2), 
+INFO: Loaded 1 PC tables (3794 PCs): 3794 [0x1021913f8,0x1021a0118), 
+INFO:        0 files found in /Users/arthur/RustroverProjects/rgk/fuzz/corpus/receipt_decode
+INFO: -max_len is not provided; libFuzzer will not generate inputs larger than 4096 bytes
+INFO: A corpus is not provided, starting from an empty corpus
+#2	INITED cov: 35 ft: 35 corp: 1/1b exec/s: 0 rss: 44Mb
+#414	NEW    cov: 39 ft: 39 corp: 2/9b lim: 8 exec/s: 0 rss: 44Mb L: 8/8 MS: 2 InsertRepeatedBytes-CopyPart-
+#1000	DONE   cov: 39 ft: 39 corp: 2/9b lim: 11 exec/s: 0 rss: 44Mb
+Done 1000 runs in 0 second(s)

@@ -1,0 +1,27 @@
+[package]
+name = "rgk-sync"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+description = "RGK live-chain scan service glue for Kaspa backends and durable indexer cursors"
+
+[dependencies]
+clap = { version = "4", features = ["derive", "env"], optional = true }
+rgk-core.workspace = true
+rgk-indexer.workspace = true
+rgk-kaspa.workspace = true
+thiserror.workspace = true
+tokio = { version = "1", features = ["macros", "rt-multi-thread", "signal", "time"], optional = true }
+
+[features]
+default = ["std"]
+std = []
+wrpc = ["std", "rgk-kaspa/wrpc"]
+daemon = ["wrpc", "rgk-indexer/persistent", "dep:clap", "dep:tokio"]
+
+[[bin]]
+name = "rgk-sync"
+path = "src/bin/rgk-sync.rs"
+required-features = ["daemon"]

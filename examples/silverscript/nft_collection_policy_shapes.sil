@@ -1,0 +1,108 @@
+pragma silverscript ^0.1.0;
+
+contract RGKNftCollectionPolicyShapes() {
+    byte[32] collection_id = 0x7171717171717171717171717171717171717171717171717171717171717171;
+    byte[32] asset_id = 0x8181818181818181818181818181818181818181818181818181818181818181;
+    byte[32] lane_id = 0x2222222222222222222222222222222222222222222222222222222222222222;
+    byte[32] template_commitment = 0x9191919191919191919191919191919191919191919191919191919191919191;
+    byte[32] metadata_commitment = 0xa3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3a3;
+    byte[32] royalty_policy_commitment = 0xa4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4a4;
+    byte[32] owner_commitment = 0xb1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1;
+    byte[32] previous_owner_commitment = 0xb1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1;
+    byte[32] new_owner_commitment = 0xc2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2c2;
+    byte[32] ownership_authorization_commitment = 0xd3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3d3;
+    byte[32] burn_authorization_commitment = 0xe5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5;
+    byte[32] burn_authorization = 0xe5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5e5;
+    byte[32] state_digest = 0xe4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4;
+    int max_supply = 100;
+    int token_index = 7;
+    int amount = 1;
+    int burned_amount = 1;
+
+    #[covenant.singleton(mode = verification)]
+    function mint_fixed_supply_token(
+        State prev_state,
+        State new_state,
+        int minted_index,
+        byte[32] collection,
+        byte[32] template,
+        byte[32] metadata,
+        byte[32] royalty_policy
+    ) {
+        require(collection == collection_id);
+        require(minted_index >= 0);
+        require(minted_index < max_supply);
+        require(minted_index == token_index);
+        require(template == template_commitment);
+        require(metadata == metadata_commitment);
+        require(royalty_policy == royalty_policy_commitment);
+        require(new_state.asset_id == asset_id);
+        require(new_state.lane_id == lane_id);
+        require(new_state.metadata_commitment == metadata);
+        require(new_state.owner_commitment == owner_commitment);
+        require(prev_state.state_digest != new_state.state_digest);
+    }
+
+    #[covenant.singleton(mode = verification)]
+    function transfer_single_token(
+        State prev_state,
+        State new_state,
+        byte[32] previous_owner,
+        byte[32] next_owner,
+        byte[32] authorization
+    ) {
+        require(prev_state.asset_id == asset_id);
+        require(new_state.asset_id == asset_id);
+        require(prev_state.lane_id == lane_id);
+        require(new_state.lane_id == lane_id);
+        require(prev_state.metadata_commitment == metadata_commitment);
+        require(new_state.metadata_commitment == metadata_commitment);
+        require(previous_owner == previous_owner_commitment);
+        require(next_owner == new_owner_commitment);
+        require(previous_owner != next_owner);
+        require(authorization == ownership_authorization_commitment);
+        require(new_state.ownership_authorization_commitment == authorization);
+        require(prev_state.state_digest != new_state.state_digest);
+    }
+
+    #[covenant.singleton(mode = verification)]
+    function burn_single_token(
+        State prev_state,
+        State new_state,
+        byte[32] authorization,
+        byte[32] transition_digest,
+        byte[32] continuation_commitment
+    ) {
+        require(prev_state.asset_id == asset_id);
+        require(new_state.asset_id == asset_id);
+        require(prev_state.lane_id == lane_id);
+        require(new_state.lane_id == lane_id);
+        require(prev_state.metadata_commitment == metadata_commitment);
+        require(new_state.metadata_commitment == metadata_commitment);
+        require(prev_state.owner_commitment == owner_commitment);
+        require(new_state.owner_commitment == owner_commitment);
+        require(prev_state.amount == 1);
+        require(new_state.amount == 0);
+        require(new_state.burned_amount == 1);
+        require(authorization == burn_authorization_commitment);
+        require(new_state.burn_authorization == authorization);
+        require(prev_state.state_digest != new_state.state_digest);
+        require(transition_digest != prev_state.state_digest);
+        require(continuation_commitment != prev_state.state_digest);
+    }
+
+    #[covenant.singleton(mode = verification)]
+    function preserve_collection_template(
+        State prev_state,
+        State new_state,
+        byte[32] collection,
+        byte[32] template,
+        byte[32] royalty_policy
+    ) {
+        require(collection == collection_id);
+        require(template == template_commitment);
+        require(royalty_policy == royalty_policy_commitment);
+        require(prev_state.asset_id == new_state.asset_id);
+        require(prev_state.metadata_commitment == new_state.metadata_commitment);
+    }
+}

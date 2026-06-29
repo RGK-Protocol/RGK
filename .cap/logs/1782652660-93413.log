@@ -1,0 +1,51 @@
+== stdout ==
+README.md:88:| ZK proof generation        | local BN254 Groth16 prover path is live behind `real-zk`; on-chain `OpZkPrecompile` invocation is still open |
+README.md:98:* **`OpZkPrecompile` (opcode `0xa6`)** — the on-chain ZK verifier. RGK can
+README.md:118:  validator delegation point. The missing piece is a real consignment fixture
+README.md:122:  `OpZkPrecompile` success in `kaspad` logs.
+docs/SECURITY.md:75:* **The Toccata engine's `OpZkPrecompile`** is correct (when ZK mode is
+docs/SECURITY.md:139:will require an updated `CovenantSpec::build_script`. The resolver does
+docs/COVENANT-SPEC.md:61:The covenant script enforces (see `CovenantSpec::build_script`):
+docs/COVENANT-SPEC.md:78:7. *(ZK mode only)* **Proof verification.** The Toccata `OpZkPrecompile`
+docs/COVENANT-SPEC.md:114:| `OpZkPrecompile`        | `0xa6` | ZK proof verification (ZK mode only)         |
+docs/ROADMAP.md:6:an honest status tag (`LIVE` = wired and tested locally, `PARTIAL` = real
+docs/ROADMAP.md:7:surface exists but acceptance is not complete, `NEXT` = immediate next,
+docs/ROADMAP.md:27:| `HttpBackend` JSON-RPC backend                | PARTIAL     |
+docs/ROADMAP.md:51:**Remaining production work**: spend through the full
+docs/ROADMAP.md:52:`CovenantSpec::build_script` payload-hash script, publish public testnet
+docs/ROADMAP.md:83:**Acceptance**: PARTIAL. `./scripts/e2e-local.sh --live` now runs the gated
+docs/ROADMAP.md:89:exercising `CovenantSpec::build_script` on the live spend; public testnet
+docs/ROADMAP.md:112:   `Validator::validate` delegation are LIVE; a bundled real consignment
+docs/ROADMAP.md:135:on-chain via `OpZkPrecompile`. The local BN254 Groth16 path is now wired
+docs/ROADMAP.md:151:5. Update `CovenantSpec::build_script` to optionally emit
+docs/ROADMAP.md:152:   `[OpZkPrecompile || precompile_input]` after the structural checks.
+docs/ROADMAP.md:159:`OpZkPrecompile` successfully (visible in `kaspad` logs).
+docs/ROADMAP.md:181:4. NEXT: add `Indexer::rebuild_from(backend: &dyn KaspaChainBackend)` that walks
+docs/ROADMAP.md:197:10. NEXT: add a `criterion` benchmark for the hot paths (`lookup`, `apply_spend`,
+docs/ROADMAP.md:200:**Acceptance**: PARTIAL. Covenant-state persistence, scan-cursor persistence,
+docs/ROADMAP.md:217:2. **Public testnet staging**: point `WrpcBackend` at a public testnet
+docs/ROADMAP.md:262:`ReceiptVerifier::verify_local`, `CovenantSpec::build_script`,
+docs/ZK-BOUNDARY.md:8:The on-chain verifier surface is available (`OpZkPrecompile` + Groth16 tag
+docs/ZK-BOUNDARY.md:15:`OpZkPrecompile` in the live e2e path, and the circuit does not prove full RGB
+docs/ZK-BOUNDARY.md:22:* **`OpZkPrecompile`** (opcode `0xa6`) — the Toccata ZK precompile. Stack:
+docs/ZK-BOUNDARY.md:80:The covenant script would then invoke `OpZkPrecompile` with the proof bytes
+docs/ZK-BOUNDARY.md:120:2. Measure mass budget and `kaspad` logs for actual `OpZkPrecompile`
+docs/E2E.md:198:  `OpZkPrecompile`; see `docs/ZK-BOUNDARY.md`).
+docs/E2E.md:202:* It does **not** yet spend through the full `CovenantSpec::build_script`
+docs/E2E.md:210:  evidence is live; public testnet/mainnet staging remains open.
+docs/ARCHITECTURE.md:37:                          │  OpZkPrecompile (Groth16, Risc0)       │
+docs/ARCHITECTURE.md:79:   * (optionally) a Groth16 / Risc0 proof is verified via `OpZkPrecompile`
+crates/rgk-covenant/src/lib.rs:22://! 2. **Builds the Toccata covenant script** via [`CovenantSpec::build_script`]
+crates/rgk-covenant/src/lib.rs:45://! * It does not call `OpZkPrecompile`. That is wired in by `rgk-zk` and
+crates/rgk-covenant/src/lib.rs:368:    /// OpZkPrecompile (0xa6) — Toccata ZK precompile. Top stack: tag byte.
+crates/rgk-zk/src/lib.rs:9://!    the Kaspa Toccata `OpZkPrecompile` (tag byte + bytes). We do not
+crates/rgk-zk/src/lib.rs:98:/// on-chain verifier (via `OpZkPrecompile`) and the local verifier agree on
+crates/rgk-zk/src/lib.rs:200:    /// Encode the proof as it appears on the stack for `OpZkPrecompile`:
+crates/rgk-zk/src/lib.rs:236:    /// `OpZkPrecompile` call** — see SECURITY.md. It catches the obvious
+crates/rgk-zk/src/real_zk.rs:4://! Groth16 proof path on BN254 that Toccata's `OpZkPrecompile` would also
+crates/rgk-zk/src/real_zk.rs:159:/// Encode a proof in the format Toccata `OpZkPrecompile` expects:
+crates/rgk-rgb/src/lib.rs:30://! validator is callable, but it requires a real consignment plus a caller-owned
+crates/rgk-rgb/src/real_rgb.rs:126:/// Result of validating a real consignment. Maps the upstream `Validity`
+crates/rgk-core/src/chain.rs:22:    /// Kaspa public testnet (currently testnet-10 / testnet-12).
+
+== stderr ==

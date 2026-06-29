@@ -1,0 +1,20 @@
+== stdout ==
+
+running 5 tests
+test real_zk::tests::lane_graph_discovery_statement_matches_native_graph_root ... ok
+test real_zk::tests::wrong_view_key_cannot_satisfy_lane_graph_discovery_circuit ... ok
+test real_zk::tests::lane_graph_discovery_changed_public_node_rejected ... ok
+test real_zk::tests::prove_then_verify_lane_graph_discovery ... ok
+test real_zk::tests::lane_graph_discovery_precompile_stack_shape_is_toccata_compatible ... ok
+
+test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 43 filtered out; finished in 24.24s
+
+
+== stderr ==
+    Blocking waiting for file lock on package cache
+    Blocking waiting for file lock on package cache
+    Blocking waiting for file lock on build directory
+   Compiling rgk-asset v0.1.0 (/Users/arthur/RustroverProjects/rgk/crates/rgk-asset)
+   Compiling rgk-zk v0.1.0 (/Users/arthur/RustroverProjects/rgk/crates/rgk-zk)
+    Finished `test` profile [optimized + debuginfo] target(s) in 4.25s
+     Running unittests src/lib.rs (target/debug/deps/rgk_zk-2d7d6e784de2143c)

@@ -1,0 +1,746 @@
+== stdout ==
+/Users/arthur/RustroverProjects/rusty-kaspa/protocol/flows/src/flow_context.rs:89:    countdown_activation: CountdownActivation,
+/Users/arthur/RustroverProjects/rusty-kaspa/protocol/flows/src/flow_context.rs:97:    activation: ForkActivation,
+/Users/arthur/RustroverProjects/rusty-kaspa/protocol/flows/src/flow_context.rs:101:    fn toccata(toccata_activation: ForkActivation) -> Self {
+/Users/arthur/RustroverProjects/rusty-kaspa/protocol/flows/src/flow_context.rs:102:        Self { name: "Toccata", activation: toccata_activation }
+/Users/arthur/RustroverProjects/rusty-kaspa/protocol/flows/src/flow_context.rs:107:    fn new(bps: usize, countdown_activation: CountdownActivation) -> Self {
+/Users/arthur/RustroverProjects/rusty-kaspa/protocol/flows/src/flow_context.rs:109:        Self { bps, countdown_activation, sender, receiver: Mutex::new(Some(receiver)) }
+/Users/arthur/RustroverProjects/rusty-kaspa/protocol/flows/src/flow_context.rs:120:        let countdown_activation = self.countdown_activation;
+/Users/arthur/RustroverProjects/rusty-kaspa/protocol/flows/src/flow_context.rs:156:                fn activation_countdown_suffix(countdown: CountdownActivation, daa_score: Option<u64>) -> String {
+/Users/arthur/RustroverProjects/rusty-kaspa/protocol/flows/src/flow_context.rs:158:                        .and_then(|daa_score| countdown.activation.is_within_range_before_activation(daa_score, 36_000))
+/Users/arthur/RustroverProjects/rusty-kaspa/protocol/flows/src/flow_context.rs:217:                        activation_countdown_suffix(countdown_activation, summary.submit_rep_daa_score())
+/Users/arthur/RustroverProjects/rusty-kaspa/protocol/flows/src/flow_context.rs:223:                        activation_countdown_suffix(countdown_activation, summary.submit_rep_daa_score())
+/Users/arthur/RustroverProjects/rusty-kaspa/protocol/flows/src/flow_context.rs:228:                        activation_countdown_suffix(countdown_activation, summary.relay_rep_daa_score())
+/Users/arthur/RustroverProjects/rusty-kaspa/protocol/flows/src/flow_context.rs:234:                        activation_countdown_suffix(countdown_activation, summary.relay_rep_daa_score())
+/Users/arthur/RustroverProjects/rusty-kaspa/protocol/flows/src/flow_context.rs:243:                            activation_countdown_suffix(countdown_activation, summary.submit_rep_daa_score())
+/Users/arthur/RustroverProjects/rusty-kaspa/protocol/flows/src/flow_context.rs:391:                block_event_logger: Some(BlockEventLogger::new(bps, CountdownActivation::toccata(config.toccata_activation))),
+/Users/arthur/RustroverProjects/rusty-kaspa/protocol/flows/src/flow_context.rs:770:        // Networks with a scheduled Toccata activation advertise the current protocol version.
+/Users/arthur/RustroverProjects/rusty-kaspa/protocol/flows/src/flow_context.rs:772:        let advertise_toccata_p2p = self.config.toccata_activation != ForkActivation::never();
+/Users/arthur/RustroverProjects/rusty-kaspa/protocol/flows/src/flow_context.rs:773:        let advertised_protocol_version = if advertise_toccata_p2p { PROTOCOL_VERSION } else { 9 };
+/Users/arthur/RustroverProjects/rusty-kaspa/protocol/flows/src/flow_context.rs:826:        // One day before activation, upgraded nodes start disconnecting outdated peers from the P2P network.
+/Users/arthur/RustroverProjects/rusty-kaspa/protocol/flows/src/flow_context.rs:830:        let connect_only_new_versions = self.config.toccata_activation.is_active(virtual_daa_score.saturating_add(daa_threshold));
+/Users/arthur/RustroverProjects/rusty-kaspa/protocol/flows/src/flow_context.rs:832:        // Until the one-day pre-activation threshold is reached, older protocol versions remain accepted.
+/Users/arthur/RustroverProjects/rusty-kaspa/protocol/flows/src/flow_context.rs:835:        // Note: post-activation fresh nodes with virtual DAA score near genesis are not covered here and
+/Users/arthur/RustroverProjects/rusty-kaspa/protocol/flows/src/flow_context.rs:836:        // are guarded later during IBD by `validate_pruning_point_freshness_for_toccata`.
+/Users/arthur/RustroverProjects/rusty-kaspa/indexes/core/src/indexed_utxos.rs:142:    fn pre_toccata_bytes() -> Vec<u8> {
+/Users/arthur/RustroverProjects/rusty-kaspa/indexes/core/src/indexed_utxos.rs:151:    fn decode_pre_toccata() {
+/Users/arthur/RustroverProjects/rusty-kaspa/indexes/core/src/indexed_utxos.rs:152:        let decoded: CompactUtxoEntry = bincode::deserialize(&pre_toccata_bytes()).expect("decode pre-Toccata CompactUtxoEntry");
+/Users/arthur/RustroverProjects/rusty-kaspa/indexes/core/src/indexed_utxos.rs:157:    fn decode_post_toccata_none() {
+/Users/arthur/RustroverProjects/rusty-kaspa/indexes/core/src/indexed_utxos.rs:166:    fn decode_post_toccata_some() {
+/Users/arthur/RustroverProjects/rusty-kaspa/indexes/core/src/indexed_utxos.rs:175:    fn bincode_roundtrip_pre_toccata() {
+/Users/arthur/RustroverProjects/rusty-kaspa/indexes/core/src/indexed_utxos.rs:176:        let decoded: CompactUtxoEntry = bincode::deserialize(&pre_toccata_bytes()).expect("decode pre-Toccata CompactUtxoEntry");
+/Users/arthur/RustroverProjects/rusty-kaspa/indexes/core/src/indexed_utxos.rs:183:    fn bincode_roundtrip_post_toccata() {
+/Users/arthur/RustroverProjects/rusty-kaspa/indexes/core/src/indexed_utxos.rs:207:    fn decode_pre_toccata_json() {
+/Users/arthur/RustroverProjects/rusty-kaspa/core/src/log/appender.rs:70:pub const FORK_KEYWORD: &str = "toccata";
+/Users/arthur/RustroverProjects/rusty-kaspa/rpc/service/src/service.rs:795:        // as the two pruning points used are both either from before activation or after. The only exception are
+/Users/arthur/RustroverProjects/rusty-kaspa/rpc/service/src/service.rs:796:        // the two pruning points before and after activation. However this inaccuracy can be considered negligible.
+/Users/arthur/RustroverProjects/rusty-kaspa/rpc/service/src/service.rs:798:        // moment of activation.
+/Users/arthur/RustroverProjects/rusty-kaspa/simpa/src/main.rs:40:#[derive(Parser, Debug)]
+/Users/arthur/RustroverProjects/rusty-kaspa/simpa/src/main.rs:42:struct Args {
+/Users/arthur/RustroverProjects/rusty-kaspa/simpa/src/main.rs:107:    /// Use testnet-11 consensus params
+/Users/arthur/RustroverProjects/rusty-kaspa/simpa/src/main.rs:109:    testnet11: bool,
+/Users/arthur/RustroverProjects/rusty-kaspa/simpa/src/main.rs:200:    args.bps = if args.testnet11 { TenBps::bps() as f64 } else { args.bps };
+/Users/arthur/RustroverProjects/rusty-kaspa/simpa/src/main.rs:201:    let mut params = if args.testnet11 { SIMNET_PARAMS } else { DEVNET_PARAMS };
+/Users/arthur/RustroverProjects/rusty-kaspa/simpa/src/main.rs:202:    params.crescendo_activation = ForkActivation::always();
+/Users/arthur/RustroverProjects/rusty-kaspa/simpa/src/main.rs:357:    if args.testnet11 {
+/Users/arthur/RustroverProjects/rusty-kaspa/simpa/src/main.rs:359:            "Using kaspa-testnet-11 configuration (GHOSTDAG K={}, DAA window size={}, Median time window size={})",
+/Users/arthur/RustroverProjects/rusty-kaspa/simpa/src/main.rs:377:            params.crescendo_activation = ForkActivation::never();
+/Users/arthur/RustroverProjects/rusty-kaspa/simpa/src/main.rs:382:            params.crescendo_activation = ForkActivation::always();
+/Users/arthur/RustroverProjects/rusty-kaspa/simpa/src/main.rs:402:        params.toccata_activation = ForkActivation::new(1000);
+/Users/arthur/RustroverProjects/rusty-kaspa/kaspad/src/args.rs:16:#[cfg(feature = "devnet-prealloc")]
+/Users/arthur/RustroverProjects/rusty-kaspa/kaspad/src/args.rs:18:#[cfg(feature = "devnet-prealloc")]
+/Users/arthur/RustroverProjects/rusty-kaspa/kaspad/src/args.rs:20:#[cfg(feature = "devnet-prealloc")]
+/Users/arthur/RustroverProjects/rusty-kaspa/kaspad/src/args.rs:22:#[cfg(feature = "devnet-prealloc")]
+/Users/arthur/RustroverProjects/rusty-kaspa/kaspad/src/args.rs:28:pub struct Args {
+/Users/arthur/RustroverProjects/rusty-kaspa/kaspad/src/args.rs:35:    pub rpclisten: Option<ContextualNetAddress>,
+/Users/arthur/RustroverProjects/rusty-kaspa/kaspad/src/args.rs:37:    pub rpclisten_borsh: Option<WrpcNetAddress>,
+/Users/arthur/RustroverProjects/rusty-kaspa/kaspad/src/args.rs:39:    pub rpclisten_json: Option<WrpcNetAddress>,
+/Users/arthur/RustroverProjects/rusty-kaspa/kaspad/src/args.rs:68:    pub testnet: bool,
+/Users/arthur/RustroverProjects/rusty-kaspa/kaspad/src/args.rs:70:    pub testnet_suffix: u32,
+/Users/arthur/RustroverProjects/rusty-kaspa/kaspad/src/args.rs:71:    pub devnet: bool,
+/Users/arthur/RustroverProjects/rusty-kaspa/kaspad/src/args.rs:72:    pub simnet: bool,
+/Users/arthur/RustroverProjects/rusty-kaspa/kaspad/src/args.rs:82:    #[cfg(feature = "devnet-prealloc")]
+/Users/arthur/RustroverProjects/rusty-kaspa/kaspad/src/args.rs:84:    #[cfg(feature = "devnet-prealloc")]
+/Users/arthur/RustroverProjects/rusty-kaspa/kaspad/src/args.rs:86:    #[cfg(feature = "devnet-prealloc")]
+/Users/arthur/RustroverProjects/rusty-kaspa/kaspad/src/args.rs:109:            rpclisten_borsh: None,
+/Users/arthur/RustroverProjects/rusty-kaspa/kaspad/src/args.rs:110:            rpclisten_json: None,
+/Users/arthur/RustroverProjects/rusty-kaspa/kaspad/src/args.rs:121:            testnet: false,
+/Users/arthur/RustroverProjects/rusty-kaspa/kaspad/src/args.rs:122:            testnet_suffix: 10,
+/Users/arthur/RustroverProjects/rusty-kaspa/kaspad/src/args.rs:123:            devnet: false,
+/Users/arthur/RustroverProjects/rusty-kaspa/kaspad/src/args.rs:124:            simnet: false,
+/Users/arthur/RustroverProjects/rusty-kaspa/kaspad/src/args.rs:128:            rpclisten: None,
+/Users/arthur/RustroverProjects/rusty-kaspa/kaspad/src/args.rs:142:            #[cfg(feature = "devnet-prealloc")]
+/Users/arthur/RustroverProjects/rusty-kaspa/kaspad/src/args.rs:144:            #[cfg(feature = "devnet-prealloc")]
+/Users/arthur/RustroverProjects/rusty-kaspa/kaspad/src/args.rs:146:            #[cfg(feature = "devnet-prealloc")]
+/Users/arthur/RustroverProjects/rusty-kaspa/kaspad/src/args.rs:180:        #[cfg(feature = "devnet-prealloc")]
+/Users/arthur/RustroverProjects/rusty-kaspa/kaspad/src/args.rs:186:    #[cfg(feature = "devnet-prealloc")]
+/Users/arthur/RustroverProjects/rusty-kaspa/kaspad/src/args.rs:207:        match (self.testnet, self.devnet, self.simnet) {
+/Users/arthur/RustroverProjects/rusty-kaspa/kaspad/src/args.rs:209:            (true, false, false) => NetworkId::with_suffix(NetworkType::Testnet, self.testnet_suffix),
+/Users/arthur/RustroverProjects/rusty-kaspa/kaspad/src/args.rs:249:            Arg::new("rpclisten")
+/Users/arthur/RustroverProjects/rusty-kaspa/kaspad/src/args.rs:250:                .long("rpclisten")
+/Users/arthur/RustroverProjects/rusty-kaspa/kaspad/src/args.rs:256:                .help("Interface:port to listen for gRPC connections (default port: 16110, testnet: 16210)."),
+/Users/arthur/RustroverProjects/rusty-kaspa/kaspad/src/args.rs:259:            Arg::new("rpclisten-borsh")
+/Users/arthur/RustroverProjects/rusty-kaspa/kaspad/src/args.rs:260:                .long("rpclisten-borsh")
+/Users/arthur/RustroverProjects/rusty-kaspa/kaspad/src/args.rs:265:                .default_missing_value("default") // TODO: Find a way to use defaults.rpclisten_borsh
+/Users/arthur/RustroverProjects/rusty-kaspa/kaspad/src/args.rs:267:                .help("Interface:port to listen for wRPC Borsh connections (default port: 17110, testnet: 17210)."),
+/Users/arthur/RustroverProjects/rusty-kaspa/kaspad/src/args.rs:271:            Arg::new("rpclisten-json")
+/Users/arthur/RustroverProjects/rusty-kaspa/kaspad/src/args.rs:272:                .long("rpclisten-json")
+/Users/arthur/RustroverProjects/rusty-kaspa/kaspad/src/args.rs:277:                .default_missing_value("default") // TODO: Find a way to use defaults.rpclisten_json
+/Users/arthur/RustroverProjects/rusty-kaspa/kaspad/src/args.rs:279:                .help("Interface:port to listen for wRPC JSON connections (default port: 18110, testnet: 18210)."),
+/Users/arthur/RustroverProjects/rusty-kaspa/kaspad/src/args.rs:309:                .help("Add an interface:port to listen for connections (default all interfaces port: 16111, testnet: 16211)."),
+/Users/arthur/RustroverProjects/rusty-kaspa/kaspad/src/args.rs:359:        .arg(arg!(--testnet "Use the test network").env("KASPAD_TESTNET"))
+/Users/arthur/RustroverProjects/rusty-kaspa/kaspad/src/args.rs:369:        .arg(arg!(--devnet "Use the development test network").env("KASPAD_DEVNET"))
+/Users/arthur/RustroverProjects/rusty-kaspa/kaspad/src/args.rs:370:        .arg(arg!(--simnet "Use the simulation test network").env("KASPAD_SIMNET"))
+/Users/arthur/RustroverProjects/rusty-kaspa/kaspad/src/args.rs:465:    #[cfg(feature = "devnet-prealloc")]
+/Users/arthur/RustroverProjects/rusty-kaspa/kaspad/src/args.rs:507:            rpclisten: m.get_one::<ContextualNetAddress>("rpclisten").cloned().or(defaults.rpclisten),
+/Users/arthur/RustroverProjects/rusty-kaspa/kaspad/src/args.rs:508:            rpclisten_borsh: m.get_one::<WrpcNetAddress>("rpclisten-borsh").cloned().or(defaults.rpclisten_borsh),
+/Users/arthur/RustroverProjects/rusty-kaspa/kaspad/src/args.rs:509:            rpclisten_json: m.get_one::<WrpcNetAddress>("rpclisten-json").cloned().or(defaults.rpclisten_json),
+/Users/arthur/RustroverProjects/rusty-kaspa/kaspad/src/args.rs:525:            testnet: arg_match_unwrap_or::<bool>(&m, "testnet", defaults.testnet),
+/Users/arthur/RustroverProjects/rusty-kaspa/kaspad/src/args.rs:526:            testnet_suffix: arg_match_unwrap_or::<u32>(&m, "netsuffix", defaults.testnet_suffix),
+/Users/arthur/RustroverProjects/rusty-kaspa/kaspad/src/args.rs:527:            devnet: arg_match_unwrap_or::<bool>(&m, "devnet", defaults.devnet),
+/Users/arthur/RustroverProjects/rusty-kaspa/kaspad/src/args.rs:528:            simnet: arg_match_unwrap_or::<bool>(&m, "simnet", defaults.simnet),
+/Users/arthur/RustroverProjects/rusty-kaspa/kaspad/src/args.rs:545:            #[cfg(feature = "devnet-prealloc")]
+/Users/arthur/RustroverProjects/rusty-kaspa/kaspad/src/args.rs:547:            #[cfg(feature = "devnet-prealloc")]
+/Users/arthur/RustroverProjects/rusty-kaspa/kaspad/src/args.rs:549:            #[cfg(feature = "devnet-prealloc")]
+/Users/arthur/RustroverProjects/rusty-kaspa/kaspad/src/args.rs:622:                                            port: 16111, testnet: 16211)
+/Users/arthur/RustroverProjects/rusty-kaspa/kaspad/src/args.rs:632:      --rpclisten=                          Add an interface/port to listen for RPC connections (default port: 16110,
+/Users/arthur/RustroverProjects/rusty-kaspa/kaspad/src/args.rs:633:                                            testnet: 16210)
+/Users/arthur/RustroverProjects/rusty-kaspa/kaspad/src/args.rs:684:      --testnet                             Use the test network
+/Users/arthur/RustroverProjects/rusty-kaspa/kaspad/src/args.rs:685:      --simnet                              Use the simulation test network
+/Users/arthur/RustroverProjects/rusty-kaspa/kaspad/src/args.rs:686:      --devnet                              Use the development test network
+/Users/arthur/RustroverProjects/rusty-kaspa/kaspad/src/args.rs:687:      --override-dag-params-file=           Overrides DAG params (allowed only on devnet)
+/Users/arthur/RustroverProjects/rusty-kaspa/kaspad/src/daemon.rs:91:    #[cfg(feature = "devnet-prealloc")]
+/Users/arthur/RustroverProjects/rusty-kaspa/kaspad/src/daemon.rs:93:        if args.num_prealloc_utxos.is_some() && !(args.devnet || args.simnet) {
+/Users/arthur/RustroverProjects/rusty-kaspa/kaspad/src/daemon.rs:287:        println!("This branch does not currently support testnet-10. Please use the tn10 branch for TN10.");
+/Users/arthur/RustroverProjects/rusty-kaspa/kaspad/src/daemon.rs:413:    if !is_db_reset_needed && (args.testnet || args.devnet || args.simnet) {
+/Users/arthur/RustroverProjects/rusty-kaspa/kaspad/src/daemon.rs:573:    let grpc_server_addr = args.rpclisten.unwrap_or(ContextualNetAddress::loopback()).normalize(config.default_rpc_port());
+/Users/arthur/RustroverProjects/rusty-kaspa/kaspad/src/daemon.rs:653:        config.toccata_activation,
+/Users/arthur/RustroverProjects/rusty-kaspa/kaspad/src/daemon.rs:749:        (args.rpclisten_borsh.clone(), WrpcEncoding::Borsh, wrpc_borsh_counters),
+/Users/arthur/RustroverProjects/rusty-kaspa/kaspad/src/daemon.rs:750:        (args.rpclisten_json.clone(), WrpcEncoding::SerdeJson, wrpc_json_counters),
+/Users/arthur/RustroverProjects/rusty-kaspa/wasm/src/lib.rs:122:const rpc = new RpcClient("127.0.0.1", Encoding.Borsh, "testnet-10");
+/Users/arthur/RustroverProjects/rusty-kaspa/wasm/src/lib.rs:126:    networkId : "testnet-10"
+/Users/arthur/RustroverProjects/rusty-kaspa/simpa/tests/smt_repro.rs:69:    params.toccata_activation = ForkActivation::always();
+/Users/arthur/RustroverProjects/rusty-kaspa/simpa/tests/smt_repro.rs:155:    params.crescendo_activation = ForkActivation::always();
+/Users/arthur/RustroverProjects/rusty-kaspa/simpa/tests/smt_repro.rs:171:    // Toccata activation is set by the caller.
+/Users/arthur/RustroverProjects/rusty-kaspa/daemon/src/cpu_miner/mod.rs:62:                argv.push("--testnet");
+/Users/arthur/RustroverProjects/rusty-kaspa/protocol/flows/src/ibd/flow.rs:152:                    // TODO(post-toccata): In pre-Toccata nodes there are some edge cases where the SMT stable flag is wrongly set to false at this point.
+/Users/arthur/RustroverProjects/rusty-kaspa/protocol/flows/src/ibd/flow.rs:285:                // pruning point. Before activation, `sync_new_smt_state` is a no-op and the flag
+/Users/arthur/RustroverProjects/rusty-kaspa/protocol/flows/src/ibd/flow.rs:286:                // is never set, so we treat it as stable to preserve pre-activation IBD behavior.
+/Users/arthur/RustroverProjects/rusty-kaspa/protocol/flows/src/ibd/flow.rs:288:                let is_smt_stable = if self.ctx.config.toccata_activation.is_active(pp_header.daa_score) {
+/Users/arthur/RustroverProjects/rusty-kaspa/protocol/flows/src/ibd/flow.rs:403:        // checked below by `validate_pruning_point_freshness_for_toccata`.
+/Users/arthur/RustroverProjects/rusty-kaspa/protocol/flows/src/ibd/flow.rs:448:        validate_pruning_point_freshness_for_toccata(
+/Users/arthur/RustroverProjects/rusty-kaspa/protocol/flows/src/ibd/flow.rs:691:        if !self.ctx.config.toccata_activation.is_active(pp_header.daa_score) {
+/Users/arthur/RustroverProjects/rusty-kaspa/protocol/flows/src/ibd/flow.rs:724:        let inactivity_shortcut = if !self.ctx.config.toccata_activation.is_active(shortcut_header.daa_score) {
+/Users/arthur/RustroverProjects/rusty-kaspa/protocol/flows/src/ibd/flow.rs:1080:/// [Toccata] Fresh nodes cannot easily identify outdated peers after activation, so we guard
+/Users/arthur/RustroverProjects/rusty-kaspa/protocol/flows/src/ibd/flow.rs:1083:/// TODO(post-toccata): remove or adjust this stale pruning-point guard once Toccata is cleaned up.
+/Users/arthur/RustroverProjects/rusty-kaspa/protocol/flows/src/ibd/flow.rs:1084:fn validate_pruning_point_freshness_for_toccata(
+/Users/arthur/RustroverProjects/rusty-kaspa/protocol/flows/src/ibd/flow.rs:1091:    // No activation is expected.
+/Users/arthur/RustroverProjects/rusty-kaspa/protocol/flows/src/ibd/flow.rs:1092:    if params.toccata_activation == ForkActivation::never() {
+/Users/arthur/RustroverProjects/rusty-kaspa/protocol/flows/src/ibd/flow.rs:1096:    // If the pruning point is post-activation, its header is validated as part of the pruning proof.
+/Users/arthur/RustroverProjects/rusty-kaspa/protocol/flows/src/ibd/flow.rs:1097:    if params.toccata_activation.is_active(pp_daa_score) {
+/Users/arthur/RustroverProjects/rusty-kaspa/protocol/flows/src/ibd/flow.rs:1101:    // Otherwise, protect fresh nodes from outdated syncers with stale pre-activation pruning points.
+/Users/arthur/RustroverProjects/rusty-kaspa/protocol/flows/src/ibd/flow.rs:1103:    let activation_daa_score = params.toccata_activation.daa_score();
+/Users/arthur/RustroverProjects/rusty-kaspa/protocol/flows/src/ibd/flow.rs:1106:    // 1. the syncer's pruning point is still pre-activation;
+/Users/arthur/RustroverProjects/rusty-kaspa/protocol/flows/src/ibd/flow.rs:1107:    // 2. based on its timestamp and DAA score, activation should have happened long enough ago
+/Users/arthur/RustroverProjects/rusty-kaspa/protocol/flows/src/ibd/flow.rs:1108:    //    for the syncer to already expose a post-activation pruning point.
+/Users/arthur/RustroverProjects/rusty-kaspa/protocol/flows/src/ibd/flow.rs:1112:    let pp_to_activation_blocks = activation_daa_score.saturating_sub(pp_daa_score);
+/Users/arthur/RustroverProjects/rusty-kaspa/protocol/flows/src/ibd/flow.rs:1113:    let pp_to_activation_millis = pp_to_activation_blocks.saturating_mul(millis_per_block);
+/Users/arthur/RustroverProjects/rusty-kaspa/protocol/flows/src/ibd/flow.rs:1114:    let estimated_activation_time = pp_timestamp.saturating_add(pp_to_activation_millis);
+/Users/arthur/RustroverProjects/rusty-kaspa/protocol/flows/src/ibd/flow.rs:1117:    // The oldest activation estimate for which a pre-activation pruning point is still tolerated.
+/Users/arthur/RustroverProjects/rusty-kaspa/protocol/flows/src/ibd/flow.rs:1118:    let stale_activation_time_cutoff = now.saturating_sub(pruning_period_millis).saturating_sub(ONE_DAY_MILLIS);
+/Users/arthur/RustroverProjects/rusty-kaspa/protocol/flows/src/ibd/flow.rs:1120:    // If activation should have happened before this cutoff, the syncer should already
+/Users/arthur/RustroverProjects/rusty-kaspa/protocol/flows/src/ibd/flow.rs:1121:    // expose a post-activation pruning point.
+/Users/arthur/RustroverProjects/rusty-kaspa/protocol/flows/src/ibd/flow.rs:1122:    if estimated_activation_time < stale_activation_time_cutoff {
+/Users/arthur/RustroverProjects/rusty-kaspa/protocol/flows/src/ibd/flow.rs:1124:            "syncer pruning point {} is stale: DAA score {} is below Toccata activation DAA score {}, but based on its timestamp {} a post-activation pruning point is expected by now",
+/Users/arthur/RustroverProjects/rusty-kaspa/protocol/flows/src/ibd/flow.rs:1125:            pp_hash, pp_daa_score, activation_daa_score, pp_timestamp
+/Users/arthur/RustroverProjects/rusty-kaspa/protocol/flows/src/ibd/flow.rs:1137:    fn params_with_toccata_activation(activation_daa_score: u64) -> Params {
+/Users/arthur/RustroverProjects/rusty-kaspa/protocol/flows/src/ibd/flow.rs:1139:        params.toccata_activation = ForkActivation::new(activation_daa_score);
+/Users/arthur/RustroverProjects/rusty-kaspa/protocol/flows/src/ibd/flow.rs:1143:    fn params_without_toccata_activation() -> Params {
+/Users/arthur/RustroverProjects/rusty-kaspa/protocol/flows/src/ibd/flow.rs:1145:        params.toccata_activation = ForkActivation::never();
+/Users/arthur/RustroverProjects/rusty-kaspa/protocol/flows/src/ibd/flow.rs:1154:    fn test_toccata_pruning_point_staleness_guard() {
+/Users/arthur/RustroverProjects/rusty-kaspa/protocol/flows/src/ibd/flow.rs:1156:        let activation_daa_score = 10_000_000;
+/Users/arthur/RustroverProjects/rusty-kaspa/protocol/flows/src/ibd/flow.rs:1157:        let params = params_with_toccata_activation(activation_daa_score);
+/Users/arthur/RustroverProjects/rusty-kaspa/protocol/flows/src/ibd/flow.rs:1160:        let pp_daa_score = activation_daa_score - 10;
+/Users/arthur/RustroverProjects/rusty-kaspa/protocol/flows/src/ibd/flow.rs:1162:        let pp_to_activation_millis = 10 * params.target_time_per_block();
+/Users/arthur/RustroverProjects/rusty-kaspa/protocol/flows/src/ibd/flow.rs:1163:        let estimated_activation_time = pp_timestamp + pp_to_activation_millis;
+/Users/arthur/RustroverProjects/rusty-kaspa/protocol/flows/src/ibd/flow.rs:1164:        let stale_after = estimated_activation_time + pruning_period_millis(&params) + ONE_DAY_MILLIS;
+/Users/arthur/RustroverProjects/rusty-kaspa/protocol/flows/src/ibd/flow.rs:1166:        // No activation is configured:
+/Users/arthur/RustroverProjects/rusty-kaspa/protocol/flows/src/ibd/flow.rs:1167:        // PP(pre-activation by score) ---- estimated activation ---- pruning period + margin ---- now
+/Users/arthur/RustroverProjects/rusty-kaspa/protocol/flows/src/ibd/flow.rs:1169:            validate_pruning_point_freshness_for_toccata(
+/Users/arthur/RustroverProjects/rusty-kaspa/protocol/flows/src/ibd/flow.rs:1170:                &params_without_toccata_activation(),
+/Users/arthur/RustroverProjects/rusty-kaspa/protocol/flows/src/ibd/flow.rs:1179:        // Normal pre-activation IBD: activation is still ten days away.
+/Users/arthur/RustroverProjects/rusty-kaspa/protocol/flows/src/ibd/flow.rs:1180:        // PP/now -------- 10d -------- activation
+/Users/arthur/RustroverProjects/rusty-kaspa/protocol/flows/src/ibd/flow.rs:1181:        let pp_ten_days_before_activation = activation_daa_score - 10 * blocks_per_day;
+/Users/arthur/RustroverProjects/rusty-kaspa/protocol/flows/src/ibd/flow.rs:1183:            validate_pruning_point_freshness_for_toccata(&params, pp_hash, pp_timestamp, pp_ten_days_before_activation, pp_timestamp)
+/Users/arthur/RustroverProjects/rusty-kaspa/protocol/flows/src/ibd/flow.rs:1187:        // The syncer's pruning point is already post-activation, so the staleness guard is done:
+/Users/arthur/RustroverProjects/rusty-kaspa/protocol/flows/src/ibd/flow.rs:1188:        // PP(post-activation by score) ----------------------------------------------- now
+/Users/arthur/RustroverProjects/rusty-kaspa/protocol/flows/src/ibd/flow.rs:1190:            validate_pruning_point_freshness_for_toccata(&params, pp_hash, pp_timestamp, activation_daa_score, stale_after + 1)
+/Users/arthur/RustroverProjects/rusty-kaspa/protocol/flows/src/ibd/flow.rs:1194:        // Last tolerated instant for a pre-activation pruning point:
+/Users/arthur/RustroverProjects/rusty-kaspa/protocol/flows/src/ibd/flow.rs:1195:        // PP ---- estimated activation ---- pruning period + margin == now
+/Users/arthur/RustroverProjects/rusty-kaspa/protocol/flows/src/ibd/flow.rs:1196:        assert!(validate_pruning_point_freshness_for_toccata(&params, pp_hash, pp_timestamp, pp_daa_score, stale_after).is_ok());
+/Users/arthur/RustroverProjects/rusty-kaspa/protocol/flows/src/ibd/flow.rs:1198:        // One millisecond later, the same pre-activation pruning point is stale:
+/Users/arthur/RustroverProjects/rusty-kaspa/protocol/flows/src/ibd/flow.rs:1199:        // PP ---- estimated activation ---- pruning period + margin < now
+/Users/arthur/RustroverProjects/rusty-kaspa/protocol/flows/src/ibd/flow.rs:1200:        assert!(validate_pruning_point_freshness_for_toccata(&params, pp_hash, pp_timestamp, pp_daa_score, stale_after + 1).is_err());
+/Users/arthur/RustroverProjects/rusty-kaspa/protocol/flows/src/ibd/flow.rs:1202:        // Stale IBD: the syncer's pruning point is three days before activation, and now is
+/Users/arthur/RustroverProjects/rusty-kaspa/protocol/flows/src/ibd/flow.rs:1204:        // for the syncer to already expose a post-activation pruning point.
+/Users/arthur/RustroverProjects/rusty-kaspa/protocol/flows/src/ibd/flow.rs:1205:        // PP -------- 3d -------- activation -------- 3d -------- now
+/Users/arthur/RustroverProjects/rusty-kaspa/protocol/flows/src/ibd/flow.rs:1206:        let pp_three_days_before_activation = activation_daa_score - 3 * blocks_per_day;
+/Users/arthur/RustroverProjects/rusty-kaspa/protocol/flows/src/ibd/flow.rs:1209:            validate_pruning_point_freshness_for_toccata(
+/Users/arthur/RustroverProjects/rusty-kaspa/protocol/flows/src/ibd/flow.rs:1213:                pp_three_days_before_activation,
+/Users/arthur/RustroverProjects/rusty-kaspa/protocol/flows/src/ibd/flow.rs:1219:        // Normal IBD: two days after activation, a pruning point just before activation is
+/Users/arthur/RustroverProjects/rusty-kaspa/protocol/flows/src/ibd/flow.rs:1221:        // PP - activation -------- 2d -------- now
+/Users/arthur/RustroverProjects/rusty-kaspa/protocol/flows/src/ibd/flow.rs:1222:        let pp_just_before_activation = activation_daa_score - 1;
+/Users/arthur/RustroverProjects/rusty-kaspa/protocol/flows/src/ibd/flow.rs:1223:        let pp_just_before_activation_timestamp = pp_timestamp + 3 * ONE_DAY_MILLIS - params.target_time_per_block();
+/Users/arthur/RustroverProjects/rusty-kaspa/protocol/flows/src/ibd/flow.rs:1224:        let now_two_days_after_activation = pp_timestamp + 5 * ONE_DAY_MILLIS;
+/Users/arthur/RustroverProjects/rusty-kaspa/protocol/flows/src/ibd/flow.rs:1226:            validate_pruning_point_freshness_for_toccata(
+/Users/arthur/RustroverProjects/rusty-kaspa/protocol/flows/src/ibd/flow.rs:1229:                pp_just_before_activation_timestamp,
+/Users/arthur/RustroverProjects/rusty-kaspa/protocol/flows/src/ibd/flow.rs:1230:                pp_just_before_activation,
+/Users/arthur/RustroverProjects/rusty-kaspa/protocol/flows/src/ibd/flow.rs:1231:                now_two_days_after_activation
+/Users/arthur/RustroverProjects/rusty-kaspa/protocol/flows/src/user_agent_rule.rs:212:        assert!(UserAgentRule::parse("reject;ver:kaspad:<1.1.1").unwrap().is_match("/kaspad:1.1.0(testnet-12)/"));
+/Users/arthur/RustroverProjects/rusty-kaspa/protocol/flows/src/user_agent_rule.rs:219:        assert!(UserAgentRule::parse("reject;ver:kaspad==1.1.1").unwrap().is_match("/kaspad:1.1.1(testnet-12)/"));
+/Users/arthur/RustroverProjects/rusty-kaspa/daemon/src/kaspad/mod.rs:91:                argv.push("--testnet");
+/Users/arthur/RustroverProjects/rusty-kaspa/daemon/src/kaspad/mod.rs:94:                argv.push("--devnet");
+/Users/arthur/RustroverProjects/rusty-kaspa/daemon/src/kaspad/mod.rs:97:                argv.push("--simnet");
+/Users/arthur/RustroverProjects/rusty-kaspa/daemon/src/kaspad/mod.rs:114:                argv.push("--rpclisten-borsh=public");
+/Users/arthur/RustroverProjects/rusty-kaspa/daemon/src/kaspad/mod.rs:116:                argv.push("--rpclisten-borsh=default");
+/Users/arthur/RustroverProjects/rusty-kaspa/daemon/src/kaspad/mod.rs:124:                argv.push("--rpclisten-borsh=public");
+/Users/arthur/RustroverProjects/rusty-kaspa/daemon/src/kaspad/mod.rs:126:                argv.push("--rpclisten-borsh=default");
+/Users/arthur/RustroverProjects/rusty-kaspa/daemon/src/kaspad/mod.rs:134:            format!("--rpclisten=0.0.0.0:{}", grpc_port)
+/Users/arthur/RustroverProjects/rusty-kaspa/daemon/src/kaspad/mod.rs:136:            format!("--rpclisten=127.0.0.1:{}", grpc_port)
+/Users/arthur/RustroverProjects/rusty-kaspa/bridge/src/cli.rs:106:#[derive(Debug, Clone, Parser)]
+/Users/arthur/RustroverProjects/rusty-kaspa/bridge/src/cli.rs:113:    pub testnet: bool,
+/Users/arthur/RustroverProjects/rusty-kaspa/rpc/wrpc/examples/simple_client/src/main.rs:32:    // Verify your Kaspa node is runnning with --rpclisten-borsh=0.0.0.0:17110 parameter
+/Users/arthur/RustroverProjects/rusty-kaspa/crypto/txscript/src/data_stack.rs:328:        // Pre-toccata the element size limit was only enforced for OP_PUSHDATA opcodes, but
+/Users/arthur/RustroverProjects/rusty-kaspa/bridge/src/tests.rs:1105:        // Start an in-process devnet node with random listener ports to avoid conflicts
+/Users/arthur/RustroverProjects/rusty-kaspa/bridge/src/tests.rs:1110:            "--devnet".into(),
+/Users/arthur/RustroverProjects/rusty-kaspa/bridge/src/tests.rs:1113:            format!("--rpclisten={rpc_address}").into(),
+/Users/arthur/RustroverProjects/rusty-kaspa/bridge/src/tests.rs:1177:        // Start an in-process devnet node with random listener ports to avoid conflicts
+/Users/arthur/RustroverProjects/rusty-kaspa/bridge/src/tests.rs:1183:            "--devnet".into(),
+/Users/arthur/RustroverProjects/rusty-kaspa/bridge/src/tests.rs:1186:            format!("--rpclisten={rpc_address}").into(),
+/Users/arthur/RustroverProjects/rusty-kaspa/mining/src/toccata_transient_mass_activation_tests.rs:1://! TODO(post-toccata): Once the transient-mass activation window is behind us, reduce this module
+/Users/arthur/RustroverProjects/rusty-kaspa/mining/src/toccata_transient_mass_activation_tests.rs:2://! to the durable mempool pipeline checks and move/rename it away from Toccata-specific activation
+/Users/arthur/RustroverProjects/rusty-kaspa/mining/src/toccata_transient_mass_activation_tests.rs:5://! Remove with the activation plumbing:
+/Users/arthur/RustroverProjects/rusty-kaspa/mining/src/toccata_transient_mass_activation_tests.rs:8://! - rbf_lower_fee_replacement_is_rejected_at_delayed_mempool_activation_boundary
+/Users/arthur/RustroverProjects/rusty-kaspa/mining/src/toccata_transient_mass_activation_tests.rs:9://! - template_limits_reject_transient_tx_until_delayed_mempool_activation
+/Users/arthur/RustroverProjects/rusty-kaspa/mining/src/toccata_transient_mass_activation_tests.rs:225:    let params = transient_activation_params();
+/Users/arthur/RustroverProjects/rusty-kaspa/mining/src/toccata_transient_mass_activation_tests.rs:228:        ("pre activation", ACTIVATION_DAA_SCORE - 1, 2usize, PRIOR_BLOCK_MASS_LIMIT),
+/Users/arthur/RustroverProjects/rusty-kaspa/mining/src/toccata_transient_mass_activation_tests.rs:229:        ("at activation", ACTIVATION_DAA_SCORE, 2, PRIOR_BLOCK_MASS_LIMIT),
+/Users/arthur/RustroverProjects/rusty-kaspa/mining/src/toccata_transient_mass_activation_tests.rs:230:        ("before delayed mempool activation", ACTIVATION_DAA_SCORE + delay_daa_score - 1, 2, PRIOR_BLOCK_MASS_LIMIT),
+/Users/arthur/RustroverProjects/rusty-kaspa/mining/src/toccata_transient_mass_activation_tests.rs:231:        ("at delayed mempool activation", ACTIVATION_DAA_SCORE + delay_daa_score, 4, NEW_TRANSIENT_LIMIT),
+/Users/arthur/RustroverProjects/rusty-kaspa/mining/src/toccata_transient_mass_activation_tests.rs:232:        ("after delayed mempool activation", ACTIVATION_DAA_SCORE + delay_daa_score + 1, 4, NEW_TRANSIENT_LIMIT),
+/Users/arthur/RustroverProjects/rusty-kaspa/mining/src/toccata_transient_mass_activation_tests.rs:263:    let params = transient_activation_params();
+/Users/arthur/RustroverProjects/rusty-kaspa/mining/src/toccata_transient_mass_activation_tests.rs:291:fn rbf_lower_fee_replacement_is_rejected_at_delayed_mempool_activation_boundary() {
+/Users/arthur/RustroverProjects/rusty-kaspa/mining/src/toccata_transient_mass_activation_tests.rs:292:    let params = transient_activation_params();
+/Users/arthur/RustroverProjects/rusty-kaspa/mining/src/toccata_transient_mass_activation_tests.rs:305:        "lower-fee RBF must fail before the delayed mempool activation"
+/Users/arthur/RustroverProjects/rusty-kaspa/mining/src/toccata_transient_mass_activation_tests.rs:325:fn template_limits_reject_transient_tx_until_delayed_mempool_activation() {
+/Users/arthur/RustroverProjects/rusty-kaspa/mining/src/toccata_transient_mass_activation_tests.rs:326:    let params = transient_activation_params();
+/Users/arthur/RustroverProjects/rusty-kaspa/mining/src/toccata_transient_mass_activation_tests.rs:352:    let params = transient_activation_params();
+/Users/arthur/RustroverProjects/rusty-kaspa/mining/src/toccata_transient_mass_activation_tests.rs:372:    let params = transient_activation_params();
+/Users/arthur/RustroverProjects/rusty-kaspa/mining/src/toccata_transient_mass_activation_tests.rs:391:    let params = transient_activation_params();
+/Users/arthur/RustroverProjects/rusty-kaspa/mining/src/toccata_transient_mass_activation_tests.rs:411:fn transient_activation_params() -> Params {
+/Users/arthur/RustroverProjects/rusty-kaspa/mining/src/toccata_transient_mass_activation_tests.rs:415:    params.toccata_activation = ForkActivation::new(ACTIVATION_DAA_SCORE);
+/Users/arthur/RustroverProjects/rusty-kaspa/mining/src/toccata_transient_mass_activation_tests.rs:425:    MiningManager::with_config(config, params.toccata_activation, None, Arc::new(MiningCounters::default()))
+/Users/arthur/RustroverProjects/rusty-kaspa/bridge/src/main.rs:184:    // Single-config model: default to `config.yaml` for both mainnet and testnet runs.
+/Users/arthur/RustroverProjects/rusty-kaspa/bridge/src/main.rs:185:    // `--testnet` affects the network behavior, but does not imply a different config file.
+/Users/arthur/RustroverProjects/rusty-kaspa/bridge/src/main.rs:237:        if cli.testnet && !node_args.iter().any(|arg| arg == "--testnet") {
+/Users/arthur/RustroverProjects/rusty-kaspa/bridge/src/main.rs:238:            node_args.push("--testnet".to_string());
+/Users/arthur/RustroverProjects/rusty-kaspa/bridge/src/hasher.rs:494:        // Test with actual devnet bits: 505527324 (0x1e21bc1c)
+/Users/arthur/RustroverProjects/rusty-kaspa/bridge/src/hasher.rs:495:        let devnet_bits = 505527324u64;
+/Users/arthur/RustroverProjects/rusty-kaspa/bridge/src/hasher.rs:496:        let devnet_target = calculate_target(devnet_bits);
+/Users/arthur/RustroverProjects/rusty-kaspa/bridge/src/hasher.rs:497:        println!("Devnet bits: {} (0x{:x})", devnet_bits, devnet_bits);
+/Users/arthur/RustroverProjects/rusty-kaspa/bridge/src/hasher.rs:498:        println!("Devnet target: {:x} ({} bytes)", devnet_target, devnet_target.to_bytes_be().len());
+/Users/arthur/RustroverProjects/rusty-kaspa/bridge/src/hasher.rs:509:        println!("devnet_target (64 hex chars): {:064x}", devnet_target);
+/Users/arthur/RustroverProjects/rusty-kaspa/bridge/src/hasher.rs:513:        let target_bytes = devnet_target.to_bytes_be();
+/Users/arthur/RustroverProjects/rusty-kaspa/bridge/src/hasher.rs:524:        println!("30-byte target magnitude ≈ {:e}", devnet_target.to_f64().unwrap_or(0.0));
+/Users/arthur/RustroverProjects/rusty-kaspa/bridge/src/hasher.rs:526:        println!("pow_value <= devnet_target: {}", pow_value <= devnet_target);
+/Users/arthur/RustroverProjects/rusty-kaspa/bridge/src/hasher.rs:527:        println!("pow_value < devnet_target: {}", pow_value < devnet_target);
+/Users/arthur/RustroverProjects/rusty-kaspa/database/src/access.rs:81:    /// `consensus/core/src/utxo/pre_toccata.rs` for the current example.
+/Users/arthur/RustroverProjects/rusty-kaspa/bridge/src/share_handler.rs:636:            // On devnet, network difficulty is very low, so we should see blocks being found
+/Users/arthur/RustroverProjects/rusty-kaspa/testing/integration/src/rpc_tests.rs:47:        simnet: true,
+/Users/arthur/RustroverProjects/rusty-kaspa/testing/integration/src/rpc_tests.rs:123:                    // Submit the template (no mining, in simnet PoW is skipped)
+/Users/arthur/RustroverProjects/rusty-kaspa/testing/integration/src/subscribe_benchmarks.rs:73:/// `cargo test --package kaspa-testing-integration --lib --features devnet-prealloc -- subscribe_benchmarks::utxos_changed_subscriptions_sanity_check --exact --nocapture --ignored`
+/Users/arthur/RustroverProjects/rusty-kaspa/testing/integration/src/subscribe_benchmarks.rs:85:    let args = ArgsBuilder::simnet(TX_LEVEL_WIDTH as u64 * CONTRACT_FACTOR, PREALLOC_AMOUNT)
+/Users/arthur/RustroverProjects/rusty-kaspa/testing/integration/src/subscribe_benchmarks.rs:92:        args.rpclisten.map(|x| x.normalize(0).port).unwrap(),
+/Users/arthur/RustroverProjects/rusty-kaspa/testing/integration/src/subscribe_benchmarks.rs:127:/// `cargo test --package kaspa-testing-integration --lib --features devnet-prealloc -- subscribe_benchmarks::bench_utxos_changed_subscriptions_daemon --exact --nocapture --ignored -- --rpc=16610 --p2p=16611 --private-key=a2760251adb5b6e8d4514d23397f1631893e168c33f92ff8a7a24f397d355d62 --max-tracked-addresses=1000000 --utxoindex`
+/Users/arthur/RustroverProjects/rusty-kaspa/testing/integration/src/subscribe_benchmarks.rs:142:    let args = ArgsBuilder::simnet(TX_LEVEL_WIDTH as u64 * CONTRACT_FACTOR, PREALLOC_AMOUNT).apply_daemon_args(&daemon_args).build();
+/Users/arthur/RustroverProjects/rusty-kaspa/testing/integration/src/subscribe_benchmarks.rs:182:    let args = ArgsBuilder::simnet(TX_LEVEL_WIDTH as u64 * CONTRACT_FACTOR, PREALLOC_AMOUNT)
+/Users/arthur/RustroverProjects/rusty-kaspa/testing/integration/src/subscribe_benchmarks.rs:205:        args.rpclisten.map(|x| x.normalize(0).port).unwrap(),
+/Users/arthur/RustroverProjects/rusty-kaspa/testing/integration/src/subscribe_benchmarks.rs:279:/// `cargo test --package kaspa-testing-integration --lib --features devnet-prealloc -- subscribe_benchmarks::bench_utxos_changed_subscriptions_footprint_a --exact --nocapture --ignored`
+/Users/arthur/RustroverProjects/rusty-kaspa/testing/integration/src/subscribe_benchmarks.rs:287:/// `cargo test --package kaspa-testing-integration --lib --features devnet-prealloc -- subscribe_benchmarks::bench_utxos_changed_subscriptions_footprint_b --exact --nocapture --ignored`
+/Users/arthur/RustroverProjects/rusty-kaspa/testing/integration/src/subscribe_benchmarks.rs:295:/// `cargo test --package kaspa-testing-integration --lib --features devnet-prealloc -- subscribe_benchmarks::bench_utxos_changed_subscriptions_footprint_c --exact --nocapture --ignored`
+/Users/arthur/RustroverProjects/rusty-kaspa/testing/integration/src/subscribe_benchmarks.rs:303:/// `cargo test --package kaspa-testing-integration --lib --features devnet-prealloc -- subscribe_benchmarks::bench_utxos_changed_subscriptions_footprint_d --exact --nocapture --ignored`
+/Users/arthur/RustroverProjects/rusty-kaspa/testing/integration/src/subscribe_benchmarks.rs:311:/// `cargo test --package kaspa-testing-integration --lib --features devnet-prealloc -- subscribe_benchmarks::bench_utxos_changed_subscriptions_footprint_e --exact --nocapture --ignored`
+/Users/arthur/RustroverProjects/rusty-kaspa/protocol/p2p/src/core/hub.rs:59:                                            // version 6 and below is prior crescendo, silencing logs on deprecated versions
+/Users/arthur/RustroverProjects/rusty-kaspa/mining/src/mempool/model/transactions_pool.rs:213:            // Params::mempool_block_mass_cofactors asserts that the reference mass is stable across activation.
+/Users/arthur/RustroverProjects/rusty-kaspa/consensus/src/model/services/seq_commit_accessor.rs:19:    pub toccata_activation: ForkActivation,
+/Users/arthur/RustroverProjects/rusty-kaspa/consensus/src/model/services/seq_commit_accessor.rs:27:        toccata_activation: ForkActivation,
+/Users/arthur/RustroverProjects/rusty-kaspa/consensus/src/model/services/seq_commit_accessor.rs:30:        Self { threshold, selected_parent, reachability_service, headers_store, toccata_activation }
+/Users/arthur/RustroverProjects/rusty-kaspa/consensus/src/model/services/seq_commit_accessor.rs:41:        if !self.toccata_activation.is_active(header.daa_score) {
+/Users/arthur/RustroverProjects/rusty-kaspa/rpc/wrpc/proxy/src/main.rs:19:#[derive(Debug, Parser)]
+/Users/arthur/RustroverProjects/rusty-kaspa/rpc/wrpc/proxy/src/main.rs:22:struct Args {
+/Users/arthur/RustroverProjects/rusty-kaspa/rpc/wrpc/proxy/src/main.rs:23:    /// proxy for testnet network
+/Users/arthur/RustroverProjects/rusty-kaspa/rpc/wrpc/proxy/src/main.rs:25:    testnet: bool,
+/Users/arthur/RustroverProjects/rusty-kaspa/rpc/wrpc/proxy/src/main.rs:26:    /// proxy for simnet network
+/Users/arthur/RustroverProjects/rusty-kaspa/rpc/wrpc/proxy/src/main.rs:28:    simnet: bool,
+/Users/arthur/RustroverProjects/rusty-kaspa/rpc/wrpc/proxy/src/main.rs:29:    /// proxy for devnet network
+/Users/arthur/RustroverProjects/rusty-kaspa/rpc/wrpc/proxy/src/main.rs:31:    devnet: bool,
+/Users/arthur/RustroverProjects/rusty-kaspa/rpc/wrpc/proxy/src/main.rs:54:    let Args { testnet, simnet, devnet, grpc_proxy_address, interface, verbose, threads, encoding } = Args::parse();
+/Users/arthur/RustroverProjects/rusty-kaspa/rpc/wrpc/proxy/src/main.rs:56:    let network_type = if testnet {
+/Users/arthur/RustroverProjects/rusty-kaspa/rpc/wrpc/proxy/src/main.rs:58:    } else if simnet {
+/Users/arthur/RustroverProjects/rusty-kaspa/rpc/wrpc/proxy/src/main.rs:60:    } else if devnet {
+/Users/arthur/RustroverProjects/rusty-kaspa/bridge/src/pow_diagnostic.rs:100:        tracing::debug!("  This confirms the issue: even with devnet difficulty, we can't find valid blocks");
+/Users/arthur/RustroverProjects/rusty-kaspa/consensus/src/consensus/mod.rs:8:#[cfg(feature = "devnet-prealloc")]
+/Users/arthur/RustroverProjects/rusty-kaspa/consensus/src/consensus/mod.rs:1537:                // The selected parent header is used within to check for sampling activation, so we verify its existence first
+/Users/arthur/RustroverProjects/rusty-kaspa/testing/integration/src/common/args.rs:2:#[cfg(feature = "devnet-prealloc")]
+/Users/arthur/RustroverProjects/rusty-kaspa/testing/integration/src/common/args.rs:6:pub struct ArgsBuilder {
+/Users/arthur/RustroverProjects/rusty-kaspa/testing/integration/src/common/args.rs:11:    #[cfg(feature = "devnet-prealloc")]
+/Users/arthur/RustroverProjects/rusty-kaspa/testing/integration/src/common/args.rs:12:    pub fn simnet(num_prealloc_utxos: u64, prealloc_amount: u64) -> Self {
+/Users/arthur/RustroverProjects/rusty-kaspa/testing/integration/src/common/args.rs:14:            simnet: true,
+/Users/arthur/RustroverProjects/rusty-kaspa/testing/integration/src/common/args.rs:28:    #[cfg(not(feature = "devnet-prealloc"))]
+/Users/arthur/RustroverProjects/rusty-kaspa/testing/integration/src/common/args.rs:29:    pub fn simnet() -> Self {
+/Users/arthur/RustroverProjects/rusty-kaspa/testing/integration/src/common/args.rs:31:            simnet: true,
+/Users/arthur/RustroverProjects/rusty-kaspa/testing/integration/src/common/args.rs:43:    #[cfg(feature = "devnet-prealloc")]
+/Users/arthur/RustroverProjects/rusty-kaspa/consensus/src/consensus/services.rs:130:            params.toccata_activation,
+/Users/arthur/RustroverProjects/rusty-kaspa/consensus/src/consensus/services.rs:146:            params.toccata_activation,
+/Users/arthur/RustroverProjects/rusty-kaspa/consensus/src/consensus/services.rs:185:            params.toccata_activation,
+/Users/arthur/RustroverProjects/rusty-kaspa/testing/integration/src/rpc_perf_benchmarks.rs:35:/// `cargo test --release --package kaspa-testing-integration --lib --features devnet-prealloc -- rpc_perf_benchmarks::bench_rpc_high_load --exact --nocapture --ignored`
+/Users/arthur/RustroverProjects/rusty-kaspa/testing/integration/src/rpc_perf_benchmarks.rs:38:#[cfg(feature = "devnet-prealloc")] // Add this feature gate
+/Users/arthur/RustroverProjects/rusty-kaspa/testing/integration/src/rpc_perf_benchmarks.rs:53:    let args = ArgsBuilder::simnet(TX_LEVEL_WIDTH as u64 * CONTRACT_FACTOR, PREALLOC_AMOUNT_SOMPI) // Use simnet with prealloc args
+/Users/arthur/RustroverProjects/rusty-kaspa/consensus/src/model/stores/utxo_diffs.rs:3:use kaspa_consensus_core::{BlockHasher, utxo::pre_toccata::PreToccataUtxoDiff, utxo::utxo_diff::UtxoDiff};
+/Users/arthur/RustroverProjects/rusty-kaspa/consensus/src/model/stores/utxo_diffs.rs:115:    fn pre_toccata_bytes() -> Vec<u8> {
+/Users/arthur/RustroverProjects/rusty-kaspa/consensus/src/model/stores/utxo_diffs.rs:135:    fn assert_pre_toccata_diff(diff: &UtxoDiff) {
+/Users/arthur/RustroverProjects/rusty-kaspa/consensus/src/model/stores/utxo_diffs.rs:179:    fn get_decodes_pre_toccata_row() {
+/Users/arthur/RustroverProjects/rusty-kaspa/consensus/src/model/stores/utxo_diffs.rs:184:        db.put(legacy_row_key(hash), pre_toccata_bytes()).unwrap();
+/Users/arthur/RustroverProjects/rusty-kaspa/consensus/src/model/stores/utxo_diffs.rs:187:        assert_pre_toccata_diff(&diff);
+/Users/arthur/RustroverProjects/rusty-kaspa/consensus/src/model/stores/utxo_diffs.rs:199:    fn post_toccata_round_trip_uses_versioned_layout() {
+/Users/arthur/RustroverProjects/rusty-kaspa/consensus/src/model/stores/utxo_diffs.rs:238:        db.put(legacy_row_key(hash), pre_toccata_bytes()).unwrap();
+/Users/arthur/RustroverProjects/rusty-kaspa/consensus/src/model/stores/utxo_diffs.rs:256:        db.put(legacy_row_key(hash_legacy), pre_toccata_bytes()).unwrap();
+/Users/arthur/RustroverProjects/rusty-kaspa/testing/integration/src/common/daemon.rs:36:        let rpc_port = args.rpclisten.unwrap().normalize(0).port;
+/Users/arthur/RustroverProjects/rusty-kaspa/testing/integration/src/common/daemon.rs:38:        let rpc_borsh_port = match args.rpclisten_borsh.clone().unwrap() {
+/Users/arthur/RustroverProjects/rusty-kaspa/testing/integration/src/common/daemon.rs:132:        let rpc_port = port_from_address(args.rpclisten);
+/Users/arthur/RustroverProjects/rusty-kaspa/testing/integration/src/common/daemon.rs:137:        args.rpclisten = Some(format!("0.0.0.0:{rpc_port}").try_into().unwrap());
+/Users/arthur/RustroverProjects/rusty-kaspa/testing/integration/src/common/daemon.rs:139:        args.rpclisten_json = Some(format!("0.0.0.0:{rpc_json_port}").parse().unwrap());
+/Users/arthur/RustroverProjects/rusty-kaspa/testing/integration/src/common/daemon.rs:140:        args.rpclisten_borsh = Some(format!("0.0.0.0:{rpc_borsh_port}").parse().unwrap());
+/Users/arthur/RustroverProjects/rusty-kaspa/testing/integration/src/common/daemon.rs:145:        let args = Args { devnet: true, disable_upnp: true, ..Default::default() };
+/Users/arthur/RustroverProjects/rusty-kaspa/consensus/src/consensus/utxo_set_override.rs:1:#[cfg(feature = "devnet-prealloc")]
+/Users/arthur/RustroverProjects/rusty-kaspa/consensus/src/consensus/utxo_set_override.rs:33:#[cfg(feature = "devnet-prealloc")]
+/Users/arthur/RustroverProjects/rusty-kaspa/consensus/src/consensus/factory.rs:1:#[cfg(feature = "devnet-prealloc")]
+/Users/arthur/RustroverProjects/rusty-kaspa/consensus/src/consensus/factory.rs:282:        #[cfg(feature = "devnet-prealloc")]
+/Users/arthur/RustroverProjects/rusty-kaspa/consensus/src/consensus/factory.rs:351:            #[cfg(feature = "devnet-prealloc")]
+/Users/arthur/RustroverProjects/rusty-kaspa/rpc/wrpc/wasm/src/resolver.rs:61:         * Network identifier: `mainnet` or `testnet-11` etc.
+/Users/arthur/RustroverProjects/rusty-kaspa/testing/integration/src/consensus_integration_tests.rs:501:async fn header_version_is_enforced_by_activation() {
+/Users/arthur/RustroverProjects/rusty-kaspa/testing/integration/src/consensus_integration_tests.rs:509:    let activation = MAINNET_PARAMS.genesis.daa_score + 10;
+/Users/arthur/RustroverProjects/rusty-kaspa/testing/integration/src/consensus_integration_tests.rs:512:        .edit_consensus_params(|p| p.toccata_activation = ForkActivation::new(activation))
+/Users/arthur/RustroverProjects/rusty-kaspa/testing/integration/src/consensus_integration_tests.rs:522:        if block.header.daa_score >= activation {
+/Users/arthur/RustroverProjects/rusty-kaspa/testing/integration/src/consensus_integration_tests.rs:537:    let wrong_post_activation_block = set_block_version(active_block.clone(), BLOCK_VERSION);
+/Users/arthur/RustroverProjects/rusty-kaspa/testing/integration/src/consensus_integration_tests.rs:539:        consensus.validate_and_insert_block(wrong_post_activation_block.to_immutable()).block_task.await,
+/Users/arthur/RustroverProjects/rusty-kaspa/testing/integration/src/consensus_integration_tests.rs:647:                p.crescendo_activation = ForkActivation::always();
+/Users/arthur/RustroverProjects/rusty-kaspa/testing/integration/src/consensus_integration_tests.rs:1127:                    p.crescendo_activation = ForkActivation::always();
+/Users/arthur/RustroverProjects/rusty-kaspa/testing/integration/src/consensus_integration_tests.rs:1147:                    p.crescendo_activation = ForkActivation::always();
+/Users/arthur/RustroverProjects/rusty-kaspa/testing/integration/src/consensus_integration_tests.rs:1440:// Minimal KIP-21 proof check for these activation tests: mine the virtual view into
+/Users/arthur/RustroverProjects/rusty-kaspa/testing/integration/src/consensus_integration_tests.rs:1594:            p.toccata_activation = ForkActivation::always();
+/Users/arthur/RustroverProjects/rusty-kaspa/testing/integration/src/consensus_integration_tests.rs:1733:    // The script should fail before KIP-10 activation and succeed after
+/Users/arthur/RustroverProjects/rusty-kaspa/testing/integration/src/consensus_integration_tests.rs:1752:    // Initialize consensus with KIP-10 activation point
+/Users/arthur/RustroverProjects/rusty-kaspa/testing/integration/src/consensus_integration_tests.rs:1764:            p.crescendo_activation = ForkActivation::always();
+/Users/arthur/RustroverProjects/rusty-kaspa/testing/integration/src/consensus_integration_tests.rs:1765:            p.toccata_activation = ForkActivation::never();
+/Users/arthur/RustroverProjects/rusty-kaspa/testing/integration/src/consensus_integration_tests.rs:1807:async fn toccata_activation_test() {
+/Users/arthur/RustroverProjects/rusty-kaspa/testing/integration/src/consensus_integration_tests.rs:1813:            p.toccata_activation = ForkActivation::new(ACTIVATION_DAA_SCORE)
+/Users/arthur/RustroverProjects/rusty-kaspa/testing/integration/src/consensus_integration_tests.rs:1824:    // Redeem script that uses OpCat (disabled before Toccata activation, enabled after)
+/Users/arthur/RustroverProjects/rusty-kaspa/testing/integration/src/consensus_integration_tests.rs:1863:    // Advance chain until just before activation (DAA score = ACTIVATION_DAA_SCORE - 1)
+/Users/arthur/RustroverProjects/rusty-kaspa/testing/integration/src/consensus_integration_tests.rs:1887:    // Pre-activation: inserting block with the covenant opcode should be rejected
+/Users/arthur/RustroverProjects/rusty-kaspa/testing/integration/src/consensus_integration_tests.rs:1902:    // Advance to activation
+/Users/arthur/RustroverProjects/rusty-kaspa/testing/integration/src/consensus_integration_tests.rs:1907:    // Post-activation: same transaction should now be accepted
+/Users/arthur/RustroverProjects/rusty-kaspa/testing/integration/src/consensus_integration_tests.rs:1928:async fn push_limit_activation_test() {
+/Users/arthur/RustroverProjects/rusty-kaspa/testing/integration/src/consensus_integration_tests.rs:1941:            p.toccata_activation = ForkActivation::new(ACTIVATION_DAA_SCORE)
+/Users/arthur/RustroverProjects/rusty-kaspa/testing/integration/src/consensus_integration_tests.rs:1995:    // Advance chain until just before activation (DAA score = ACTIVATION_DAA_SCORE - 1)
+/Users/arthur/RustroverProjects/rusty-kaspa/testing/integration/src/consensus_integration_tests.rs:2003:    // Pre-activation: inserting block with a transaction that pushes more than the max script element size onto the stack should be accepted
+/Users/arthur/RustroverProjects/rusty-kaspa/testing/integration/src/consensus_integration_tests.rs:2048:    // Advance to activation
+/Users/arthur/RustroverProjects/rusty-kaspa/testing/integration/src/consensus_integration_tests.rs:2055:    // Post-activation: a similar transaction should now be rejected
+/Users/arthur/RustroverProjects/rusty-kaspa/testing/integration/src/consensus_integration_tests.rs:2103:            p.crescendo_activation = ForkActivation::always()
+/Users/arthur/RustroverProjects/rusty-kaspa/testing/integration/src/consensus_integration_tests.rs:2168:    // Initialize consensus with payload activation point
+/Users/arthur/RustroverProjects/rusty-kaspa/testing/integration/src/consensus_integration_tests.rs:2180:            p.toccata_activation = ForkActivation::never();
+/Users/arthur/RustroverProjects/rusty-kaspa/testing/integration/src/consensus_integration_tests.rs:2214:    // Test 2: Verify the same transaction is accepted after activation
+/Users/arthur/RustroverProjects/rusty-kaspa/testing/integration/src/consensus_integration_tests.rs:2260:            p.toccata_activation = ForkActivation::always();
+/Users/arthur/RustroverProjects/rusty-kaspa/testing/integration/src/consensus_integration_tests.rs:2301:fn init_toccata_stark_fixture() -> (TestConsensus, Vec<std::thread::JoinHandle<()>>, Hash, Vec<Transaction>) {
+/Users/arthur/RustroverProjects/rusty-kaspa/testing/integration/src/consensus_integration_tests.rs:2373:    params.crescendo_activation = ForkActivation::always();
+/Users/arthur/RustroverProjects/rusty-kaspa/testing/integration/src/consensus_integration_tests.rs:2374:    params.toccata_activation = ForkActivation::always();
+/Users/arthur/RustroverProjects/rusty-kaspa/testing/integration/src/consensus_integration_tests.rs:2455:async fn toccata_accepts_one_valid_stark_proof_but_rejects_two() {
+/Users/arthur/RustroverProjects/rusty-kaspa/testing/integration/src/consensus_integration_tests.rs:2458:    let (consensus, wait_handles, genesis_hash, transactions) = init_toccata_stark_fixture();
+/Users/arthur/RustroverProjects/rusty-kaspa/testing/integration/src/consensus_integration_tests.rs:2551:            p.crescendo_activation = ForkActivation::always();
+/Users/arthur/RustroverProjects/rusty-kaspa/testing/integration/src/consensus_integration_tests.rs:2561:    // Build blockchain up to one block before activation
+/Users/arthur/RustroverProjects/rusty-kaspa/testing/integration/src/mempool_benchmarks.rs:58:/// `cargo test --release --package kaspa-testing-integration --lib --features devnet-prealloc -- mempool_benchmarks::bench_bbt_latency --exact --nocapture --ignored`
+/Users/arthur/RustroverProjects/rusty-kaspa/testing/integration/src/mempool_benchmarks.rs:105:        simnet: true,
+/Users/arthur/RustroverProjects/rusty-kaspa/testing/integration/src/mempool_benchmarks.rs:306:/// `cargo test --release --package kaspa-testing-integration --lib --features devnet-prealloc -- mempool_benchmarks::bench_bbt_latency_2 --exact --nocapture --ignored`
+/Users/arthur/RustroverProjects/rusty-kaspa/testing/integration/src/mempool_benchmarks.rs:352:    let args = ArgsBuilder::simnet(TX_LEVEL_WIDTH as u64 * CONTRACT_FACTOR, 500)
+/Users/arthur/RustroverProjects/rusty-kaspa/testing/integration/src/mempool_benchmarks.rs:396:/// `cargo test --release --package kaspa-testing-integration --lib --features devnet-prealloc -- mempool_benchmarks::bench_bbt_latency_lanes --exact --nocapture --ignored`
+/Users/arthur/RustroverProjects/rusty-kaspa/testing/integration/src/mempool_benchmarks.rs:422:    let args = ArgsBuilder::simnet(TX_LEVEL_WIDTH as u64 * CONTRACT_FACTOR, 500)
+/Users/arthur/RustroverProjects/rusty-kaspa/testing/integration/src/mempool_benchmarks.rs:467:/// `cargo test --release --package kaspa-testing-integration --lib --features devnet-prealloc -- mempool_benchmarks::bench_bbt_latency_stark --exact --nocapture --ignored`
+/Users/arthur/RustroverProjects/rusty-kaspa/testing/integration/src/mempool_benchmarks.rs:539:    let args = ArgsBuilder::simnet(TX_LEVEL_WIDTH as u64 * STARK_CONTRACT_FACTOR as u64, 500)
+/Users/arthur/RustroverProjects/rusty-kaspa/rpc/wrpc/wasm/src/client.rs:58:         * Network identifier: `mainnet`, `testnet-10` etc.
+/Users/arthur/RustroverProjects/rusty-kaspa/testing/integration/src/lib.rs:19:#[cfg(feature = "devnet-prealloc")]
+/Users/arthur/RustroverProjects/rusty-kaspa/testing/integration/src/lib.rs:23:#[cfg(feature = "devnet-prealloc")]
+/Users/arthur/RustroverProjects/rusty-kaspa/testing/integration/src/lib.rs:27:#[cfg(feature = "devnet-prealloc")]
+/Users/arthur/RustroverProjects/rusty-kaspa/consensus/src/pipeline/body_processor/body_validation_in_isolation.rs:99:            // so applying these lane/gas limits unconditionally is harmless before activation.
+/Users/arthur/RustroverProjects/rusty-kaspa/consensus/src/pipeline/body_processor/body_validation_in_isolation.rs:191:    fn toccata_lane_tx(index: u8, lane: SubnetworkId, gas: u64) -> Transaction {
+/Users/arthur/RustroverProjects/rusty-kaspa/consensus/src/pipeline/body_processor/body_validation_in_isolation.rs:481:            vec![block.transactions[0].clone(), toccata_lane_tx(1, lane(1), body_processor.block_lane_limits.gas_per_lane + 1)];
+/Users/arthur/RustroverProjects/rusty-kaspa/consensus/src/pipeline/body_processor/body_validation_in_isolation.rs:490:            .chain((1..=body_processor.block_lane_limits.lanes_per_block as u8 + 1).map(|i| toccata_lane_tx(i, lane(i), 0)))
+/Users/arthur/RustroverProjects/rusty-kaspa/consensus/src/model/stores/virtual_state.rs:8:use kaspa_consensus_core::utxo::pre_toccata::PreToccataUtxoDiff;
+/Users/arthur/RustroverProjects/rusty-kaspa/consensus/src/model/stores/virtual_state.rs:290:    use kaspa_consensus_core::utxo::pre_toccata::{PreToccataUtxoDiff, PreToccataUtxoEntry};
+/Users/arthur/RustroverProjects/rusty-kaspa/consensus/src/model/stores/virtual_state.rs:307:    fn pre_toccata_entry(amount: u64, daa: u64, coinbase: bool, spk: &[u8]) -> PreToccataUtxoEntry {
+/Users/arthur/RustroverProjects/rusty-kaspa/consensus/src/model/stores/virtual_state.rs:332:        add.insert(outpoint(0x11, 0), pre_toccata_entry(0x0123_4567_89ab_cdef, 42, true, &[0x76, 0xa9, 0x14]));
+/Users/arthur/RustroverProjects/rusty-kaspa/consensus/src/model/stores/virtual_state.rs:333:        add.insert(outpoint(0x33, 4), pre_toccata_entry(500, 100, false, &[0xaa, 0xbb]));
+/Users/arthur/RustroverProjects/rusty-kaspa/consensus/src/model/stores/virtual_state.rs:335:        remove.insert(outpoint(0x22, 7), pre_toccata_entry(2_000_000, 99, false, &[0x51, 0x52]));
+/Users/arthur/RustroverProjects/rusty-kaspa/consensus/src/model/stores/virtual_state.rs:336:        remove.insert(outpoint(0x44, 11), pre_toccata_entry(777, 12, true, &[0xde, 0xad, 0xbe, 0xef]));
+/Users/arthur/RustroverProjects/rusty-kaspa/consensus/src/model/stores/virtual_state.rs:378:    fn post_toccata_set_lands_at_versioned_key() {
+/Users/arthur/RustroverProjects/rusty-kaspa/testing/integration/src/daemon_integration_tests.rs:68:// Ignored since it might fail to initialize the logger if another test already initialized it. Run it specifically with `cargo test --release --package kaspa-testing-integration --lib -- daemon_integration_tests::daemon_toccata_activation_log_file_test --ignored`
+/Users/arthur/RustroverProjects/rusty-kaspa/testing/integration/src/daemon_integration_tests.rs:71:async fn daemon_toccata_activation_log_file_test() {
+/Users/arthur/RustroverProjects/rusty-kaspa/testing/integration/src/daemon_integration_tests.rs:78:    fs::write(&params_path, r#"{"skip_proof_of_work":true,"toccata_activation":1}"#).unwrap();
+/Users/arthur/RustroverProjects/rusty-kaspa/testing/integration/src/daemon_integration_tests.rs:81:        simnet: true,
+/Users/arthur/RustroverProjects/rusty-kaspa/testing/integration/src/daemon_integration_tests.rs:98:    assert!(!initial_log.contains("[Toccata] Activated for"), "Toccata activation logs were emitted before activation");
+/Users/arthur/RustroverProjects/rusty-kaspa/testing/integration/src/daemon_integration_tests.rs:105:        let activation_check_client = rpc_client.clone();
+/Users/arthur/RustroverProjects/rusty-kaspa/testing/integration/src/daemon_integration_tests.rs:110:                let client = activation_check_client.clone();
+/Users/arthur/RustroverProjects/rusty-kaspa/testing/integration/src/daemon_integration_tests.rs:113:            "daemon did not reach Toccata activation",
+/Users/arthur/RustroverProjects/rusty-kaspa/testing/integration/src/daemon_integration_tests.rs:124:    assert_eq!(header_log_count, 1, "Toccata activation log for header in context validation should be emitted exactly once");
+/Users/arthur/RustroverProjects/rusty-kaspa/testing/integration/src/daemon_integration_tests.rs:126:    assert_eq!(virtual_state_log_count, 1, "Toccata activation log for virtual state processing rules should be emitted exactly once");
+/Users/arthur/RustroverProjects/rusty-kaspa/testing/integration/src/daemon_integration_tests.rs:165:        simnet: true,
+/Users/arthur/RustroverProjects/rusty-kaspa/testing/integration/src/daemon_integration_tests.rs:249:        simnet: true,
+/Users/arthur/RustroverProjects/rusty-kaspa/testing/integration/src/daemon_integration_tests.rs:523:        simnet: true,
+/Users/arthur/RustroverProjects/rusty-kaspa/testing/integration/src/daemon_integration_tests.rs:759:        simnet: true,
+/Users/arthur/RustroverProjects/rusty-kaspa/testing/integration/src/daemon_integration_tests.rs:837:        simnet: true,
+/Users/arthur/RustroverProjects/rusty-kaspa/testing/integration/src/daemon_integration_tests.rs:1040:        simnet: true,
+/Users/arthur/RustroverProjects/rusty-kaspa/testing/integration/src/daemon_integration_tests.rs:1248:    let args = Args { devnet: true, ..Default::default() };
+/Users/arthur/RustroverProjects/rusty-kaspa/mining/src/manager.rs:55:        toccata_activation: ForkActivation,
+/Users/arthur/RustroverProjects/rusty-kaspa/mining/src/manager.rs:62:        Self::with_config(config, toccata_activation, cache_lifetime, counters)
+/Users/arthur/RustroverProjects/rusty-kaspa/mining/src/manager.rs:69:        toccata_activation: ForkActivation,
+/Users/arthur/RustroverProjects/rusty-kaspa/mining/src/manager.rs:78:        Self::with_config(config, toccata_activation, cache_lifetime, counters)
+/Users/arthur/RustroverProjects/rusty-kaspa/mining/src/manager.rs:83:        toccata_activation: ForkActivation,
+/Users/arthur/RustroverProjects/rusty-kaspa/mining/src/manager.rs:88:        let mempool = RwLock::new(Mempool::new(config.clone(), toccata_activation, counters.clone()));
+/Users/arthur/RustroverProjects/rusty-kaspa/mining/src/lib.rs:18:mod toccata_transient_mass_activation_tests;
+/Users/arthur/RustroverProjects/rusty-kaspa/mining/src/mempool/mod.rs:52:    // TODO(post-toccata): remove this field, will be unused after post-toccata cleanups
+/Users/arthur/RustroverProjects/rusty-kaspa/mining/src/mempool/mod.rs:53:    toccata_activation: ForkActivation,
+/Users/arthur/RustroverProjects/rusty-kaspa/mining/src/mempool/mod.rs:61:    pub(crate) fn new(config: Arc<Config>, toccata_activation: ForkActivation, counters: Arc<MiningCounters>) -> Self {
+/Users/arthur/RustroverProjects/rusty-kaspa/mining/src/mempool/mod.rs:65:        Self { config, toccata_activation, transaction_pool, orphan_pool, accepted_transactions, counters }
+/Users/arthur/RustroverProjects/rusty-kaspa/consensus/src/pipeline/header_processor/post_pow_validation.rs:104:    // TODO(post-toccata): Remove this and restore the context-free check_header_version.
+/Users/arthur/RustroverProjects/rusty-kaspa/mining/src/mempool/check_transaction_standard.rs:11:use kaspa_txscript::{post_toccata_p2sh_sig_scanner, script_class::ScriptClass};
+/Users/arthur/RustroverProjects/rusty-kaspa/mining/src/mempool/check_transaction_standard.rs:65:                    // post-toccata scanner is valid pre-toccata as well
+/Users/arthur/RustroverProjects/rusty-kaspa/mining/src/mempool/check_transaction_standard.rs:67:                        post_toccata_p2sh_sig_scanner(&transaction.tx.inputs[i].signature_script, &entry.script_public_key);
+/Users/arthur/RustroverProjects/rusty-kaspa/mining/src/mempool/check_transaction_standard.rs:80:        // pricing value and do not fluctuate with activation status.
+/Users/arthur/RustroverProjects/rusty-kaspa/mining/src/mempool/check_transaction_standard.rs:85:        // TODO(post-toccata): remove `use_prior_p2p_fee_rules` and unconditionally use:
+/Users/arthur/RustroverProjects/rusty-kaspa/mining/src/mempool/check_transaction_standard.rs:88:        // The relaxation allows software to adapt between release and activation, instead of txs being p2p rejected by updated nodes
+/Users/arthur/RustroverProjects/rusty-kaspa/mining/src/mempool/check_transaction_standard.rs:89:        let use_prior_p2p_fee_rules = priority == Priority::Low && !self.toccata_activation.is_active(virtual_daa_score);
+/Users/arthur/RustroverProjects/rusty-kaspa/mining/src/mempool/check_transaction_standard.rs:208:                let mempool = Mempool::new(Arc::new(config), params.toccata_activation, counters);
+/Users/arthur/RustroverProjects/rusty-kaspa/mining/src/mempool/check_transaction_standard.rs:332:                let mempool = Mempool::new(Arc::new(config), params.toccata_activation, counters);
+/Users/arthur/RustroverProjects/rusty-kaspa/mining/src/mempool/check_transaction_standard.rs:397:        // Use simnet params so prior and post-activation transient limits differ while the fork is active;
+/Users/arthur/RustroverProjects/rusty-kaspa/mining/src/mempool/check_transaction_standard.rs:398:        // this verifies that relay-fee pricing uses stable post-activation cofactors.
+/Users/arthur/RustroverProjects/rusty-kaspa/mining/src/mempool/check_transaction_standard.rs:400:        assert_ne!(params.toccata_activation, ForkActivation::never(), "this test requires post-activation cofactors");
+/Users/arthur/RustroverProjects/rusty-kaspa/mining/src/mempool/check_transaction_standard.rs:452:        let mempool = Mempool::new(Arc::new(config), params.toccata_activation, counters);
+/Users/arthur/RustroverProjects/rusty-kaspa/mining/src/mempool/check_transaction_standard.rs:476:        // TODO(post-toccata): remove this temporary test case
+/Users/arthur/RustroverProjects/rusty-kaspa/mining/src/mempool/check_transaction_standard.rs:481:        let toccata_activation = ForkActivation::new(10);
+/Users/arthur/RustroverProjects/rusty-kaspa/mining/src/mempool/check_transaction_standard.rs:482:        let toccata_daa_activation = toccata_activation.daa_score();
+/Users/arthur/RustroverProjects/rusty-kaspa/mining/src/mempool/check_transaction_standard.rs:484:        let mempool = Mempool::new(Arc::new(config), toccata_activation, Arc::new(MiningCounters::default()));
+/Users/arthur/RustroverProjects/rusty-kaspa/mining/src/mempool/check_transaction_standard.rs:498:        assert_eq!(mempool.check_transaction_standard_in_context(&mtx, Priority::Low, toccata_daa_activation - 1), Ok(()));
+/Users/arthur/RustroverProjects/rusty-kaspa/mining/src/mempool/check_transaction_standard.rs:504:                toccata_daa_activation - 1
+/Users/arthur/RustroverProjects/rusty-kaspa/mining/src/mempool/check_transaction_standard.rs:510:            mempool.check_transaction_standard_in_context(&mtx, Priority::Low, toccata_daa_activation),
+/Users/arthur/RustroverProjects/rusty-kaspa/mining/src/mempool/check_transaction_standard.rs:520:            mempool.check_transaction_standard_in_context(&mtx, Priority::High, toccata_daa_activation - 1),
+/Users/arthur/RustroverProjects/rusty-kaspa/mining/src/mempool/check_transaction_standard.rs:530:            mempool.check_transaction_standard_in_context(&mtx, Priority::High, toccata_daa_activation),
+/Users/arthur/RustroverProjects/rusty-kaspa/crypto/txscript/src/lib.rs:217:/// - After the runtime signature operation counting hardfork activation
+/Users/arthur/RustroverProjects/rusty-kaspa/crypto/txscript/src/lib.rs:259:pub fn post_toccata_p2sh_sig_scanner(signature_script: &[u8], spk: &ScriptPublicKey) -> u64 {
+/Users/arthur/RustroverProjects/rusty-kaspa/crypto/txscript/src/lib.rs:314:/// - Before the runtime signature operation counting hardfork activation
+/Users/arthur/RustroverProjects/rusty-kaspa/crypto/txscript/src/lib.rs:1136:    fn test_direct_push_above_post_toccata_element_limit_is_rejected() {
+/Users/arthur/RustroverProjects/rusty-kaspa/crypto/txscript/src/lib.rs:1826:    fn test_post_toccata_p2sh_sig_scanner() {
+/Users/arthur/RustroverProjects/rusty-kaspa/crypto/txscript/src/lib.rs:1901:            assert_eq!(post_toccata_p2sh_sig_scanner(&signature_script, &spk), test.expected_sig_ops, "{}", test.name);
+/Users/arthur/RustroverProjects/rusty-kaspa/crypto/txscript/src/lib.rs:1905:        assert_eq!(post_toccata_p2sh_sig_scanner(&[], &non_p2sh), 0, "non-p2sh spk");
+/Users/arthur/RustroverProjects/rusty-kaspa/crypto/txscript/src/lib.rs:1909:        assert_eq!(post_toccata_p2sh_sig_scanner(&malformed_push, &p2sh), 0, "malformed sigscript");
+/Users/arthur/RustroverProjects/rusty-kaspa/consensus/src/pipeline/pruning_processor/processor.rs:586:        if self.config.toccata_activation.is_active(pp_header.daa_score) {
+/Users/arthur/RustroverProjects/rusty-kaspa/consensus/src/pipeline/header_processor/processor.rs:117:    pub(crate) toccata_activation: ForkActivation,
+/Users/arthur/RustroverProjects/rusty-kaspa/consensus/src/pipeline/header_processor/processor.rs:118:    pub(crate) toccata_logger: ForkLogger,
+/Users/arthur/RustroverProjects/rusty-kaspa/consensus/src/pipeline/header_processor/processor.rs:206:            toccata_activation: params.toccata_activation,
+/Users/arthur/RustroverProjects/rusty-kaspa/consensus/src/pipeline/header_processor/processor.rs:207:            toccata_logger: ForkLogger::new("header in context validation", false),
+/Users/arthur/RustroverProjects/rusty-kaspa/consensus/src/pipeline/header_processor/processor.rs:308:        if self.toccata_activation.is_within_range_from_activation(header.daa_score, 10_000) {
+/Users/arthur/RustroverProjects/rusty-kaspa/consensus/src/pipeline/header_processor/processor.rs:309:            self.toccata_logger.report_activation();
+/Users/arthur/RustroverProjects/rusty-kaspa/consensus/src/pipeline/header_processor/processor.rs:470:        // Note that for official nets (mainnet, testnet etc) they are guaranteed to be equal as enforced by a test in genesis.rs
+/Users/arthur/RustroverProjects/rusty-kaspa/consensus/src/pipeline/header_processor/pre_ghostdag_validation.rs:31:        // TODO(post-toccata): Uncomment this and remove check_header_version_in_context.
+/Users/arthur/RustroverProjects/rusty-kaspa/consensus/core/src/network.rs:4://! This module implements [`NetworkType`] (such as `mainnet`, `testnet`, `devnet`, and `simnet`)
+/Users/arthur/RustroverProjects/rusty-kaspa/consensus/core/src/network.rs:8://! explicitly with `testnet` networks, allowing declaration of testnet versions such as
+/Users/arthur/RustroverProjects/rusty-kaspa/consensus/core/src/network.rs:9://! `testnet-10`, `testnet-11`, etc.
+/Users/arthur/RustroverProjects/rusty-kaspa/consensus/core/src/network.rs:107:            "testnet" => Ok(NetworkType::Testnet),
+/Users/arthur/RustroverProjects/rusty-kaspa/consensus/core/src/network.rs:108:            "simnet" => Ok(NetworkType::Simnet),
+/Users/arthur/RustroverProjects/rusty-kaspa/consensus/core/src/network.rs:109:            "devnet" => Ok(NetworkType::Devnet),
+/Users/arthur/RustroverProjects/rusty-kaspa/consensus/core/src/network.rs:120:            NetworkType::Testnet => "testnet",
+/Users/arthur/RustroverProjects/rusty-kaspa/consensus/core/src/network.rs:121:            NetworkType::Simnet => "simnet",
+/Users/arthur/RustroverProjects/rusty-kaspa/consensus/core/src/network.rs:122:            NetworkType::Devnet => "devnet",
+/Users/arthur/RustroverProjects/rusty-kaspa/consensus/core/src/network.rs:239:        // We define the P2P port on the [`networkId`] type in order to adapt testnet ports according to testnet suffix,
+/Users/arthur/RustroverProjects/rusty-kaspa/consensus/core/src/network.rs:312:        // Disallow testnet network without suffix.
+/Users/arthur/RustroverProjects/rusty-kaspa/consensus/core/src/network.rs:314:        // multiple testnet networks
+/Users/arthur/RustroverProjects/rusty-kaspa/consensus/core/src/network.rs:455:            Test { name: "Valid testnet", expr: "testnet-88", expected: Ok(NetworkId::with_suffix(NetworkType::Testnet, 88)) },
+/Users/arthur/RustroverProjects/rusty-kaspa/consensus/core/src/network.rs:462:            Test { name: "Invalid suffix", expr: "testnet-x", expected: Err(NetworkIdError::InvalidSuffix("x".to_string())) },
+/Users/arthur/RustroverProjects/rusty-kaspa/consensus/core/src/network.rs:465:                expr: "testnet-10-x",
+/Users/arthur/RustroverProjects/rusty-kaspa/consensus/src/pipeline/virtual_processor/tests.rs:177:async fn block_template_version_changes_to_v2_upon_activation() {
+/Users/arthur/RustroverProjects/rusty-kaspa/consensus/src/pipeline/virtual_processor/tests.rs:178:    let activation = MAINNET_PARAMS.genesis.daa_score + 10;
+/Users/arthur/RustroverProjects/rusty-kaspa/consensus/src/pipeline/virtual_processor/tests.rs:181:        .edit_consensus_params(|p| p.toccata_activation = ForkActivation::new(activation))
+/Users/arthur/RustroverProjects/rusty-kaspa/consensus/src/pipeline/virtual_processor/tests.rs:187:    let mut saw_pre_activation_template = false;
+/Users/arthur/RustroverProjects/rusty-kaspa/consensus/src/pipeline/virtual_processor/tests.rs:196:        if template.block.header.daa_score >= activation {
+/Users/arthur/RustroverProjects/rusty-kaspa/consensus/src/pipeline/virtual_processor/tests.rs:197:            assert!(saw_pre_activation_template);
+/Users/arthur/RustroverProjects/rusty-kaspa/consensus/src/pipeline/virtual_processor/tests.rs:202:        saw_pre_activation_template = true;
+/Users/arthur/RustroverProjects/rusty-kaspa/consensus/src/pipeline/virtual_processor/tests.rs:351:            p.toccata_activation = ForkActivation::always();
+/Users/arthur/RustroverProjects/rusty-kaspa/consensus/src/pipeline/virtual_processor/utxo_validation.rs:210:        let (expected_accepted_id_merkle_root, smt_build) = if self.toccata_activation.is_active(header.daa_score) {
+/Users/arthur/RustroverProjects/rusty-kaspa/consensus/src/pipeline/virtual_processor/utxo_validation.rs:249:        if self.toccata_activation.is_active(header.daa_score) {
+/Users/arthur/RustroverProjects/rusty-kaspa/consensus/src/pipeline/virtual_processor/utxo_validation.rs:387:        let seq_commit_accessor = if self.toccata_activation.is_active(pov_daa_score) {
+/Users/arthur/RustroverProjects/rusty-kaspa/consensus/src/pipeline/virtual_processor/utxo_validation.rs:392:                self.toccata_activation,
+/Users/arthur/RustroverProjects/rusty-kaspa/consensus/src/pipeline/virtual_processor/utxo_validation.rs:468:        let seq_commit_accessor = if self.toccata_activation.is_active(pov_daa_score) {
+/Users/arthur/RustroverProjects/rusty-kaspa/consensus/src/pipeline/virtual_processor/utxo_validation.rs:473:                self.toccata_activation,
+/Users/arthur/RustroverProjects/rusty-kaspa/consensus/src/pipeline/virtual_processor/utxo_validation.rs:557:            // the current block's POV the lane expired, so a re-touch is a re-activation
+/Users/arthur/RustroverProjects/rusty-kaspa/mining/src/mempool/config.rs:26:/// the mempool and relayed prior toccata activates. It is specified in sompi per 1kg (or 1000 grams) of transaction mass.
+/Users/arthur/RustroverProjects/rusty-kaspa/consensus/src/pipeline/virtual_processor/processor.rs:176:    // Toccata activation
+/Users/arthur/RustroverProjects/rusty-kaspa/consensus/src/pipeline/virtual_processor/processor.rs:177:    pub(crate) toccata_activation: ForkActivation,
+/Users/arthur/RustroverProjects/rusty-kaspa/consensus/src/pipeline/virtual_processor/processor.rs:178:    pub(crate) toccata_logger: ForkLogger,
+/Users/arthur/RustroverProjects/rusty-kaspa/consensus/src/pipeline/virtual_processor/processor.rs:252:            toccata_activation: params.toccata_activation,
+/Users/arthur/RustroverProjects/rusty-kaspa/consensus/src/pipeline/virtual_processor/processor.rs:253:            toccata_logger: ForkLogger::new("virtual state processing rules", true),
+/Users/arthur/RustroverProjects/rusty-kaspa/consensus/src/pipeline/virtual_processor/processor.rs:585:        if self.toccata_activation.is_within_range_from_activation(virtual_daa_window.daa_score, 10_000) {
+/Users/arthur/RustroverProjects/rusty-kaspa/consensus/src/pipeline/virtual_processor/processor.rs:586:            self.toccata_logger.report_activation();
+/Users/arthur/RustroverProjects/rusty-kaspa/consensus/src/pipeline/virtual_processor/processor.rs:590:        let accepted_id_digests = if self.toccata_activation.is_active(virtual_daa_window.daa_score) {
+/Users/arthur/RustroverProjects/rusty-kaspa/consensus/src/pipeline/virtual_processor/processor.rs:666:        if !self.toccata_activation.is_active(self.genesis.daa_score) {
+/Users/arthur/RustroverProjects/rusty-kaspa/consensus/src/pipeline/virtual_processor/processor.rs:824:        // descendant of pp, or a pre-Toccata selected parent right after activation:
+/Users/arthur/RustroverProjects/rusty-kaspa/consensus/src/pipeline/virtual_processor/processor.rs:856:        if !self.toccata_activation.is_active(header.daa_score) {
+/Users/arthur/RustroverProjects/rusty-kaspa/consensus/src/pipeline/virtual_processor/processor.rs:894:    /// When the parent has no stored metadata (e.g. pre-toccata or origin predecessor),
+/Users/arthur/RustroverProjects/rusty-kaspa/consensus/src/pipeline/virtual_processor/processor.rs:1464:        let accepted_id_merkle_root = if self.toccata_activation.is_active(virtual_state.daa_score) {
+/Users/arthur/RustroverProjects/rusty-kaspa/consensus/src/pipeline/virtual_processor/fork_logger.rs:32:    pub fn report_activation(&self) -> bool {
+/Users/arthur/RustroverProjects/rusty-kaspa/consensus/src/processes/coinbase.rs:35:    toccata_activation: ForkActivation,
+/Users/arthur/RustroverProjects/rusty-kaspa/consensus/src/processes/coinbase.rs:41:    /// The crescendo activation DAA score where BPS increased from 1 to 10.
+/Users/arthur/RustroverProjects/rusty-kaspa/consensus/src/processes/coinbase.rs:44:    crescendo_activation_daa_score: u64,
+/Users/arthur/RustroverProjects/rusty-kaspa/consensus/src/processes/coinbase.rs:72:        toccata_activation: ForkActivation,
+/Users/arthur/RustroverProjects/rusty-kaspa/consensus/src/processes/coinbase.rs:87:            toccata_activation,
+/Users/arthur/RustroverProjects/rusty-kaspa/consensus/src/processes/coinbase.rs:90:            crescendo_activation_daa_score: bps_history.activation().daa_score(),
+/Users/arthur/RustroverProjects/rusty-kaspa/consensus/src/processes/coinbase.rs:142:            if self.toccata_activation.is_active(daa_score) { constants::TX_VERSION_TOCCATA } else { constants::TX_VERSION };
+/Users/arthur/RustroverProjects/rusty-kaspa/consensus/src/processes/coinbase.rs:234:        let subsidy_table = if self.bps_history.activation().is_active(daa_score) {
+/Users/arthur/RustroverProjects/rusty-kaspa/consensus/src/processes/coinbase.rs:246:        let seconds_since_deflationary_phase_started = if self.crescendo_activation_daa_score < self.deflationary_phase_daa_score {
+/Users/arthur/RustroverProjects/rusty-kaspa/consensus/src/processes/coinbase.rs:247:            // crescendo_activation < deflationary_phase <= daa_score (activated before deflation)
+/Users/arthur/RustroverProjects/rusty-kaspa/consensus/src/processes/coinbase.rs:249:        } else if daa_score < self.crescendo_activation_daa_score {
+/Users/arthur/RustroverProjects/rusty-kaspa/consensus/src/processes/coinbase.rs:250:            // deflationary_phase <= daa_score < crescendo_activation (pre activation)
+/Users/arthur/RustroverProjects/rusty-kaspa/consensus/src/processes/coinbase.rs:253:            // Else - deflationary_phase <= crescendo_activation <= daa_score.
+/Users/arthur/RustroverProjects/rusty-kaspa/consensus/src/processes/coinbase.rs:254:            // Count seconds differently before and after Crescendo activation
+/Users/arthur/RustroverProjects/rusty-kaspa/consensus/src/processes/coinbase.rs:255:            (self.crescendo_activation_daa_score - self.deflationary_phase_daa_score) / self.bps_history.before()
+/Users/arthur/RustroverProjects/rusty-kaspa/consensus/src/processes/coinbase.rs:256:                + (daa_score - self.crescendo_activation_daa_score) / self.bps_history.after()
+/Users/arthur/RustroverProjects/rusty-kaspa/consensus/src/processes/coinbase.rs:323:        let testnet_11_bps = SIMNET_PARAMS.bps();
+/Users/arthur/RustroverProjects/rusty-kaspa/consensus/src/processes/coinbase.rs:325:            + SUBSIDY_BY_MONTH_TABLE.iter().map(|x| (x.div_ceil(testnet_11_bps) * testnet_11_bps) * SECONDS_PER_MONTH).sum::<u64>();
+/Users/arthur/RustroverProjects/rusty-kaspa/consensus/src/processes/coinbase.rs:368:    /// `cargo test --release --package kaspa-consensus --lib -- processes::coinbase::tests::verify_crescendo_emission_schedule --exact --nocapture --ignored`
+/Users/arthur/RustroverProjects/rusty-kaspa/consensus/src/processes/coinbase.rs:371:    fn verify_crescendo_emission_schedule() {
+/Users/arthur/RustroverProjects/rusty-kaspa/consensus/src/processes/coinbase.rs:373:        // deflation and activation DAA scores (and the test is long anyway)
+/Users/arthur/RustroverProjects/rusty-kaspa/consensus/src/processes/coinbase.rs:376:            params.crescendo_activation = ForkActivation::never();
+/Users/arthur/RustroverProjects/rusty-kaspa/consensus/src/processes/coinbase.rs:380:            let mut activations = vec![10000, 33444444, 120727479];
+/Users/arthur/RustroverProjects/rusty-kaspa/consensus/src/processes/coinbase.rs:382:                let activation = Params::from(network_id).crescendo_activation;
+/Users/arthur/RustroverProjects/rusty-kaspa/consensus/src/processes/coinbase.rs:383:                if activation != ForkActivation::never() && activation != ForkActivation::always() {
+/Users/arthur/RustroverProjects/rusty-kaspa/consensus/src/processes/coinbase.rs:384:                    activations.push(activation.daa_score());
+/Users/arthur/RustroverProjects/rusty-kaspa/consensus/src/processes/coinbase.rs:388:            // Loop over a few random activation points + specified activation points for all nets
+/Users/arthur/RustroverProjects/rusty-kaspa/consensus/src/processes/coinbase.rs:389:            for activation in activations {
+/Users/arthur/RustroverProjects/rusty-kaspa/consensus/src/processes/coinbase.rs:390:                params.crescendo_activation = ForkActivation::new(activation);
+/Users/arthur/RustroverProjects/rusty-kaspa/consensus/src/processes/coinbase.rs:394:                // Epochs only represents the number of times the subsidy changed (lower after activation due to rounding)
+/Users/arthur/RustroverProjects/rusty-kaspa/consensus/src/processes/coinbase.rs:396:                println!("CRESCENDO:\t{}\tepochs, total emission: {}, activation: {}", new_epochs, new_total, activation);
+/Users/arthur/RustroverProjects/rusty-kaspa/consensus/src/processes/coinbase.rs:399:                assert!(diff.abs() <= 51, "activation: {}", activation);
+/Users/arthur/RustroverProjects/rusty-kaspa/consensus/src/processes/coinbase.rs:406:        let activation = cbm.bps().activation().daa_score();
+/Users/arthur/RustroverProjects/rusty-kaspa/consensus/src/processes/coinbase.rs:413:            // Pre activation we expect the legacy calc (1bps)
+/Users/arthur/RustroverProjects/rusty-kaspa/consensus/src/processes/coinbase.rs:414:            if current < activation {
+/Users/arthur/RustroverProjects/rusty-kaspa/consensus/src/processes/coinbase.rs:441:            if params.crescendo_activation != ForkActivation::always() {
+/Users/arthur/RustroverProjects/rusty-kaspa/consensus/src/processes/coinbase.rs:442:                // We test activation scenarios in verify_crescendo_emission_schedule
+/Users/arthur/RustroverProjects/rusty-kaspa/consensus/src/processes/coinbase.rs:443:                params.crescendo_activation = ForkActivation::never();
+/Users/arthur/RustroverProjects/rusty-kaspa/consensus/src/processes/coinbase.rs:599:    fn expected_coinbase_transaction_selects_version_by_toccata_activation() {
+/Users/arthur/RustroverProjects/rusty-kaspa/consensus/src/processes/coinbase.rs:601:        params.toccata_activation = ForkActivation::new(100);
+/Users/arthur/RustroverProjects/rusty-kaspa/consensus/src/processes/coinbase.rs:608:        let pre_activation =
+/Users/arthur/RustroverProjects/rusty-kaspa/consensus/src/processes/coinbase.rs:610:        let post_activation =
+/Users/arthur/RustroverProjects/rusty-kaspa/consensus/src/processes/coinbase.rs:613:        assert_eq!(pre_activation.tx.version, constants::TX_VERSION);
+/Users/arthur/RustroverProjects/rusty-kaspa/consensus/src/processes/coinbase.rs:614:        assert_eq!(post_activation.tx.version, constants::TX_VERSION_TOCCATA);
+/Users/arthur/RustroverProjects/rusty-kaspa/consensus/src/processes/coinbase.rs:624:            params.toccata_activation,
+/Users/arthur/RustroverProjects/rusty-kaspa/testing/integration/src/tasks/daemon.rs:16:#[derive(Parser, Debug)]
+/Users/arthur/RustroverProjects/rusty-kaspa/testing/integration/src/tasks/daemon.rs:72:            "devnet-prealloc".to_owned(),
+/Users/arthur/RustroverProjects/rusty-kaspa/testing/integration/src/tasks/daemon.rs:109:    #[cfg(feature = "devnet-prealloc")]
+/Users/arthur/RustroverProjects/rusty-kaspa/testing/integration/src/tasks/daemon.rs:111:        args.rpclisten = Some(format!("0.0.0.0:{}", self.rpc).try_into().unwrap());
+/Users/arthur/RustroverProjects/rusty-kaspa/testing/integration/src/tasks/daemon.rs:118:    #[cfg(not(feature = "devnet-prealloc"))]
+/Users/arthur/RustroverProjects/rusty-kaspa/testing/integration/src/tasks/daemon.rs:120:        args.rpclisten = Some(format!("0.0.0.0:{}", self.rpc).try_into().unwrap());
+/Users/arthur/RustroverProjects/rusty-kaspa/consensus/src/processes/pruning.rs:236:            // Post-crescendo: expected header pruning point is no longer part of header validity, but we want to make sure
+/Users/arthur/RustroverProjects/rusty-kaspa/consensus/src/processes/past_median_time.rs:24:            // This indicates we are in the few seconds post hardfork/network activation where the window is
+/Users/arthur/RustroverProjects/rusty-kaspa/consensus/src/processes/transaction_validator/tx_validation_in_isolation.rs:15:    /// header contextual validation if it becomes HF activation dependent. This is bcs we rely
+/Users/arthur/RustroverProjects/rusty-kaspa/consensus/src/processes/transaction_validator/tx_validation_in_isolation.rs:92:        // TODO(post-toccata): restore this to the const post-activation limit and remove
+/Users/arthur/RustroverProjects/rusty-kaspa/consensus/src/processes/transaction_validator/tx_validation_in_isolation.rs:357:        forked_params.toccata_activation = ForkActivation::new(100);
+/Users/arthur/RustroverProjects/rusty-kaspa/consensus/src/processes/transaction_validator/tx_validation_in_isolation.rs:412:        // TODO(post-toccata): turn back into pure in-isolation test
+/Users/arthur/RustroverProjects/rusty-kaspa/consensus/core/src/errors/config.rs:20:    #[cfg(feature = "devnet-prealloc")]
+/Users/arthur/RustroverProjects/rusty-kaspa/consensus/core/src/errors/config.rs:21:    #[error("Cannot preallocate UTXOs on any network except devnet")]
+/Users/arthur/RustroverProjects/rusty-kaspa/consensus/core/src/errors/config.rs:24:    #[cfg(feature = "devnet-prealloc")]
+/Users/arthur/RustroverProjects/rusty-kaspa/consensus/src/processes/transaction_validator/tx_validation_in_utxo_context.rs:171:        let covenants_enabled = self.toccata_activation.is_active(block_daa_score);
+/Users/arthur/RustroverProjects/rusty-kaspa/consensus/src/processes/transaction_validator/tx_validation_in_utxo_context.rs:178:        if !self.toccata_activation.is_active(block_daa_score) {
+/Users/arthur/RustroverProjects/rusty-kaspa/consensus/src/processes/transaction_validator/tx_validation_in_header_context.rs:95:    // TODO(post-toccata): Remove the contextual check and only leave the isolated one after the HF
+/Users/arthur/RustroverProjects/rusty-kaspa/consensus/src/processes/transaction_validator/tx_validation_in_header_context.rs:97:        if self.toccata_activation.is_active(block_daa_score) {
+/Users/arthur/RustroverProjects/rusty-kaspa/consensus/src/processes/transaction_validator/tx_validation_in_header_context.rs:111:    // TODO(post-toccata): Remove this and restore the context-free check_transaction_signature_scripts.
+/Users/arthur/RustroverProjects/rusty-kaspa/cli/src/cli.rs:370:                                Events::AccountDeactivation { .. } => { },
+/Users/arthur/RustroverProjects/rusty-kaspa/consensus/src/processes/transaction_validator/mod.rs:28:    toccata_activation: ForkActivation,
+/Users/arthur/RustroverProjects/rusty-kaspa/consensus/src/processes/transaction_validator/mod.rs:46:        toccata_activation: ForkActivation,
+/Users/arthur/RustroverProjects/rusty-kaspa/consensus/src/processes/transaction_validator/mod.rs:59:            toccata_activation,
+/Users/arthur/RustroverProjects/rusty-kaspa/consensus/src/processes/transaction_validator/mod.rs:84:            toccata_activation: ForkActivation::never(),
+/Users/arthur/RustroverProjects/rusty-kaspa/consensus/core/src/config/genesis.rs:145:        0x6b, 0x61, 0x73, 0x70, 0x61, 0x2d, 0x74, 0x65, 0x73, 0x74, 0x6e, 0x65, 0x74, // kaspa-testnet
+/Users/arthur/RustroverProjects/rusty-kaspa/consensus/core/src/config/genesis.rs:171:        0x6b, 0x61, 0x73, 0x70, 0x61, 0x2d, 0x73, 0x69, 0x6d, 0x6e, 0x65, 0x74, // kaspa-simnet
+/Users/arthur/RustroverProjects/rusty-kaspa/consensus/core/src/config/genesis.rs:177:        // Golang devnet genesis hash
+/Users/arthur/RustroverProjects/rusty-kaspa/consensus/core/src/config/genesis.rs:181:        // New rust devnet genesis hash updated according to the modified bits field (see below)
+/Users/arthur/RustroverProjects/rusty-kaspa/consensus/core/src/config/genesis.rs:192:    // bits: 525264379, // Golang devnet genesis bits
+/Users/arthur/RustroverProjects/rusty-kaspa/consensus/core/src/config/genesis.rs:193:    bits: 0x1e21bc1c, // Bits with ~testnet-like difficulty for slow devnet start
+/Users/arthur/RustroverProjects/rusty-kaspa/consensus/core/src/config/genesis.rs:203:        0x6b, 0x61, 0x73, 0x70, 0x61, 0x2d, 0x64, 0x65, 0x76, 0x6e, 0x65, 0x74, // kaspa-devnet
+/Users/arthur/RustroverProjects/rusty-kaspa/consensus/core/src/config/mod.rs:8:#[cfg(feature = "devnet-prealloc")]
+/Users/arthur/RustroverProjects/rusty-kaspa/consensus/core/src/config/mod.rs:10:#[cfg(feature = "devnet-prealloc")]
+/Users/arthur/RustroverProjects/rusty-kaspa/consensus/core/src/config/mod.rs:67:    #[cfg(feature = "devnet-prealloc")]
+/Users/arthur/RustroverProjects/rusty-kaspa/consensus/core/src/config/mod.rs:101:            #[cfg(feature = "devnet-prealloc")]
+/Users/arthur/RustroverProjects/rusty-kaspa/consensus/core/src/config/params.rs:25:// TODO(post-toccata): check whether this early signature-script length guard can be
+/Users/arthur/RustroverProjects/rusty-kaspa/consensus/core/src/config/params.rs:48:    /// Returns the actual DAA score triggering the activation. Should be used only
+/Users/arthur/RustroverProjects/rusty-kaspa/consensus/core/src/config/params.rs:50:    /// Otherwise, **activation checks should always go through `self.is_active(..)`**
+/Users/arthur/RustroverProjects/rusty-kaspa/consensus/core/src/config/params.rs:75:    pub fn is_within_range_from_activation(self, current_daa_score: u64, range: u64) -> bool {
+/Users/arthur/RustroverProjects/rusty-kaspa/consensus/core/src/config/params.rs:80:    /// Returns the distance from activation if so, or `None` otherwise.
+/Users/arthur/RustroverProjects/rusty-kaspa/consensus/core/src/config/params.rs:81:    pub fn is_within_range_before_activation(self, current_daa_score: u64, range: u64) -> Option<u64> {
+/Users/arthur/RustroverProjects/rusty-kaspa/consensus/core/src/config/params.rs:86:/// A consensus parameter which depends on forking activation
+/Users/arthur/RustroverProjects/rusty-kaspa/consensus/core/src/config/params.rs:91:    activation: ForkActivation,
+/Users/arthur/RustroverProjects/rusty-kaspa/consensus/core/src/config/params.rs:95:    const fn new(pre: T, post: T, activation: ForkActivation) -> Self {
+/Users/arthur/RustroverProjects/rusty-kaspa/consensus/core/src/config/params.rs:96:        Self { pre, post, activation }
+/Users/arthur/RustroverProjects/rusty-kaspa/consensus/core/src/config/params.rs:100:        Self { pre: val, post: val, activation: ForkActivation::never() }
+/Users/arthur/RustroverProjects/rusty-kaspa/consensus/core/src/config/params.rs:103:    pub fn activation(&self) -> ForkActivation {
+/Users/arthur/RustroverProjects/rusty-kaspa/consensus/core/src/config/params.rs:104:        self.activation
+/Users/arthur/RustroverProjects/rusty-kaspa/consensus/core/src/config/params.rs:108:        if self.activation.is_active(daa_score) { self.post } else { self.pre }
+/Users/arthur/RustroverProjects/rusty-kaspa/consensus/core/src/config/params.rs:111:    pub fn with_delayed_activation(&self, delay_daa_score: u64) -> Self {
+/Users/arthur/RustroverProjects/rusty-kaspa/consensus/core/src/config/params.rs:112:        Self::new(self.pre, self.post, self.activation.delayed_by(delay_daa_score))
+/Users/arthur/RustroverProjects/rusty-kaspa/consensus/core/src/config/params.rs:115:    /// Returns the value before activation (=pre unless activation = always)
+/Users/arthur/RustroverProjects/rusty-kaspa/consensus/core/src/config/params.rs:117:        match self.activation.0 {
+/Users/arthur/RustroverProjects/rusty-kaspa/consensus/core/src/config/params.rs:123:    /// Returns the permanent long-term value after activation (=post unless the activation is never scheduled)
+/Users/arthur/RustroverProjects/rusty-kaspa/consensus/core/src/config/params.rs:125:        match self.activation.0 {
+/Users/arthur/RustroverProjects/rusty-kaspa/consensus/core/src/config/params.rs:131:    /// Returns the configured post-fork value regardless of whether activation is scheduled.
+/Users/arthur/RustroverProjects/rusty-kaspa/consensus/core/src/config/params.rs:138:        ForkedParam::new(f(self.pre), f(self.post), self.activation)
+/Users/arthur/RustroverProjects/rusty-kaspa/consensus/core/src/config/params.rs:152:    /// Note that if activation is not scheduled (set to never) then pre is always returned,
+/Users/arthur/RustroverProjects/rusty-kaspa/consensus/core/src/config/params.rs:153:    /// and if activation is set to always (since inception), post will be returned.
+/Users/arthur/RustroverProjects/rusty-kaspa/consensus/core/src/config/params.rs:155:        match self.activation.0 {
+/Users/arthur/RustroverProjects/rusty-kaspa/consensus/core/src/config/params.rs:165:    /// Note that if activation is not scheduled (set to never) then pre is always returned,
+/Users/arthur/RustroverProjects/rusty-kaspa/consensus/core/src/config/params.rs:166:    /// and if activation is set to always (since inception), post will be returned.
+/Users/arthur/RustroverProjects/rusty-kaspa/consensus/core/src/config/params.rs:168:        match self.activation.0 {
+/Users/arthur/RustroverProjects/rusty-kaspa/consensus/core/src/config/params.rs:263:    /// Target time per block prior to the crescendo hardfork (in milliseconds)
+/Users/arthur/RustroverProjects/rusty-kaspa/consensus/core/src/config/params.rs:264:    pub pre_crescendo_target_time_per_block: Option<u64>,
+/Users/arthur/RustroverProjects/rusty-kaspa/consensus/core/src/config/params.rs:266:    /// Crescendo activation DAA score
+/Users/arthur/RustroverProjects/rusty-kaspa/consensus/core/src/config/params.rs:267:    pub crescendo_activation: Option<ForkActivation>,
+/Users/arthur/RustroverProjects/rusty-kaspa/consensus/core/src/config/params.rs:269:    pub toccata_activation: Option<ForkActivation>,
+/Users/arthur/RustroverProjects/rusty-kaspa/consensus/core/src/config/params.rs:276:            pre_crescendo_target_time_per_block: Some(p.pre_crescendo_target_time_per_block),
+/Users/arthur/RustroverProjects/rusty-kaspa/consensus/core/src/config/params.rs:300:            crescendo_activation: Some(p.crescendo_activation),
+/Users/arthur/RustroverProjects/rusty-kaspa/consensus/core/src/config/params.rs:301:            toccata_activation: Some(p.toccata_activation),
+/Users/arthur/RustroverProjects/rusty-kaspa/consensus/core/src/config/params.rs:363:    /// Target time per block prior to the crescendo hardfork (in milliseconds).
+/Users/arthur/RustroverProjects/rusty-kaspa/consensus/core/src/config/params.rs:365:    pub pre_crescendo_target_time_per_block: u64,
+/Users/arthur/RustroverProjects/rusty-kaspa/consensus/core/src/config/params.rs:367:    /// Crescendo activation DAA score
+/Users/arthur/RustroverProjects/rusty-kaspa/consensus/core/src/config/params.rs:368:    pub crescendo_activation: ForkActivation,
+/Users/arthur/RustroverProjects/rusty-kaspa/consensus/core/src/config/params.rs:370:    pub toccata_activation: ForkActivation,
+/Users/arthur/RustroverProjects/rusty-kaspa/consensus/core/src/config/params.rs:408:            1000 / self.pre_crescendo_target_time_per_block,
+/Users/arthur/RustroverProjects/rusty-kaspa/consensus/core/src/config/params.rs:410:            self.crescendo_activation,
+/Users/arthur/RustroverProjects/rusty-kaspa/consensus/core/src/config/params.rs:420:        ForkedParam::new(self.prior_block_mass_limits, new_block_mass_limits, self.toccata_activation)
+/Users/arthur/RustroverProjects/rusty-kaspa/consensus/core/src/config/params.rs:433:    /// near activation are normalized by the stricter pre-activation limits.
+/Users/arthur/RustroverProjects/rusty-kaspa/consensus/core/src/config/params.rs:442:            "delaying mempool mass activation assumes the compute mass limit does not change"
+/Users/arthur/RustroverProjects/rusty-kaspa/consensus/core/src/config/params.rs:446:            "delaying mempool mass activation assumes the storage mass limit does not change"
+/Users/arthur/RustroverProjects/rusty-kaspa/consensus/core/src/config/params.rs:450:            "delaying mempool mass activation is only safe when the post-activation transient limit is not stricter"
+/Users/arthur/RustroverProjects/rusty-kaspa/consensus/core/src/config/params.rs:453:        block_mass_limits.with_delayed_activation(MEMPOOL_BLOCK_MASS_ACTIVATION_DELAY_SECONDS.saturating_mul(self.bps()))
+/Users/arthur/RustroverProjects/rusty-kaspa/consensus/core/src/config/params.rs:464:            "mempool mass normalization assumes the reference mass is stable across activation"
+/Users/arthur/RustroverProjects/rusty-kaspa/consensus/core/src/config/params.rs:473:        ForkedParam::new(self.prior_max_signature_script_len, self.new_max_signature_script_len, self.toccata_activation)
+/Users/arthur/RustroverProjects/rusty-kaspa/consensus/core/src/config/params.rs:535:        ForkedParam::new(BLOCK_VERSION, TOCCATA_BLOCK_VERSION, self.toccata_activation)
+/Users/arthur/RustroverProjects/rusty-kaspa/consensus/core/src/config/params.rs:603:            pre_crescendo_target_time_per_block: overrides
+/Users/arthur/RustroverProjects/rusty-kaspa/consensus/core/src/config/params.rs:604:                .pre_crescendo_target_time_per_block
+/Users/arthur/RustroverProjects/rusty-kaspa/consensus/core/src/config/params.rs:605:                .unwrap_or(self.pre_crescendo_target_time_per_block),
+/Users/arthur/RustroverProjects/rusty-kaspa/consensus/core/src/config/params.rs:607:            crescendo_activation: overrides.crescendo_activation.unwrap_or(self.crescendo_activation),
+/Users/arthur/RustroverProjects/rusty-kaspa/consensus/core/src/config/params.rs:608:            toccata_activation: overrides.toccata_activation.unwrap_or(self.toccata_activation),
+/Users/arthur/RustroverProjects/rusty-kaspa/consensus/core/src/config/params.rs:718:    pre_crescendo_target_time_per_block: 1000,
+/Users/arthur/RustroverProjects/rusty-kaspa/consensus/core/src/config/params.rs:721:    crescendo_activation: ForkActivation::new(110_165_000),
+/Users/arthur/RustroverProjects/rusty-kaspa/consensus/core/src/config/params.rs:723:    toccata_activation: ForkActivation::never(),
+/Users/arthur/RustroverProjects/rusty-kaspa/consensus/core/src/config/params.rs:731:        "dnsseeder-kaspa-testnet.x-con.at",
+/Users/arthur/RustroverProjects/rusty-kaspa/consensus/core/src/config/params.rs:733:        "n-testnet-10.kaspa.ws",
+/Users/arthur/RustroverProjects/rusty-kaspa/consensus/core/src/config/params.rs:778:    pre_crescendo_target_time_per_block: 1000,
+/Users/arthur/RustroverProjects/rusty-kaspa/consensus/core/src/config/params.rs:781:    crescendo_activation: ForkActivation::new(88_657_000),
+/Users/arthur/RustroverProjects/rusty-kaspa/consensus/core/src/config/params.rs:784:    toccata_activation: ForkActivation::new(467_579_632),
+/Users/arthur/RustroverProjects/rusty-kaspa/consensus/core/src/config/params.rs:819:    skip_proof_of_work: true, // For simnet only, PoW can be simulated by default
+/Users/arthur/RustroverProjects/rusty-kaspa/consensus/core/src/config/params.rs:823:    // For simnet, we deviate from default 10BPS configuration and allow at least 64 parents in order to support mempool benchmarks out of the box
+/Users/arthur/RustroverProjects/rusty-kaspa/consensus/core/src/config/params.rs:826:    pre_crescendo_target_time_per_block: TenBps::target_time_per_block(),
+/Users/arthur/RustroverProjects/rusty-kaspa/consensus/core/src/config/params.rs:828:    crescendo_activation: ForkActivation::always(),
+/Users/arthur/RustroverProjects/rusty-kaspa/consensus/core/src/config/params.rs:829:    toccata_activation: ForkActivation::always(),
+/Users/arthur/RustroverProjects/rusty-kaspa/consensus/core/src/config/params.rs:870:    pre_crescendo_target_time_per_block: TenBps::target_time_per_block(),
+/Users/arthur/RustroverProjects/rusty-kaspa/consensus/core/src/config/params.rs:872:    crescendo_activation: ForkActivation::always(),
+/Users/arthur/RustroverProjects/rusty-kaspa/consensus/core/src/config/params.rs:873:    toccata_activation: ForkActivation::never(),
+/Users/arthur/RustroverProjects/rusty-kaspa/consensus/core/src/config/params.rs:881:    fn override_params_deserializes_toccata_activation() {
+/Users/arthur/RustroverProjects/rusty-kaspa/consensus/core/src/config/params.rs:882:        let override_params: OverrideParams = serde_json::from_str(r#"{"toccata_activation":42}"#).unwrap();
+/Users/arthur/RustroverProjects/rusty-kaspa/consensus/core/src/config/params.rs:884:        assert_eq!(override_params.toccata_activation, Some(ForkActivation::new(42)));
+/Users/arthur/RustroverProjects/rusty-kaspa/consensus/core/src/constants.rs:2:// TODO(post-toccata): Change this to 2 and remove TOCCATA_BLOCK_VERSION.
+/Users/arthur/RustroverProjects/rusty-kaspa/consensus/core/src/constants.rs:7:// TODO(post-toccata): Remove this and change BLOCK_VERSION to 2.
+/Users/arthur/RustroverProjects/rusty-kaspa/consensus/core/src/merkle.rs:9:pub fn calc_hash_merkle_root_pre_crescendo<'a>(txs: impl ExactSizeIterator<Item = &'a Transaction>) -> Hash {
+/Users/arthur/RustroverProjects/rusty-kaspa/consensus/core/src/merkle.rs:10:    calc_merkle_root(txs.map(hashing::tx::hash_pre_crescendo))
+/Users/arthur/RustroverProjects/rusty-kaspa/consensus/core/src/merkle.rs:13:pub fn calc_accepted_id_merkle_root_pre_crescendo(mut accepted_tx_ids: Vec<Hash>) -> Hash {
+/Users/arthur/RustroverProjects/rusty-kaspa/consensus/core/src/merkle.rs:20:    use crate::merkle::{calc_hash_merkle_root, calc_hash_merkle_root_pre_crescendo};
+/Users/arthur/RustroverProjects/rusty-kaspa/consensus/core/src/merkle.rs:277:        // Make sure that pre-crescendo hash is unaffected by the mass set
+/Users/arthur/RustroverProjects/rusty-kaspa/consensus/core/src/merkle.rs:279:            calc_hash_merkle_root_pre_crescendo(txs.iter()),
+/Users/arthur/RustroverProjects/rusty-kaspa/cli/src/modules/node.rs:226:                    twarnln!(ctx, "example: 'node select /home/user/testnet/kaspad'");
+/Users/arthur/RustroverProjects/rusty-kaspa/cli/src/modules/network.rs:4:#[help("Select network type (mainnet|testnet)")]
+/Users/arthur/RustroverProjects/rusty-kaspa/consensus/core/src/api/mod.rs:328:    /// block-to-seq_commit fold is just a header read + activation check).
+/Users/arthur/RustroverProjects/rusty-kaspa/consensus/src/processes/pruning_proof/apply.rs:302:        if self.toccata_activation.is_active(pruning_point_header.daa_score) {
+/Users/arthur/RustroverProjects/rusty-kaspa/consensus/src/processes/pruning_proof/apply.rs:325:                if !self.toccata_activation.is_active(current_header.daa_score) {
+/Users/arthur/RustroverProjects/rusty-kaspa/consensus/src/processes/pruning_proof/apply.rs:326:                    // We cannot demand chain-qualification for blocks below the Toccata activation
+/Users/arthur/RustroverProjects/rusty-kaspa/consensus/core/tests/db_compat.rs:5://! `tests/fixtures/pre_toccata_db_compat_hex`) using the post-Toccata types,
+/Users/arthur/RustroverProjects/rusty-kaspa/consensus/core/tests/db_compat.rs:19:const FIXTURE: &str = include_str!("fixtures/pre_toccata_db_compat_hex");
+/Users/arthur/RustroverProjects/rusty-kaspa/consensus/core/tests/db_compat.rs:81:fn decode_pre_toccata_coinbase_transaction() {
+/Users/arthur/RustroverProjects/rusty-kaspa/consensus/core/tests/db_compat.rs:88:fn decode_pre_toccata_regular_transaction() {
+/Users/arthur/RustroverProjects/rusty-kaspa/consensus/core/tests/db_compat.rs:95:fn decode_pre_toccata_block_body() {
+/Users/arthur/RustroverProjects/rusty-kaspa/consensus/core/tests/db_compat.rs:102:fn roundtrip_pre_toccata_regular_transaction() {
+/Users/arthur/RustroverProjects/rusty-kaspa/consensus/core/tests/db_compat.rs:111:fn roundtrip_pre_toccata_block_body() {
+/Users/arthur/RustroverProjects/rusty-kaspa/consensus/core/tests/db_compat.rs:119:fn roundtrip_post_toccata_transaction_with_compute_budget_and_covenant() {
+/Users/arthur/RustroverProjects/rusty-kaspa/consensus/core/tests/db_compat.rs:136:fn roundtrip_mixed_pre_and_post_toccata_block_body() {
+/Users/arthur/RustroverProjects/rusty-kaspa/consensus/src/processes/pruning_proof/mod.rs:122:    toccata_activation: ForkActivation,
+/Users/arthur/RustroverProjects/rusty-kaspa/consensus/src/processes/pruning_proof/mod.rs:144:        toccata_activation: ForkActivation,
+/Users/arthur/RustroverProjects/rusty-kaspa/consensus/src/processes/pruning_proof/mod.rs:180:            toccata_activation,
+/Users/arthur/RustroverProjects/rusty-kaspa/consensus/src/processes/pruning_proof/mod.rs:301:                    // TODO(post-toccata): remove the redundant `ghostdag_blocks` field as part of cleaning up old P2P versions
+/Users/arthur/RustroverProjects/rusty-kaspa/consensus/src/processes/pruning_proof/mod.rs:342:        if self.toccata_activation.is_active(self.headers_store.get_daa_score(pruning_point).unwrap()) {
+/Users/arthur/RustroverProjects/rusty-kaspa/consensus/src/processes/pruning_proof/mod.rs:372:                if !self.toccata_activation.is_active(current_header.daa_score) {
+/Users/arthur/RustroverProjects/rusty-kaspa/consensus/src/processes/pruning_proof/mod.rs:373:                    // We are not demanded to provide the chain segment for blocks below the Toccata activation
+/Users/arthur/RustroverProjects/rusty-kaspa/rpc/core/src/api/rpc.rs:141:    /// Requests the list of known kaspad addresses in the current network (mainnet, testnet, etc.)
+/Users/arthur/RustroverProjects/rusty-kaspa/consensus/src/processes/window.rs:415:                    // TODO (relaxed): remove this once most of the network upgrades from crescendo version
+/Users/arthur/RustroverProjects/rusty-kaspa/rothschild/src/main.rs:50:pub struct Args {
+/Users/arthur/RustroverProjects/rusty-kaspa/rothschild/src/main.rs:108:                .default_value("testnet")
+/Users/arthur/RustroverProjects/rusty-kaspa/rothschild/src/main.rs:109:                .value_parser(["testnet", "devnet"])
+/Users/arthur/RustroverProjects/rusty-kaspa/rothschild/src/main.rs:110:                .help("Network to use (testnet or devnet)"),
+/Users/arthur/RustroverProjects/rusty-kaspa/rothschild/src/main.rs:117:                .help("RPC server (defaults: testnet=16210, devnet=16610"),
+/Users/arthur/RustroverProjects/rusty-kaspa/consensus/core/src/utxo/mod.rs:1:pub mod pre_toccata;
+/Users/arthur/RustroverProjects/rusty-kaspa/cli/src/matchers.rs:35:                    cli_.term().writeln("testnet addresses can not be currently looked up with the block explorer");
+/Users/arthur/RustroverProjects/rusty-kaspa/consensus/core/src/utxo/utxo_entry.rs:137:    fn pre_toccata_bytes() -> Vec<u8> {
+/Users/arthur/RustroverProjects/rusty-kaspa/consensus/core/src/utxo/utxo_entry.rs:150:    fn decode_pre_toccata() {
+/Users/arthur/RustroverProjects/rusty-kaspa/consensus/core/src/utxo/utxo_entry.rs:151:        let decoded: UtxoEntry = bincode::deserialize(&pre_toccata_bytes()).expect("decode pre-Toccata UtxoEntry");
+/Users/arthur/RustroverProjects/rusty-kaspa/consensus/core/src/utxo/utxo_entry.rs:161:    fn pre_toccata_hex_decodes_as_pre_toccata_entry() {
+/Users/arthur/RustroverProjects/rusty-kaspa/consensus/core/src/utxo/utxo_entry.rs:162:        use crate::utxo::pre_toccata::PreToccataUtxoEntry;
+/Users/arthur/RustroverProjects/rusty-kaspa/consensus/core/src/utxo/utxo_entry.rs:163:        let bytes = pre_toccata_bytes();
+/Users/arthur/RustroverProjects/rusty-kaspa/consensus/core/src/utxo/utxo_entry.rs:176:    fn decode_post_toccata_none() {
+/Users/arthur/RustroverProjects/rusty-kaspa/consensus/core/src/utxo/utxo_entry.rs:185:    fn decode_post_toccata_some() {
+/Users/arthur/RustroverProjects/rusty-kaspa/consensus/core/src/utxo/utxo_entry.rs:194:    fn bincode_roundtrip_pre_toccata() {
+/Users/arthur/RustroverProjects/rusty-kaspa/consensus/core/src/utxo/utxo_entry.rs:195:        let decoded: UtxoEntry = bincode::deserialize(&pre_toccata_bytes()).expect("decode pre-Toccata UtxoEntry");
+/Users/arthur/RustroverProjects/rusty-kaspa/consensus/core/src/utxo/utxo_entry.rs:202:    fn bincode_roundtrip_post_toccata() {
+/Users/arthur/RustroverProjects/rusty-kaspa/cli/src/wizards/wallet.rs:32:        tprintln!(ctx, "Currently available networks are 'mainnet', 'testnet-10' and 'testnet-11'");
+/Users/arthur/RustroverProjects/rusty-kaspa/consensus/core/src/utxo/utxo_diff.rs:593:    fn decode_pre_toccata_utxo_diff_fixture() {
+/Users/arthur/RustroverProjects/rusty-kaspa/consensus/core/src/utxo/utxo_diff.rs:594:        use crate::utxo::pre_toccata::PreToccataUtxoDiff;
+/Users/arthur/RustroverProjects/rusty-kaspa/wallet/core/src/settings.rs:20:    #[describe("Network type (mainnet|testnet-10|testnet-11)")]
+/Users/arthur/RustroverProjects/rusty-kaspa/wallet/bip32/src/mnemonic/phrase.rs:304:                // KTRV (kaspa testnet xprv)
+/Users/arthur/RustroverProjects/rusty-kaspa/wallet/core/src/error.rs:79:    #[error("No network selected. Please use `network (mainnet|testnet-10|testnet-11)` to select a network.")]
+/Users/arthur/RustroverProjects/rusty-kaspa/consensus/core/src/utxo/pre_toccata.rs:106:    fn pre_toccata_entry_self_roundtrip() {
+/Users/arthur/RustroverProjects/rusty-kaspa/consensus/core/src/utxo/pre_toccata.rs:114:    fn pre_toccata_entry_decodes_as_post_toccata() {
+/Users/arthur/RustroverProjects/rusty-kaspa/consensus/core/src/utxo/pre_toccata.rs:127:    fn pre_toccata_diff_via_shadow_yields_post_toccata() {
+/Users/arthur/RustroverProjects/rusty-kaspa/wallet/bip32/src/prefix.rs:14:/// `xprv`/`xpub` (mainnet) and `tprv`/`tpub` (testnet), however in practice
+/Users/arthur/RustroverProjects/rusty-kaspa/wallet/core/src/wasm/utils.rs:38:/// based on the network type (e.g. `KAS` for mainnet, `TKAS` for testnet,
+/Users/arthur/RustroverProjects/rusty-kaspa/wallet/core/src/wasm/utils.rs:39:/// `SKAS` for simnet, `DKAS` for devnet).
+/Users/arthur/RustroverProjects/rusty-kaspa/wallet/core/src/events.rs:127:    AccountDeactivation {
+/Users/arthur/RustroverProjects/rusty-kaspa/wallet/core/src/events.rs:286:    AccountDeactivation,
+/Users/arthur/RustroverProjects/rusty-kaspa/wallet/core/src/events.rs:324:            Events::AccountDeactivation { .. } => EventKind::AccountDeactivation,
+/Users/arthur/RustroverProjects/rusty-kaspa/wallet/core/src/events.rs:364:            "account-activation" => Ok(EventKind::AccountActivation),
+/Users/arthur/RustroverProjects/rusty-kaspa/wallet/core/src/events.rs:365:            "account-deactivation" => Ok(EventKind::AccountDeactivation),
+/Users/arthur/RustroverProjects/rusty-kaspa/wallet/core/src/events.rs:413:            EventKind::AccountActivation => "account-activation",
+/Users/arthur/RustroverProjects/rusty-kaspa/wallet/core/src/events.rs:414:            EventKind::AccountDeactivation => "account-deactivation",
+/Users/arthur/RustroverProjects/rusty-kaspa/consensus/core/src/hashing/tx.rs:26:/// Returns the transaction hash pre-crescendo (which excludes the mass commitment)
+/Users/arthur/RustroverProjects/rusty-kaspa/consensus/core/src/hashing/tx.rs:27:pub fn hash_pre_crescendo(tx: &Transaction) -> Hash {
+/Users/arthur/RustroverProjects/rusty-kaspa/wallet/core/src/wasm/notify.rs:117:            AccountActivation = "account-activation",
+/Users/arthur/RustroverProjects/rusty-kaspa/wallet/core/src/wasm/notify.rs:118:            AccountDeactivation = "account-deactivation",
+/Users/arthur/RustroverProjects/rusty-kaspa/wallet/core/src/wasm/notify.rs:154:            "account-activation": IAccountActivationEvent,
+/Users/arthur/RustroverProjects/rusty-kaspa/wallet/core/src/wasm/notify.rs:155:            "account-deactivation": IAccountDeactivationEvent,
+/Users/arthur/RustroverProjects/rusty-kaspa/wallet/core/src/wasm/notify.rs:414:    IAccountDeactivationEvent,
+/Users/arthur/RustroverProjects/rusty-kaspa/wallet/core/src/wasm/notify.rs:421:    export interface IAccountDeactivationEvent {
+/Users/arthur/RustroverProjects/rusty-kaspa/wallet/core/src/wallet/mod.rs:480:        self.notify(Events::AccountDeactivation { ids }).await?;
+/Users/arthur/RustroverProjects/rusty-kaspa/wallet/core/src/wasm/tx/generator/generator.rs:98:     * Optional NetworkId or network id as string (i.e. `mainnet` or `testnet-11`). Required when {@link IGeneratorSettingsObject.entries} is array
+/Users/arthur/RustroverProjects/rusty-kaspa/wallet/core/src/tx/payment.rs:21:     * you are transacting on (e.g. `kaspa:` for mainnet, `kaspatest:` for testnet, etc).
+
+== stderr ==

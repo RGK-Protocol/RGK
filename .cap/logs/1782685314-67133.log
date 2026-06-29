@@ -1,0 +1,16 @@
+== stdout ==
+
+running 3 tests
+test native::tests::public_and_private_lane_policies_have_different_visibility ... ok
+test native::tests::private_lane_discovery_and_tags_behave_as_commitments ... ok
+test native::tests::private_lane_graph_root_binds_ordered_lane_nodes ... ok
+
+test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 28 filtered out; finished in 0.00s
+
+
+== stderr ==
+    Blocking waiting for file lock on package cache
+    Blocking waiting for file lock on package cache
+   Compiling rgk-asset v0.1.0 (/Users/arthur/RustroverProjects/rgk/crates/rgk-asset)
+    Finished `test` profile [optimized + debuginfo] target(s) in 1.62s
+     Running unittests src/lib.rs (target/debug/deps/rgk_asset-62819fe3dc6f14f9)

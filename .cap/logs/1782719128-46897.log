@@ -1,0 +1,35 @@
+== stdout ==
+
+== stderr ==
+    Blocking waiting for file lock on package cache
+    Blocking waiting for file lock on package cache
+    Blocking waiting for file lock on package cache
+    Blocking waiting for file lock on package cache
+    Blocking waiting for file lock on build directory
+   Compiling rgk-asset v0.1.0 (/Users/arthur/RustroverProjects/rgk/crates/rgk-asset)
+   Compiling kaspa-wrpc-client v1.2.2-toc.4 (/Users/arthur/RustroverProjects/rusty-kaspa/rpc/wrpc/client)
+   Compiling rgk-zk v0.1.0 (/Users/arthur/RustroverProjects/rgk/crates/rgk-zk)
+   Compiling rgk-kaspa v0.1.0 (/Users/arthur/RustroverProjects/rgk/crates/rgk-kaspa)
+   Compiling rgk-sync v0.1.0 (/Users/arthur/RustroverProjects/rgk/crates/rgk-sync)
+   Compiling rgk-resolver v0.1.0 (/Users/arthur/RustroverProjects/rgk/crates/rgk-resolver)
+   Compiling rgk-e2e v0.1.0 (/Users/arthur/RustroverProjects/rgk/tests/rgk-e2e)
+    Finished `test` profile [optimized + debuginfo] target(s) in 14.52s
+  Executable unittests src/lib.rs (target/debug/deps/rgk_asset-204a5836217fa95a)
+  Executable unittests src/lib.rs (target/debug/deps/rgk_core-00b8321bf245e020)
+  Executable unittests src/lib.rs (target/debug/deps/rgk_covenant-508b3e39b4828012)
+  Executable unittests src/lib.rs (target/debug/deps/rgk_e2e-6a9dfe661e00c1a6)
+  Executable unittests src/bin/rgk-testnet-staging-address.rs (target/debug/deps/rgk_testnet_staging_address-93991cd3f1c1a907)
+  Executable tests/covenant_script_vm.rs (target/debug/deps/covenant_script_vm-dfbadd78f5573315)
+  Executable tests/example_matrix.rs (target/debug/deps/example_matrix-dbaca20486783865)
+  Executable tests/live_covenant.rs (target/debug/deps/live_covenant-0ada30d698a60b7f)
+  Executable tests/live_devnet.rs (target/debug/deps/live_devnet-ba7340f2592aaf88)
+  Executable tests/live_kaspa.rs (target/debug/deps/live_kaspa-ce42562dc4d03f64)
+  Executable tests/zk_precompile_vm.rs (target/debug/deps/zk_precompile_vm-8a61ccdcfa548514)
+  Executable unittests src/lib.rs (target/debug/deps/rgk_indexer-b46dd01e466cab81)
+  Executable unittests src/lib.rs (target/debug/deps/rgk_kaspa-1f96525474705eee)
+  Executable unittests src/lib.rs (target/debug/deps/rgk_receipt-638d2a0f4c184ea9)
+  Executable unittests src/lib.rs (target/debug/deps/rgk_resolver-b02538e0f4b221e2)
+  Executable unittests src/lib.rs (target/debug/deps/rgk_sync-058e4fc94d5d4f93)
+  Executable unittests src/bin/rgk-sync.rs (target/debug/deps/rgk_sync-b3cfd46b5ea83636)
+  Executable unittests src/lib.rs (target/debug/deps/rgk_tx-4a640dc3639e9ad0)
+  Executable unittests src/lib.rs (target/debug/deps/rgk_zk-8404acb0b7ac2a38)

@@ -1,0 +1,88 @@
+[package]
+name = "rgk-zk"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+description = "RGK ZK receipt mode — proof-carrying statements bound to the Toccata ZK precompile"
+
+[dependencies]
+rgk-asset.workspace = true
+rgk-core.workspace = true
+rgk-receipt.workspace = true
+rgk-covenant.workspace = true
+thiserror.workspace = true
+sha2.workspace = true
+
+[features]
+default = ["std"]
+std = []
+# Real Groth16 prover path: ark-groth16 + ark-bn254 + ark-relations.
+# Off by default so the rest of the workspace builds without ZK deps.
+# Enable with: cargo test -p rgk-zk --features real-zk
+real-zk = [
+  "dep:ark-groth16",
+  "dep:ark-bn254",
+  "dep:ark-relations",
+  "dep:ark-r1cs-std",
+  "dep:ark-std",
+  "dep:ark-snark",
+  "dep:ark-serialize",
+  "dep:ark-ff",
+  "dep:ark-crypto-primitives",
+  "dep:rand",
+]
+
+[dependencies.ark-groth16]
+version = "0.5"
+default-features = false
+optional = true
+
+[dependencies.ark-bn254]
+version = "0.5"
+default-features = false
+features = ["curve"]
+optional = true
+
+[dependencies.ark-relations]
+version = "0.5"
+default-features = false
+optional = true
+
+[dependencies.ark-r1cs-std]
+version = "0.5"
+default-features = false
+optional = true
+
+[dependencies.ark-std]
+version = "0.5"
+default-features = false
+optional = true
+
+[dependencies.ark-snark]
+version = "0.5"
+default-features = false
+optional = true
+
+[dependencies.ark-serialize]
+version = "0.5"
+default-features = false
+optional = true
+
+[dependencies.ark-ff]
+version = "0.5"
+default-features = false
+optional = true
+
+[dependencies.ark-crypto-primitives]
+version = "0.5"
+default-features = false
+features = ["crh", "r1cs"]
+optional = true
+
+[dependencies.rand]
+version = "0.8"
+default-features = false
+features = ["std"]
+optional = true

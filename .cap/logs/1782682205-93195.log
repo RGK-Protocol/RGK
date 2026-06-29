@@ -1,0 +1,18 @@
+== stdout ==
+
+running 7 tests
+test native::tests::production_zk_allocation_shape_policy_is_native_and_exact ... ok
+test native::tests::production_zk_transfer_plan_rejects_partial_previous_state_spend ... ok
+test native::tests::production_zk_issue_rejects_unprovable_initial_state ... ok
+test native::tests::production_zk_continuation_rejects_unsupported_shape_before_finalization ... ok
+test native::tests::production_zk_transfer_plan_certifies_full_state_shape_before_txid ... ok
+test native::tests::production_zk_transfer_plan_rejects_unsupported_shape_before_txid ... ok
+test native::tests::production_zk_transition_rejects_unsupported_shape_only_on_zk_path ... ok
+
+test result: ok. 7 passed; 0 failed; 0 ignored; 0 measured; 23 filtered out; finished in 0.00s
+
+
+== stderr ==
+   Compiling rgk-asset v0.1.0 (/Users/arthur/RustroverProjects/rgk/crates/rgk-asset)
+    Finished `test` profile [optimized + debuginfo] target(s) in 1.36s
+     Running unittests src/lib.rs (target/debug/deps/rgk_asset-62819fe3dc6f14f9)

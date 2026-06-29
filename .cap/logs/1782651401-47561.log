@@ -1,0 +1,28 @@
+== stdout ==
+README.md:58:cargo run -p rgk-sync --features daemon --bin rgk-sync -- \
+README.md:61:  --db .rgk-sync \
+README.md:75:| sync service               | `rgk-sync::ScanService` and the gated `rgk-sync` CLI drive restart-safe cursor-based scans over `WrpcBackend` |
+README.md:101:  `persistent-indexer`, the live e2e uses `rgk-sync::ScanService` and proves
+README.md:102:  the scan cursor and indexed covenant survive sled reopen. The `daemon`
+README.md:104:  CLI. Public testnet/devnet evidence is still open; the proven live evidence
+README.md:126:  rgk-sync/        restart-safe scanner service over chain backend + cursor store
+README.md:142:cargo test -p rgk-sync --features wrpc
+README.md:143:cargo check -p rgk-sync --features daemon --bin rgk-sync
+docs/ROADMAP.md:24:| `rgk-sync::ScanService` restart-safe scanner driver | LIVE (`wrpc`) |
+docs/ROADMAP.md:25:| `rgk-sync` scanner CLI wrapper                | LIVE (`daemon`) |
+docs/ROADMAP.md:42:`rgk-sync::ScanService`, persists the scan cursor, reopens sled before and
+docs/ROADMAP.md:47:testnet/devnet evidence, and add deployment hardening around the scanner as
+docs/ROADMAP.md:58:3. DONE: `rgk-sync::ScanService` loads a durable cursor, initialises it from
+docs/ROADMAP.md:62:   DONE: the gated `rgk-sync` CLI wraps `ScanService` with `--once`,
+docs/ROADMAP.md:81:exercising `CovenantSpec::build_script` on the live spend; public-network
+docs/ROADMAP.md:184:8. DONE: `rgk-sync::ScanService` provides a reusable tick/run-until-idle
+docs/ROADMAP.md:186:9. DONE: the `rgk-sync` daemon feature provides a CLI wrapper that opens
+docs/ROADMAP.md:205:1. **Testnet-10 staging**: point `WrpcBackend` at a public testnet-10
+docs/E2E.md:49:genesis. The daemon listens on:
+docs/E2E.md:116:`rgk-sync::ScanService`, reopens sled before scanning, advances and persists
+docs/E2E.md:168:* It does **not** yet prove public-network staging. `WrpcBackend` can poll the
+docs/E2E.md:170:  restart-safe ticks over `SledIndexer`, and the gated `rgk-sync` CLI can run
+docs/E2E.md:172:  still local Toccata simnet, not public testnet/devnet.
+docs/E2E.md:182:cargo check -p rgk-sync --features daemon --bin rgk-sync
+
+== stderr ==

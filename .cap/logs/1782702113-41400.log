@@ -1,0 +1,4 @@
+== stdout ==
+[verify-devnet-evidence] ok: target/rgk-devnet-evidence/latest.txt
+
+== stderr ==

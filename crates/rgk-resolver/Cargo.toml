@@ -1,0 +1,18 @@
+[package]
+name = "rgk-resolver"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+description = "RGK end-to-end resolver — reconstructs covenant state from live Kaspa chain data"
+
+[dependencies]
+rgk-core.workspace = true
+rgk-receipt.workspace = true
+rgk-covenant.workspace = true
+rgk-kaspa.workspace = true
+rgk-indexer.workspace = true
+rgk-asset.workspace = true
+rgk-zk.workspace = true
+thiserror.workspace = true

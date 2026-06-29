@@ -1,0 +1,17 @@
+/target
+/**/target
+Cargo.lock
+
+# External checkouts are symlinked, never committed.
+/external
+
+# Local node datadirs produced by the e2e harness.
+/.krgb-localnet
+/datadir
+
+# Editor / OS cruft.
+.DS_Store
+.idea/
+.vscode/
+*.iml
+.rgk-devnet/

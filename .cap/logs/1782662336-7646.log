@@ -1,0 +1,297 @@
+== stdout ==
+
+running 24 tests
+test tests::bad_magic_rejected ... ok
+test tests::contract_id_change_rejected ... ok
+test tests::chain_domain_strings_stable ... ok
+test tests::contract_ref_roundtrips ... ok
+test tests::cross_chain_structural_rejected ... ok
+test tests::domain_tags_are_distinct ... ok
+test tests::eof_rejected ... ok
+test tests::frozen_receipt_vector_anchor ... ok
+test tests::frozen_state_commitment_vector ... ok
+test tests::hex_rejects_bad ... ok
+test tests::hex_round_trip ... ok
+test tests::no_op_transition_rejected ... ok
+test tests::outpoint_roundtrips ... ok
+test tests::policy_admits_table ... ok
+test tests::policy_mode_mismatch_rejected ... ok
+test tests::receipt_id_is_deterministic_and_payload_sensitive ... ok
+test tests::receipt_roundtrips ... ok
+test tests::replay_nonce_binds_inputs ... ok
+test tests::state_commitment_is_deterministic ... ok
+test tests::state_commitment_roundtrips ... ok
+test tests::trailing_bytes_rejected ... ok
+test tests::unknown_chain_rejected ... ok
+test tests::unknown_proof_mode_rejected ... ok
+test tests::unknown_version_rejected ... ok
+
+test result: ok. 24 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+
+running 18 tests
+test tests::opcode_values_match_toccata_checkout ... ok
+test tests::expected_payload_len_is_stable ... ok
+test tests::advance_rejects_no_op ... ok
+test tests::lineage_id_binds_outpoint_and_contract ... ok
+test tests::covenant_id_is_deterministic ... ok
+test tests::expected_payload_hash_is_deterministic ... ok
+test tests::payload_roundtrip ... ok
+test tests::payload_rejects_truncated ... ok
+test tests::frozen_covenant_id_vector ... ok
+test tests::covenant_id_changes_with_outputs ... ok
+test tests::advance_produces_new_state ... ok
+test tests::commitment_is_deterministic ... ok
+test tests::push_data_picks_correct_opcode ... ok
+test tests::payload_rejects_bad_tag ... ok
+test tests::push_script_i64_matches_upstream_builder_vectors ... ok
+test tests::push_var_int_compact ... ok
+test tests::spec_script_is_non_empty_and_starts_with_valid_opcode ... ok
+test tests::covenant_state_advance_sequences_preserve_static_fields ... ok
+
+test result: ok. 18 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+
+running 4 tests
+test canonical_state_digest_is_deterministic ... ok
+test generic_library_live_dispatch_is_disabled ... ok
+test e2e_summary_renders_all_fields ... ok
+test fixture_e2e_passes ... ok
+
+test result: ok. 4 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+
+running 17 tests
+test tests::open_twice_rejected ... ok
+test tests::chain_mismatch_in_open_rejected ... ok
+test tests::open_then_lookup ... ok
+test tests::rebuild_rejects_missing_spend_evidence ... ok
+test tests::rebuild_from_verified_source_is_idempotent ... ok
+test tests::rebuild_from_verified_source_applies_spend_plan ... ok
+test tests::empty_scan_cursor_name_rejected ... ok
+test tests::rebuild_rejects_unexpected_spending_txid ... ok
+test tests::no_op_state_rejected ... ok
+test tests::apply_spend_records_receipt_and_state ... ok
+test tests::rebuild_rejects_unconfirmed_spend ... ok
+test tests::rebuild_rejects_chain_mismatch ... ok
+test tests::replay_rejected ... ok
+test tests::rollback_restores_previous_state ... ok
+test tests::rollback_too_deep_rejected ... ok
+test tests::scan_cursor_store_round_trips_in_memory ... ok
+test tests::apply_spend_and_rollback_preserve_replay_prefix ... ok
+
+test result: ok. 17 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+
+running 6 tests
+test tests::error_classify_distinguishes_paths ... ok
+test tests::fixture_failure_mode_propagates ... ok
+test tests::submit_transaction_in_fixture_is_invariant ... ok
+test tests::fixture_spend_marks_utxo ... ok
+test tests::fixture_basics ... ok
+test tests::fixture_utxo_lookup ... ok
+
+test result: ok. 6 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+
+running 15 tests
+test tests::build_rejects_missing_transition ... ok
+test tests::build_rejects_missing_nonce ... ok
+test tests::no_op_transition_rejected ... ok
+test tests::contract_id_change_rejected ... ok
+test tests::build_round_trips_id_and_bytes ... ok
+test tests::derive_replay_nonce_is_deterministic ... ok
+test tests::receipt_id_hex_format ... ok
+test tests::replay_set_accepts_once ... ok
+test tests::verifier_rejects_chain_mismatch ... ok
+test tests::verifier_rejects_covenant_mismatch ... ok
+test tests::verifier_rejects_old_state_mismatch ... ok
+test tests::verifier_rejects_policy_mode_mismatch ... ok
+test tests::batch_err_string_renders ... ok
+test tests::verifier_summary_is_stable ... ok
+test tests::receipt_round_trip_holds_for_random_admitted_fields ... ok
+
+test result: ok. 15 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+
+running 6 tests
+test tests::reorg_risk_when_spent_below_safety_depth ... ok
+test tests::open_when_indexed_and_utxo_present ... ok
+test tests::node_down_propagates ... ok
+test tests::transitioned_valid_uses_latest_indexed_spent_outpoint ... ok
+test tests::unknown_when_not_indexed ... ok
+test tests::verify_receipt_against_indexer_rejects_mismatch ... ok
+
+test result: ok. 6 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+
+running 9 tests
+test tests::initial_state_digest_is_deterministic ... ok
+test tests::issue_nia_returns_contract_id ... ok
+test tests::apply_transition_extends_consignment ... ok
+test tests::issue_nia_rejects_wrong_schema ... ok
+test tests::issue_nia_rejects_wrong_chain ... ok
+test tests::nia_schema_id_is_stable ... ok
+test tests::validate_accepts_self_issued ... ok
+test tests::state_commitment_includes_chain_and_covenant ... ok
+test tests::validate_rejects_unknown_contract ... ok
+
+test result: ok. 9 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+
+running 6 tests
+test tests::tick_rejects_removed_chain_blocks ... ok
+test tests::first_tick_initialises_missing_cursor ... ok
+test tests::run_until_idle_accumulates_batches ... ok
+test tests::tick_rejects_cursor_chain_mismatch ... ok
+test tests::kaspa_rebuild_source_reads_fixture_spend_evidence ... ok
+test tests::tick_advances_cursor_after_added_blocks ... ok
+
+test result: ok. 6 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+
+running 10 tests
+test tests::build_genesis_output_rejects_empty_spk ... ok
+test tests::build_genesis_output_rejects_zero_covenant ... ok
+test tests::build_transition_outputs_balanced ... ok
+test tests::build_transition_outputs_overflow_rejected ... ok
+test tests::encode_input_has_expected_layout ... ok
+test tests::encode_output_roundtrip_structure ... ok
+test tests::encode_unsigned_tx ... ok
+test tests::spec_from_state_round_trips ... ok
+test tests::spk_from_redeem_script_starts_with_version_zero ... ok
+test tests::validate_balanced_rejects_underfunded ... ok
+
+test result: ok. 10 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+
+running 10 tests
+test tests::chain_id_in_public_inputs_is_pinned ... ok
+test tests::proof_encode_for_precompile ... ok
+test tests::proof_rejects_empty ... ok
+test tests::public_inputs_length_is_pinned ... ok
+test tests::proof_rejects_oversize ... ok
+test tests::statement_matches_receipt_round_trip ... ok
+test tests::tag_bytes_match_upstream ... ok
+test tests::zk_receipt_local_verify_catches_statement_mismatch ... ok
+test tests::zk_receipt_local_verify_succeeds ... ok
+test tests::zk_receipt_rejects_wrong_mode ... ok
+
+test result: ok. 10 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+
+== stderr ==
+    Blocking waiting for file lock on package cache
+    Blocking waiting for file lock on package cache
+    Blocking waiting for file lock on package cache
+   Compiling rgk-rgb v0.1.0 (/Users/arthur/RustroverProjects/rgk/crates/rgk-rgb)
+   Compiling rgk-resolver v0.1.0 (/Users/arthur/RustroverProjects/rgk/crates/rgk-resolver)
+   Compiling rgk-e2e v0.1.0 (/Users/arthur/RustroverProjects/rgk/tests/rgk-e2e)
+    Finished `test` profile [optimized + debuginfo] target(s) in 1.85s
+     Running unittests src/lib.rs (target/debug/deps/rgk_core-a3e36c5466141562)
+     Running unittests src/lib.rs (target/debug/deps/rgk_covenant-a18ab745dd983fc2)
+     Running unittests src/lib.rs (target/debug/deps/rgk_e2e-a5ca42ba8fba1006)
+     Running tests/covenant_script_vm.rs (target/debug/deps/covenant_script_vm-5302e49c32824c71)
+     Running tests/live_covenant.rs (target/debug/deps/live_covenant-8bf3a07fedab978a)
+     Running tests/live_devnet.rs (target/debug/deps/live_devnet-c87c78cf3dd3ead4)
+     Running tests/live_kaspa.rs (target/debug/deps/live_kaspa-7c1fd821145fda0c)
+     Running tests/zk_precompile_vm.rs (target/debug/deps/zk_precompile_vm-f90ab0b59e44cbee)
+     Running unittests src/lib.rs (target/debug/deps/rgk_indexer-1e2d08b633e9da20)
+     Running unittests src/lib.rs (target/debug/deps/rgk_kaspa-b632b270e7e30ca7)
+     Running unittests src/lib.rs (target/debug/deps/rgk_receipt-5df8eed425496e7d)
+     Running unittests src/lib.rs (target/debug/deps/rgk_resolver-b3bc611a97a73702)
+     Running unittests src/lib.rs (target/debug/deps/rgk_rgb-398d53dc0393626d)
+     Running unittests src/lib.rs (target/debug/deps/rgk_sync-2d9e30899cf215da)
+     Running unittests src/lib.rs (target/debug/deps/rgk_tx-7721c1b220bc8392)
+     Running unittests src/lib.rs (target/debug/deps/rgk_zk-be2c36734522b36f)
+   Doc-tests rgk_core
+   Doc-tests rgk_covenant
+   Doc-tests rgk_e2e
+   Doc-tests rgk_indexer
+   Doc-tests rgk_kaspa
+   Doc-tests rgk_receipt
+   Doc-tests rgk_resolver
+   Doc-tests rgk_rgb
+   Doc-tests rgk_sync
+   Doc-tests rgk_tx
+   Doc-tests rgk_zk

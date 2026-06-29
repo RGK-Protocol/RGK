@@ -1,0 +1,138 @@
+== stdout ==
+[run-kaspa-devnet] launching /Users/arthur/RustroverProjects/rgk/external/rusty-kaspa-toccata/target/release/kaspad in background
+[run-kaspa-devnet] pid: 91219
+[run-kaspa-devnet] log: /Users/arthur/RustroverProjects/rgk/.rgk-devnet/kaspad.log
+[run-kaspa-devnet] waiting for wRPC at ws://127.0.0.1:19111
+[run-kaspa-devnet] wRPC ready after 2s
+[e2e-devnet] live devnet RPC: ws://127.0.0.1:19111/v2/kaspa/devnet/no-tls/wrpc/borsh
+[e2e-devnet] running live_devnet test
+   Compiling kaspa-wrpc-client v1.2.2-toc.4 (/Users/arthur/RustroverProjects/rusty-kaspa/rpc/wrpc/client)
+   Compiling rgk-kaspa v0.1.0 (/Users/arthur/RustroverProjects/rgk/crates/rgk-kaspa)
+   Compiling rgk-resolver v0.1.0 (/Users/arthur/RustroverProjects/rgk/crates/rgk-resolver)
+   Compiling rgk-sync v0.1.0 (/Users/arthur/RustroverProjects/rgk/crates/rgk-sync)
+   Compiling rgk-e2e v0.1.0 (/Users/arthur/RustroverProjects/rgk/tests/rgk-e2e)
+    Finished `test` profile [optimized + debuginfo] target(s) in 2.40s
+     Running tests/live_devnet.rs (target/debug/deps/live_devnet-a446d7acbb399c7f)
+
+running 2 tests
+live-devnet: server_version=1.2.2-toc.4 network_id=devnet is_synced=false has_utxo_index=true
+test live_devnet_reports_toccata_node_identity ... ok
+live-devnet: scan cursor initialised chain=KaspaDevnet daa=60090 hash_prefix=e8c42f2b257e68ae
+test live_devnet_initialises_persistent_scan_cursor ... ok
+
+test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.05s
+
+[e2e-devnet] running policy migration recovery fixture
+    Finished `test` profile [optimized + debuginfo] target(s) in 0.08s
+     Running unittests src/lib.rs (target/debug/deps/rgk_e2e-61e4ff2d6b6c07e6)
+
+running 1 test
+RGK policy migration recovery
+  chain:           KaspaLocalToccata
+  covenant:        0xc750aee85561dc562b16688f01a736f81ed26948e166280ff5cd2a6f970d6599
+  spent_txid:      0x2121212121212121212121212121212121212121212121212121212121212121
+  new_txid:        0x2222222222222222222222222222222222222222222222222222222222222222
+  previous_policy: verifier-only
+  new_policy:      zk-or-verifier
+  migration:       0x595de1d206e02c94795f46e960bf6e2230dd921d0ebfa3470a36fe05ec972be6
+  resolver:        NativeTransitionedValid { covenant: [199, 80, 174, 232, 85, 97, 220, 86, 43, 22, 104, 143, 1, 167, 54, 248, 30, 210, 105, 72, 225, 102, 40, 15, 245, 205, 42, 111, 151, 13, 101, 153], spent_outpoint: KaspaOutpoint { transaction_id: [33, 33, 33, 33, 33, 33, 33, 33, 33, 33, 33, 33, 33, 33, 33, 33, 33, 33, 33, 33, 33, 33, 33, 33, 33, 33, 33, 33, 33, 33, 33, 33], index: 0 }, new_outpoint: KaspaOutpoint { transaction_id: [34, 34, 34, 34, 34, 34, 34, 34, 34, 34, 34, 34, 34, 34, 34, 34, 34, 34, 34, 34, 34, 34, 34, 34, 34, 34, 34, 34, 34, 34, 34, 34], index: 0 }, receipt_id: [89, 93, 225, 210, 6, 224, 44, 148, 121, 95, 70, 233, 96, 191, 110, 34, 48, 221, 146, 29, 14, 191, 163, 71, 10, 54, 254, 5, 236, 151, 43, 230], new_state: RgkStateCommitment { version: 1, chain_id: KaspaLocalToccata, covenant_id: [199, 80, 174, 232, 85, 97, 220, 86, 43, 22, 104, 143, 1, 167, 54, 248, 30, 210, 105, 72, 225, 102, 40, 15, 245, 205, 42, 111, 151, 13, 101, 153], asset_id: [66, 66, 66, 66, 66, 66, 66, 66, 66, 66, 66, 66, 66, 66, 66, 66, 66, 66, 66, 66, 66, 66, 66, 66, 66, 66, 66, 66, 66, 66, 66, 66], state_digest: [50, 50, 50, 50, 50, 50, 50, 50, 50, 50, 50, 50, 50, 50, 50, 50, 50, 50, 50, 50, 50, 50, 50, 50, 50, 50, 50, 50, 50, 50, 50, 50], receipt_policy: ZkOrVerifier }, confirmation_depth: 1 }
+
+test policy_migration_recovery_fixture_survives_reopen ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 3 filtered out; finished in 0.03s
+
+[e2e-devnet] running full covenant lifecycle on devnet
+   Compiling kaspa-wrpc-client v1.2.2-toc.4 (/Users/arthur/RustroverProjects/rusty-kaspa/rpc/wrpc/client)
+   Compiling rgk-kaspa v0.1.0 (/Users/arthur/RustroverProjects/rgk/crates/rgk-kaspa)
+   Compiling rgk-resolver v0.1.0 (/Users/arthur/RustroverProjects/rgk/crates/rgk-resolver)
+   Compiling rgk-sync v0.1.0 (/Users/arthur/RustroverProjects/rgk/crates/rgk-sync)
+   Compiling rgk-e2e v0.1.0 (/Users/arthur/RustroverProjects/rgk/tests/rgk-e2e)
+    Finished `test` profile [optimized + debuginfo] target(s) in 1.98s
+     Running tests/live_covenant.rs (target/debug/deps/live_covenant-7bf44a871ab07a5e)
+
+running 1 test
+live: connected to devnet wRPC (chain_id=KaspaDevnet)
+live: fixed keypair address = kaspadev:qzzt7atzyc4m662qppt53ua7dta99t33w923s8kwxxmxx5wvl7jtq0ahp67m9
+live: fixed pubkey x-only = [84, bf, 75, 62, 26, 2b, bd, 69, 40, 08, 57, 48, f3, be, 6a, fa, 52, ae, 31, 71, 55, 18, 1e, ce, 31, b6, 63, 51, cc, ff, a4, b0]
+live: generated keypair, devnet address: kaspadev:qzzt7atzyc4m662qppt53ua7dta99t33w923s8kwxxmxx5wvl7jtq0ahp67m9
+live: mined block, report: accepted=Success
+live: reached DAA score 60091 (target 1)
+live: coinbase block 1 mined; mining 2000 more so the FIRST coinbase UTXO matures (need DAA >= 1001 to spend it)...
+live: mined 100/2000 blocks (0.1s)
+live: mined 200/2000 blocks (0.2s)
+live: mined 300/2000 blocks (0.2s)
+live: mined 400/2000 blocks (0.3s)
+live: mined 500/2000 blocks (0.4s)
+live: mined 600/2000 blocks (0.5s)
+live: mined 700/2000 blocks (0.5s)
+live: mined 800/2000 blocks (0.6s)
+live: mined 900/2000 blocks (0.7s)
+live: mined 1000/2000 blocks (0.7s)
+live: mined 1100/2000 blocks (0.8s)
+live: mined 1200/2000 blocks (0.9s)
+live: mined 1300/2000 blocks (0.9s)
+live: mined 1400/2000 blocks (1.0s)
+live: mined 1500/2000 blocks (1.1s)
+live: mined 1600/2000 blocks (1.2s)
+live: mined 1700/2000 blocks (1.2s)
+live: mined 1800/2000 blocks (1.3s)
+live: mined 1900/2000 blocks (1.4s)
+live: mined 2000/2000 blocks (1.4s)
+live: mined 2000 blocks in 1.4s
+live: reached DAA score 62091 (target 2001)
+live: oldest coinbase UTXO is now mature (DAA >= 2001)
+live: selected coinbase UTXO at DAA 32 (oldest, mature)
+live: fetched coinbase UTXO txid=[89, 89, d5, e9, 5f, 9b, 94, 37, 24, 39, ae, 18, 0c, ae, d7, fb, a2, 74, ed, 64, a4, 22, 0e, f7, af, e6, c4, 49, e0, 31, 97, 52] index=0 value=4400000000
+live: computed covenant_id = [3f, d0, 50, d8, 51, e3, d7, 3b, 12, 13, 46, 02, b3, e7, ef, 54, 85, 28, 39, aa, 9b, 78, 43, 41, 56, 02, 0a, 19, 5b, 25, b2, 1d] for the genesis output (value=4396000000, fee=4000000)
+live: signed covenant tx, txid = [0a, 87, f8, da, 6c, da, a3, f4, 2c, bc, 9c, d7, b2, 78, 34, bd, b0, a8, 35, da, 10, 9c, 99, 5d, 49, 17, 4a, bc, 75, 04, d0, a9]
+live: covenant tx ACCEPTED by node: txid=[0a, 87, f8, da, 6c, da, a3, f4, 2c, bc, 9c, d7, b2, 78, 34, bd, b0, a8, 35, da, 10, 9c, 99, 5d, 49, 17, 4a, bc, 75, 04, d0, a9]
+live: mined block, report: accepted=Success
+live: reached DAA score 62092 (target 2)
+live: confirmation block 2 mined
+live: covenant output confirmed at DAA score 62092 with covenant_id=[3f, d0, 50, d8, 51, e3, d7, 3b, 12, 13, 46, 02, b3, e7, ef, 54, 85, 28, 39, aa, 9b, 78, 43, 41, 56, 02, 0a, 19, 5b, 25, b2, 1d]
+live: native RGK asset state digest = 0x551004c9122398c0a6dc913496535e3f6939eb44973a4f2cfffcbee4da75ee7c (allocations=1 daa=62092 confirmations=1 privacy_policy=PrivateLane lane_id=0xf9e2d47ecda382db86ba713e640cb58f4a9f75a24d0820505148c302004436d9)
+live: ZK covenant spend enabled, public_inputs=29 vk_bytes=1192 proof_bytes=128
+live: built P2SH covenant spend, txid = [87, e0, 0f, 39, 10, 2e, 80, ca, 95, b1, bd, 1e, a4, 2d, c2, 70, c7, 0f, 48, 59, d7, 48, f6, 98, 15, 9e, d1, 47, d5, 9b, 29, 06]
+live: P2SH covenant spend ACCEPTED by node: txid=[87, e0, 0f, 39, 10, 2e, 80, ca, 95, b1, bd, 1e, a4, 2d, c2, 70, c7, 0f, 48, 59, d7, 48, f6, 98, 15, 9e, d1, 47, d5, 9b, 29, 06]
+live: mined block, report: accepted=Success
+live: reached DAA score 62093 (target 62093)
+live: P2SH covenant spend confirmation block mined
+live: continuation covenant output confirmed at DAA score 62093
+live: native production-ZK allocation guard accepted shape=1x1 spent_allocations=1 new_allocations=1
+live: native RGK transition digest = 0xcde26a810f8c7218cc1db8a8b0134e0217a85e456bd0e50321c2dd969e63a354 (old_state=0x551004c9122398c0a6dc913496535e3f6939eb44973a4f2cfffcbee4da75ee7c new_state=0xf47826ea889aa003c3896df0b4ce12ba253cdf237eca63c51d4a1471d92fe5e8 witness_txid=0x87e00f39102e80ca95b1bd1ea42dc270c70f4859d748f698159ed147d59b2906 spent_allocations=1 new_allocations=1 privacy_policy=PrivateLane lane_id=0xf9e2d47ecda382db86ba713e640cb58f4a9f75a24d0820505148c302004436d9)
+live: semantic RGK transition statement public_inputs=328 continuation_shape_root=0x77690692bc127ea2faccbfbe49d4c474b5a560e7d4fab066bf5176805c9599cd policy_commitment=0x4663f5b9404ee4fe0358c6299f73422e955f5fea03e19545f5b8f99472d00bbf
+live: semantic Groth16 proof verified public_inputs=41 vk_bytes=1576 proof_bytes=128
+test live_toccata_full_covenant_lifecycle has been running for over 60 seconds
+live: supported allocation-vector Groth16 proof verified shape=1x1 public_inputs=41 vk_bytes=1576 proof_bytes=128
+live: allocation transcript segment Groth16 proof verified sides=2 segments=2 allocations=2 public_inputs_each=16 vk_bytes=776 proof_bytes_each=128 spent_root=0x5146c891ad6a95d9494483e6cda7dc9e511cfebe28df0dc51995d1ef5b3c2ff9 new_root=0x175b92ab456722d3f31d641b2689b374a562982ec5c061125bb3f86b3a20bea4 spent_amount_commitment=0x68c92efdcb7c6f9096537d37af74aba44d7615915ce88c51711c5c6d4983ff34 new_amount_commitment=0xc1760514d6f2d480507ea9247be6f416c04d9b32a5d210dba8d01d576c64a1b3
+live: allocation conservation Groth16 chain verified sides=2 segments=2 allocations=2 public_inputs_each=24 final_public_inputs=10 segment_vk_bytes=1032 segment_proof_bytes_each=128 final_vk_bytes=584 final_proof_bytes=128 spent_total_commitment=0x1a0a0bbd33746c96287dfb9516ca9f5d84b84320e66092e64860c6c9e2e1bbff new_total_commitment=0x0b1f4432d9e6afc40148127ff4ae5fba3c356190d8ca733385f21e27cd88b7d7
+live: allocation exclusion segment-pair Groth16 proof verified spent_segments=1 new_segments=1 pair_grid=1 public_inputs=29 vk_bytes=1192 proof_bytes=128 spent_root=0x5146c891ad6a95d9494483e6cda7dc9e511cfebe28df0dc51995d1ef5b3c2ff9 new_root=0x175b92ab456722d3f31d641b2689b374a562982ec5c061125bb3f86b3a20bea4 spent_amount_commitment=0x68c92efdcb7c6f9096537d37af74aba44d7615915ce88c51711c5c6d4983ff34 new_amount_commitment=0xc1760514d6f2d480507ea9247be6f416c04d9b32a5d210dba8d01d576c64a1b3
+live: registered private lane for view-key discovery (lane_id=0xf9e2d47ecda382db86ba713e640cb58f4a9f75a24d0820505148c302004436d9 scan_tag=0x3539f43aecf990bfd09e4b081ddba2835253710fa8a4022904e6ea61b963c62d privacy_policy=PrivateLane)
+live: lane-discovery Groth16 proof verified public_inputs=9 vk_bytes=552 proof_bytes=128 lane_id=0xf9e2d47ecda382db86ba713e640cb58f4a9f75a24d0820505148c302004436d9 scan_tag=0x3539f43aecf990bfd09e4b081ddba2835253710fa8a4022904e6ea61b963c62d
+live: lane-graph Groth16 proof verified nodes=2 public_inputs=22 vk_bytes=968 proof_bytes=128 graph_root=0x6ab1ca5ef8165554c39398f6ee2cd4419bd605cc09e507fec6264f1bdebd4dfc current_lane=0xf9e2d47ecda382db86ba713e640cb58f4a9f75a24d0820505148c302004436d9 next_scan_tag=0xa1300bb57a56c79e1c43eda255ac6cb55b7e04c247681d77a754ed07551312ea
+live: segmented lane-graph Groth16 proof chain verified segments=2 nodes=4 public_inputs_each=27 vk_bytes=1128 proof_bytes_each=128 start_root=0x78145c2e5e78351ffa3d0e266b1a5cb8c3eb318b074a9bcaa407fcdbc6068573 final_root=0x90f47d54d63afe8eb7e59071e891fc14e966bd0658f617d25711d29276b01bde current_lane=0xf9e2d47ecda382db86ba713e640cb58f4a9f75a24d0820505148c302004436d9 final_scan_tag=0x85fb37ef816bbbe85f5e9bb524575608a66e5914ee7bbd0507cf143449b00fdc
+live: resolver state = NativeTransitionedValid { covenant: [63, 208, 80, 216, 81, 227, 215, 59, 18, 19, 70, 2, 179, 231, 239, 84, 133, 40, 57, 170, 155, 120, 67, 65, 86, 2, 10, 25, 91, 37, 178, 29], spent_outpoint: KaspaOutpoint { transaction_id: [10, 135, 248, 218, 108, 218, 163, 244, 44, 188, 156, 215, 178, 120, 52, 189, 176, 168, 53, 218, 16, 156, 153, 93, 73, 23, 74, 188, 117, 4, 208, 169], index: 0 }, new_outpoint: KaspaOutpoint { transaction_id: [135, 224, 15, 57, 16, 46, 128, 202, 149, 177, 189, 30, 164, 45, 194, 112, 199, 15, 72, 89, 215, 72, 246, 152, 21, 158, 209, 71, 213, 155, 41, 6], index: 0 }, receipt_id: [3, 39, 136, 38, 164, 2, 205, 215, 11, 114, 91, 154, 143, 88, 135, 52, 228, 94, 179, 69, 140, 27, 43, 127, 195, 91, 30, 240, 236, 64, 233, 228], new_state: RgkStateCommitment { version: 1, chain_id: KaspaDevnet, covenant_id: [63, 208, 80, 216, 81, 227, 215, 59, 18, 19, 70, 2, 179, 231, 239, 84, 133, 40, 57, 170, 155, 120, 67, 65, 86, 2, 10, 25, 91, 37, 178, 29], asset_id: [66, 66, 66, 66, 66, 66, 66, 66, 66, 66, 66, 66, 66, 66, 66, 66, 66, 66, 66, 66, 66, 66, 66, 66, 66, 66, 66, 66, 66, 66, 66, 66], state_digest: [244, 120, 38, 234, 136, 154, 160, 3, 195, 137, 109, 240, 180, 206, 18, 186, 37, 60, 223, 35, 126, 202, 99, 197, 29, 74, 20, 113, 217, 47, 229, 232], receipt_policy: ZkOrVerifier }, confirmation_depth: 1 }
+live: resolver carried phase-2 native state digest = 0xf47826ea889aa003c3896df0b4ce12ba253cdf237eca63c51d4a1471d92fe5e8
+live: view-key lane resolver classified as NativeTransitionedValid (lane_id=0xf9e2d47ecda382db86ba713e640cb58f4a9f75a24d0820505148c302004436d9 scan_tag=0x3539f43aecf990bfd09e4b081ddba2835253710fa8a4022904e6ea61b963c62d)
+live: covenant transition classified as NativeTransitionedValid from the confirmed live Kaspa Toccata devnet spend (covenant_id=[3f, d0, 50, d8, 51, e3, d7, 3b, 12, 13, 46, 02, b3, e7, ef, 54, 85, 28, 39, aa, 9b, 78, 43, 41, 56, 02, 0a, 19, 5b, 25, b2, 1d])
+live: policy migration proof recovered after Sled reopen (previous_policy=verifier-only new_policy=zk-or-verifier migration=0x56941e32050c8c23b4070edc869686d5cbc9403a532122c4caae568df3aae2f9 state_digest=0xf47826ea889aa003c3896df0b4ce12ba253cdf237eca63c51d4a1471d92fe5e8 resolver=NativeTransitionedValid)
+live: persistent indexer recovered covenant after resolver indexing (covenant_id=[3f, d0, 50, d8, 51, e3, d7, 3b, 12, 13, 46, 02, b3, e7, ef, 54, 85, 28, 39, aa, 9b, 78, 43, 41, 56, 02, 0a, 19, 5b, 25, b2, 1d] cursor_daa=62093)
+test live_toccata_full_covenant_lifecycle ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 245.72s
+
+[e2e-devnet] running rgk-sync scanner smoke (initialise cursor)
+   Compiling kaspa-wrpc-client v1.2.2-toc.4 (/Users/arthur/RustroverProjects/rusty-kaspa/rpc/wrpc/client)
+   Compiling rgk-kaspa v0.1.0 (/Users/arthur/RustroverProjects/rgk/crates/rgk-kaspa)
+   Compiling rgk-sync v0.1.0 (/Users/arthur/RustroverProjects/rgk/crates/rgk-sync)
+    Finished `dev` profile [optimized + debuginfo] target(s) in 3.54s
+     Running `target/debug/rgk-sync --url 'ws://127.0.0.1:19111/v2/kaspa/devnet/no-tls/wrpc/borsh' --network devnet --db /Users/arthur/RustroverProjects/rgk/target/rgk-devnet-evidence/sled --once`
+tick initialised=true added_chain_blocks=0 observed_spends=0 start_daa=62093 end_daa=62093 end_hash_prefix=095ed4d16bc3b3b5
+[e2e-devnet] running rgk-sync scanner smoke (reload cursor)
+    Finished `dev` profile [optimized + debuginfo] target(s) in 0.19s
+     Running `target/debug/rgk-sync --url 'ws://127.0.0.1:19111/v2/kaspa/devnet/no-tls/wrpc/borsh' --network devnet --db /Users/arthur/RustroverProjects/rgk/target/rgk-devnet-evidence/sled --once`
+tick initialised=false added_chain_blocks=0 observed_spends=0 start_daa=62093 end_daa=62093 end_hash_prefix=095ed4d16bc3b3b5
+[verify-devnet-evidence] ok: /Users/arthur/RustroverProjects/rgk/target/rgk-devnet-evidence/latest.txt
+[e2e-devnet] evidence: /Users/arthur/RustroverProjects/rgk/target/rgk-devnet-evidence/latest.txt
+
+== stderr ==

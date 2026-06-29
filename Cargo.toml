@@ -1,0 +1,54 @@
+[workspace]
+resolver = "2"
+members = [
+    "crates/rgk-core",
+    "crates/rgk-receipt",
+    "crates/rgk-covenant",
+    "crates/rgk-kaspa",
+    "crates/rgk-asset",
+    "crates/rgk-zk",
+    "crates/rgk-indexer",
+    "crates/rgk-sync",
+    "crates/rgk-resolver",
+    "crates/rgk-tx",
+    "tests/rgk-e2e",
+]
+
+[workspace.package]
+version = "0.1.0"
+edition = "2021"
+rust-version = "1.82"
+license = "MIT OR Apache-2.0"
+repository = "https://github.com/rgk-wg/rgk"
+description = "RGK — Really Good Kaspa: Kaspa-native client-side assets over Toccata covenant lineages"
+authors = ["RGK contributors"]
+
+[workspace.dependencies]
+# Internal crates
+rgk-core      = { version = "0.1.0", path = "crates/rgk-core" }
+rgk-receipt   = { version = "0.1.0", path = "crates/rgk-receipt" }
+rgk-covenant  = { version = "0.1.0", path = "crates/rgk-covenant" }
+rgk-kaspa     = { version = "0.1.0", path = "crates/rgk-kaspa" }
+rgk-asset     = { version = "0.1.0", path = "crates/rgk-asset" }
+rgk-zk        = { version = "0.1.0", path = "crates/rgk-zk" }
+rgk-indexer   = { version = "0.1.0", path = "crates/rgk-indexer" }
+rgk-sync      = { version = "0.1.0", path = "crates/rgk-sync" }
+rgk-resolver  = { version = "0.1.0", path = "crates/rgk-resolver" }
+rgk-tx        = { version = "0.1.0", path = "crates/rgk-tx" }
+
+# Shared, lightweight, conflict-free dependencies.
+sha2     = { version = "0.10", default-features = false }
+hex      = { version = "0.4", default-features = false, features = ["alloc"] }
+thiserror = "2"
+serde    = { version = "1", default-features = false, features = ["derive", "alloc"] }
+# `getrandom` is pulled in transitively by several stacks; pin a version with a wasm fallback.
+getrandom = { version = "0.2", features = ["js"] }
+
+[profile.release]
+lto = "thin"
+codegen-units = 1
+panic = "abort"
+
+[profile.dev]
+# Faster local verification cycles for the e2e harness.
+opt-level = 1

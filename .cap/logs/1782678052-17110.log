@@ -1,0 +1,13 @@
+== stdout ==
+
+running 1 test
+test rgk_allocation_3x2_groth16_proof_executes_in_upstream_toccata_vm has been running for over 60 seconds
+test rgk_allocation_3x2_groth16_proof_executes_in_upstream_toccata_vm ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 5 filtered out; finished in 95.43s
+
+
+== stderr ==
+    Finished `test` profile [optimized + debuginfo] target(s) in 0.27s
+     Running tests/zk_precompile_vm.rs (target/debug/deps/zk_precompile_vm-d80893c784f18fe4)
+[zk-precompile-vm] allocation_3x2 public_inputs=41 vk_bytes=1576 proof_bytes=128 script_bytes=3067

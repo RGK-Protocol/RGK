@@ -1,0 +1,13 @@
+== stdout ==
+Diff in /Users/arthur/RustroverProjects/rgk/crates/rgk-asset/src/lib.rs:29:
+     RgkContinuationCommitment, RgkContinuationPlan, RgkContinuationReport,
+     RgkContinuationShapeRoot, RgkCovenantSeal, RgkFinalizedContinuation,
+     RgkFinalizedProductionZkTransfer, RgkIssueReport, RgkLane, RgkLaneGraphNode, RgkLaneState,
+-    RgkLaneStateInput, RgkMetadataCommitment, RgkNullifier, RgkOwnerCommitment,
+-    RgkOwnerDescriptor,
++    RgkLaneStateInput, RgkMetadataCommitment, RgkNullifier, RgkOwnerCommitment, RgkOwnerDescriptor,
+     RgkPolicyCommitment, RgkPrivacyPolicy, RgkProductionZkTransferPlan, RgkProofPolicy,
+     RgkReceiptCommitment, RgkScanTag, RgkSchemaId, RgkStateDigest, RgkTransition,
+     RgkTransitionDigest, RgkTransitionReport, RGK_PRODUCTION_ZK_ALLOCATION_MAX_NEW,
+
+== stderr ==

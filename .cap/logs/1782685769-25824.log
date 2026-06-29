@@ -1,0 +1,17 @@
+== stdout ==
+
+running 3 tests
+test e2e_summary_renders_all_fields ... ok
+test canonical_state_digest_is_deterministic ... ok
+test fixture_e2e_passes ... ok
+
+test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+
+== stderr ==
+   Compiling rgk-asset v0.1.0 (/Users/arthur/RustroverProjects/rgk/crates/rgk-asset)
+   Compiling rgk-zk v0.1.0 (/Users/arthur/RustroverProjects/rgk/crates/rgk-zk)
+   Compiling rgk-resolver v0.1.0 (/Users/arthur/RustroverProjects/rgk/crates/rgk-resolver)
+   Compiling rgk-e2e v0.1.0 (/Users/arthur/RustroverProjects/rgk/tests/rgk-e2e)
+    Finished `test` profile [optimized + debuginfo] target(s) in 1.87s
+     Running unittests src/lib.rs (target/debug/deps/rgk_e2e-b673bcd913c1edb5)

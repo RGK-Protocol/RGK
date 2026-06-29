@@ -1,0 +1,136 @@
+== stdout ==
+
+== stderr ==
++ set -euo pipefail
++++ dirname scripts/verify-silverscript-artifacts.sh
+++ cd scripts/..
+++ pwd
++ ROOT=/Users/arthur/RustroverProjects/rgk
++ SILVERSCRIPT_ROOT=/Users/arthur/RustroverProjects/rgk/external/silverscript
++ EXPECTED_COMMIT=d25bd3427a093c17327ca3d6b9e1aa5f7688c863
++ NETWORK_SCOPE=kaspa_testnet12_only
++ SOURCE_DIR=/Users/arthur/RustroverProjects/rgk/examples/silverscript
++ ARTIFACT_DIR=/Users/arthur/RustroverProjects/rgk/examples/silverscript/artifacts
++ MANIFEST=/Users/arthur/RustroverProjects/rgk/examples/silverscript/artifacts/manifest.tsv
++ '[' '!' -d /Users/arthur/RustroverProjects/rgk/external/silverscript/.git ']'
+++ git -C /Users/arthur/RustroverProjects/rgk/external/silverscript rev-parse HEAD
++ actual_commit=d25bd3427a093c17327ca3d6b9e1aa5f7688c863
++ '[' d25bd3427a093c17327ca3d6b9e1aa5f7688c863 '!=' d25bd3427a093c17327ca3d6b9e1aa5f7688c863 ']'
++ '[' 1 = 1 ']'
++ mkdir -p /Users/arthur/RustroverProjects/rgk/examples/silverscript/artifacts
+++ mktemp -d
++ tmp_dir=/var/folders/kq/dz44fm994nz94zw2dfqnz_g00000gn/T/tmp.x50SBU67me
++ tmp_manifest=/var/folders/kq/dz44fm994nz94zw2dfqnz_g00000gn/T/tmp.x50SBU67me/manifest.tsv
++ trap 'rm -rf "${tmp_dir}"' EXIT
++ printf 'example_id\tsource_path\tartifact_path\tcompiler_commit\tcompiler_version\tnetwork_scope\tsource_sha256\tartifact_sha256\tscript_bytes\tabi_entries\n'
++ rows=0
++ for source in '"${SOURCE_DIR}"/*.sil'
++ '[' -f /Users/arthur/RustroverProjects/rgk/examples/silverscript/allocation_audit_certificate_recovery.sil ']'
++ rows=1
+++ basename /Users/arthur/RustroverProjects/rgk/examples/silverscript/allocation_audit_certificate_recovery.sil .sil
++ example_id=allocation_audit_certificate_recovery
++ compiled=/var/folders/kq/dz44fm994nz94zw2dfqnz_g00000gn/T/tmp.x50SBU67me/allocation_audit_certificate_recovery.json
++ artifact=/Users/arthur/RustroverProjects/rgk/examples/silverscript/artifacts/allocation_audit_certificate_recovery.json
++ cargo run --quiet --manifest-path /Users/arthur/RustroverProjects/rgk/external/silverscript/Cargo.toml -p silverscript-lang --bin silverc -- /Users/arthur/RustroverProjects/rgk/examples/silverscript/allocation_audit_certificate_recovery.sil -o /var/folders/kq/dz44fm994nz94zw2dfqnz_g00000gn/T/tmp.x50SBU67me/allocation_audit_certificate_recovery.json
++ '[' 1 = 1 ']'
++ cp /var/folders/kq/dz44fm994nz94zw2dfqnz_g00000gn/T/tmp.x50SBU67me/allocation_audit_certificate_recovery.json /Users/arthur/RustroverProjects/rgk/examples/silverscript/artifacts/allocation_audit_certificate_recovery.json
++ IFS='	'
++ read -r compiler_version script_bytes abi_entries
+++ json_fields /var/folders/kq/dz44fm994nz94zw2dfqnz_g00000gn/T/tmp.x50SBU67me/allocation_audit_certificate_recovery.json
+++ python3 - /var/folders/kq/dz44fm994nz94zw2dfqnz_g00000gn/T/tmp.x50SBU67me/allocation_audit_certificate_recovery.json
++ source_rel=examples/silverscript/allocation_audit_certificate_recovery.sil
++ artifact_rel=examples/silverscript/artifacts/allocation_audit_certificate_recovery.json
+++ sha256_file /Users/arthur/RustroverProjects/rgk/examples/silverscript/allocation_audit_certificate_recovery.sil
+++ shasum -a 256 /Users/arthur/RustroverProjects/rgk/examples/silverscript/allocation_audit_certificate_recovery.sil
+++ awk '{print $1}'
++ source_sha=611fdbf8e46c612e18a3fbad1aba5c507af2d1ad9c59b1ee8abf37538a799a32
+++ sha256_file /Users/arthur/RustroverProjects/rgk/examples/silverscript/artifacts/allocation_audit_certificate_recovery.json
+++ shasum -a 256 /Users/arthur/RustroverProjects/rgk/examples/silverscript/artifacts/allocation_audit_certificate_recovery.json
+++ awk '{print $1}'
++ artifact_sha=8de48ab5c7561d618db190f37b88f4c9c652170777970b3f408e85ded0789c63
++ printf '%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n' allocation_audit_certificate_recovery examples/silverscript/allocation_audit_certificate_recovery.sil examples/silverscript/artifacts/allocation_audit_certificate_recovery.json d25bd3427a093c17327ca3d6b9e1aa5f7688c863 0.1.0 kaspa_testnet12_only 611fdbf8e46c612e18a3fbad1aba5c507af2d1ad9c59b1ee8abf37538a799a32 8de48ab5c7561d618db190f37b88f4c9c652170777970b3f408e85ded0789c63 321 1
++ for source in '"${SOURCE_DIR}"/*.sil'
++ '[' -f /Users/arthur/RustroverProjects/rgk/examples/silverscript/burn_authorised_lifecycle.sil ']'
++ rows=2
+++ basename /Users/arthur/RustroverProjects/rgk/examples/silverscript/burn_authorised_lifecycle.sil .sil
++ example_id=burn_authorised_lifecycle
++ compiled=/var/folders/kq/dz44fm994nz94zw2dfqnz_g00000gn/T/tmp.x50SBU67me/burn_authorised_lifecycle.json
++ artifact=/Users/arthur/RustroverProjects/rgk/examples/silverscript/artifacts/burn_authorised_lifecycle.json
++ cargo run --quiet --manifest-path /Users/arthur/RustroverProjects/rgk/external/silverscript/Cargo.toml -p silverscript-lang --bin silverc -- /Users/arthur/RustroverProjects/rgk/examples/silverscript/burn_authorised_lifecycle.sil -o /var/folders/kq/dz44fm994nz94zw2dfqnz_g00000gn/T/tmp.x50SBU67me/burn_authorised_lifecycle.json
++ '[' 1 = 1 ']'
++ cp /var/folders/kq/dz44fm994nz94zw2dfqnz_g00000gn/T/tmp.x50SBU67me/burn_authorised_lifecycle.json /Users/arthur/RustroverProjects/rgk/examples/silverscript/artifacts/burn_authorised_lifecycle.json
++ IFS='	'
++ read -r compiler_version script_bytes abi_entries
+++ json_fields /var/folders/kq/dz44fm994nz94zw2dfqnz_g00000gn/T/tmp.x50SBU67me/burn_authorised_lifecycle.json
+++ python3 - /var/folders/kq/dz44fm994nz94zw2dfqnz_g00000gn/T/tmp.x50SBU67me/burn_authorised_lifecycle.json
++ source_rel=examples/silverscript/burn_authorised_lifecycle.sil
++ artifact_rel=examples/silverscript/artifacts/burn_authorised_lifecycle.json
+++ sha256_file /Users/arthur/RustroverProjects/rgk/examples/silverscript/burn_authorised_lifecycle.sil
+++ shasum -a 256 /Users/arthur/RustroverProjects/rgk/examples/silverscript/burn_authorised_lifecycle.sil
+++ awk '{print $1}'
++ source_sha=115c6231859e299d413bb80cc71606278ab136c8dd445d1ec2a946bc298f4d7d
+++ sha256_file /Users/arthur/RustroverProjects/rgk/examples/silverscript/artifacts/burn_authorised_lifecycle.json
+++ shasum -a 256 /Users/arthur/RustroverProjects/rgk/examples/silverscript/artifacts/burn_authorised_lifecycle.json
+++ awk '{print $1}'
++ artifact_sha=c8606b30d9fea64d3a672ad5fa057164a31b4b374e336df68b0bb992d9c6304f
++ printf '%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n' burn_authorised_lifecycle examples/silverscript/burn_authorised_lifecycle.sil examples/silverscript/artifacts/burn_authorised_lifecycle.json d25bd3427a093c17327ca3d6b9e1aa5f7688c863 0.1.0 kaspa_testnet12_only 115c6231859e299d413bb80cc71606278ab136c8dd445d1ec2a946bc298f4d7d c8606b30d9fea64d3a672ad5fa057164a31b4b374e336df68b0bb992d9c6304f 370 1
++ for source in '"${SOURCE_DIR}"/*.sil'
++ '[' -f /Users/arthur/RustroverProjects/rgk/examples/silverscript/fungible_batch_transfer_shapes.sil ']'
++ rows=3
+++ basename /Users/arthur/RustroverProjects/rgk/examples/silverscript/fungible_batch_transfer_shapes.sil .sil
++ example_id=fungible_batch_transfer_shapes
++ compiled=/var/folders/kq/dz44fm994nz94zw2dfqnz_g00000gn/T/tmp.x50SBU67me/fungible_batch_transfer_shapes.json
++ artifact=/Users/arthur/RustroverProjects/rgk/examples/silverscript/artifacts/fungible_batch_transfer_shapes.json
++ cargo run --quiet --manifest-path /Users/arthur/RustroverProjects/rgk/external/silverscript/Cargo.toml -p silverscript-lang --bin silverc -- /Users/arthur/RustroverProjects/rgk/examples/silverscript/fungible_batch_transfer_shapes.sil -o /var/folders/kq/dz44fm994nz94zw2dfqnz_g00000gn/T/tmp.x50SBU67me/fungible_batch_transfer_shapes.json
++ '[' 1 = 1 ']'
++ cp /var/folders/kq/dz44fm994nz94zw2dfqnz_g00000gn/T/tmp.x50SBU67me/fungible_batch_transfer_shapes.json /Users/arthur/RustroverProjects/rgk/examples/silverscript/artifacts/fungible_batch_transfer_shapes.json
++ IFS='	'
++ read -r compiler_version script_bytes abi_entries
+++ json_fields /var/folders/kq/dz44fm994nz94zw2dfqnz_g00000gn/T/tmp.x50SBU67me/fungible_batch_transfer_shapes.json
+++ python3 - /var/folders/kq/dz44fm994nz94zw2dfqnz_g00000gn/T/tmp.x50SBU67me/fungible_batch_transfer_shapes.json
++ source_rel=examples/silverscript/fungible_batch_transfer_shapes.sil
++ artifact_rel=examples/silverscript/artifacts/fungible_batch_transfer_shapes.json
+++ sha256_file /Users/arthur/RustroverProjects/rgk/examples/silverscript/fungible_batch_transfer_shapes.sil
+++ shasum -a 256 /Users/arthur/RustroverProjects/rgk/examples/silverscript/fungible_batch_transfer_shapes.sil
+++ awk '{print $1}'
++ source_sha=88edf4c26a01a2374cab9ba5e50c849fcb7923c8873a6aeaf56cf5f4df5f458b
+++ sha256_file /Users/arthur/RustroverProjects/rgk/examples/silverscript/artifacts/fungible_batch_transfer_shapes.json
+++ shasum -a 256 /Users/arthur/RustroverProjects/rgk/examples/silverscript/artifacts/fungible_batch_transfer_shapes.json
+++ awk '{print $1}'
++ artifact_sha=e6ce46b78870227d0d2f99524d58d77273805c07140f9942aad6f032dbbbb1c7
++ printf '%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n' fungible_batch_transfer_shapes examples/silverscript/fungible_batch_transfer_shapes.sil examples/silverscript/artifacts/fungible_batch_transfer_shapes.json d25bd3427a093c17327ca3d6b9e1aa5f7688c863 0.1.0 kaspa_testnet12_only 88edf4c26a01a2374cab9ba5e50c849fcb7923c8873a6aeaf56cf5f4df5f458b e6ce46b78870227d0d2f99524d58d77273805c07140f9942aad6f032dbbbb1c7 629 3
++ for source in '"${SOURCE_DIR}"/*.sil'
++ '[' -f /Users/arthur/RustroverProjects/rgk/examples/silverscript/metadata_ownership_guardrails.sil ']'
++ rows=4
+++ basename /Users/arthur/RustroverProjects/rgk/examples/silverscript/metadata_ownership_guardrails.sil .sil
++ example_id=metadata_ownership_guardrails
++ compiled=/var/folders/kq/dz44fm994nz94zw2dfqnz_g00000gn/T/tmp.x50SBU67me/metadata_ownership_guardrails.json
++ artifact=/Users/arthur/RustroverProjects/rgk/examples/silverscript/artifacts/metadata_ownership_guardrails.json
++ cargo run --quiet --manifest-path /Users/arthur/RustroverProjects/rgk/external/silverscript/Cargo.toml -p silverscript-lang --bin silverc -- /Users/arthur/RustroverProjects/rgk/examples/silverscript/metadata_ownership_guardrails.sil -o /var/folders/kq/dz44fm994nz94zw2dfqnz_g00000gn/T/tmp.x50SBU67me/metadata_ownership_guardrails.json
++ '[' 1 = 1 ']'
++ cp /var/folders/kq/dz44fm994nz94zw2dfqnz_g00000gn/T/tmp.x50SBU67me/metadata_ownership_guardrails.json /Users/arthur/RustroverProjects/rgk/examples/silverscript/artifacts/metadata_ownership_guardrails.json
++ IFS='	'
++ read -r compiler_version script_bytes abi_entries
+++ json_fields /var/folders/kq/dz44fm994nz94zw2dfqnz_g00000gn/T/tmp.x50SBU67me/metadata_ownership_guardrails.json
+++ python3 - /var/folders/kq/dz44fm994nz94zw2dfqnz_g00000gn/T/tmp.x50SBU67me/metadata_ownership_guardrails.json
++ source_rel=examples/silverscript/metadata_ownership_guardrails.sil
++ artifact_rel=examples/silverscript/artifacts/metadata_ownership_guardrails.json
+++ sha256_file /Users/arthur/RustroverProjects/rgk/examples/silverscript/metadata_ownership_guardrails.sil
+++ shasum -a 256 /Users/arthur/RustroverProjects/rgk/examples/silverscript/metadata_ownership_guardrails.sil
+++ awk '{print $1}'
++ source_sha=174730f8a8bf46284387853a1631ae4cc35825bd35f5f77a6ba4f75b3bc4d8b6
+++ sha256_file /Users/arthur/RustroverProjects/rgk/examples/silverscript/artifacts/metadata_ownership_guardrails.json
+++ shasum -a 256 /Users/arthur/RustroverProjects/rgk/examples/silverscript/artifacts/metadata_ownership_guardrails.json
+++ awk '{print $1}'
++ artifact_sha=bac0cb55565bbd8649ded50bc4672c3d881cdc37cb7f80d74c85d947b355444c
++ printf '%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n' metadata_ownership_guardrails examples/silverscript/metadata_ownership_guardrails.sil examples/silverscript/artifacts/metadata_ownership_guardrails.json d25bd3427a093c17327ca3d6b9e1aa5f7688c863 0.1.0 kaspa_testnet12_only 174730f8a8bf46284387853a1631ae4cc35825bd35f5f77a6ba4f75b3bc4d8b6 bac0cb55565bbd8649ded50bc4672c3d881cdc37cb7f80d74c85d947b355444c 503 1
++ for source in '"${SOURCE_DIR}"/*.sil'
++ '[' -f /Users/arthur/RustroverProjects/rgk/examples/silverscript/nft_collection_policy_shapes.sil ']'
++ rows=5
+++ basename /Users/arthur/RustroverProjects/rgk/examples/silverscript/nft_collection_policy_shapes.sil .sil
++ example_id=nft_collection_policy_shapes
++ compiled=/var/folders/kq/dz44fm994nz94zw2dfqnz_g00000gn/T/tmp.x50SBU67me/nft_collection_policy_shapes.json
++ artifact=/Users/arthur/RustroverProjects/rgk/examples/silverscript/artifacts/nft_collection_policy_shapes.json
++ cargo run --quiet --manifest-path /Users/arthur/RustroverProjects/rgk/external/silverscript/Cargo.toml -p silverscript-lang --bin silverc -- /Users/arthur/RustroverProjects/rgk/examples/silverscript/nft_collection_policy_shapes.sil -o /var/folders/kq/dz44fm994nz94zw2dfqnz_g00000gn/T/tmp.x50SBU67me/nft_collection_policy_shapes.json
+compile error: unsupported feature: mode=verification with binding=auth on singleton function 'mint_fixed_supply_token' expects parameters '(State prev_state, State new_state, ...)'
++ rm -rf /var/folders/kq/dz44fm994nz94zw2dfqnz_g00000gn/T/tmp.x50SBU67me

@@ -1,0 +1,33 @@
+== stdout ==
+
+== stderr ==
+    Updating crates.io index
+     Locking 29 packages to latest compatible versions
+      Adding generic-array v0.14.7 (available: v0.14.9)
+   Compiling version_check v0.9.5
+   Compiling proc-macro2 v1.0.106
+   Compiling quote v1.0.46
+   Compiling unicode-ident v1.0.24
+   Compiling typenum v1.20.1
+   Compiling libc v0.2.186
+   Compiling find-msvc-tools v0.1.9
+   Compiling shlex v2.0.1
+   Compiling thiserror v2.0.18
+   Compiling cfg-if v1.0.4
+   Compiling hex v0.4.3
+   Compiling arbitrary v1.4.2
+   Compiling generic-array v0.14.7
+   Compiling syn v2.0.118
+   Compiling cpufeatures v0.2.17
+   Compiling jobserver v0.1.34
+   Compiling cc v1.2.65
+   Compiling thiserror-impl v2.0.18
+   Compiling crypto-common v0.1.7
+   Compiling block-buffer v0.10.4
+   Compiling digest v0.10.7
+   Compiling sha2 v0.10.9
+   Compiling libfuzzer-sys v0.4.13
+   Compiling rgk-core v0.1.0 (/Users/arthur/RustroverProjects/rgk/crates/rgk-core)
+   Compiling rgk-receipt v0.1.0 (/Users/arthur/RustroverProjects/rgk/crates/rgk-receipt)
+   Compiling rgk-fuzz v0.0.0 (/Users/arthur/RustroverProjects/rgk/fuzz)
+    Finished `release` profile [optimized + debuginfo] target(s) in 7.43s

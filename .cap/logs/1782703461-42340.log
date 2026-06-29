@@ -1,0 +1,21 @@
+== stdout ==
+
+running 1 test
+test real_zk::tests::allocation_1x1_rejects_inconsistent_burn_accounting ... FAILED
+
+failures:
+
+failures:
+    real_zk::tests::allocation_1x1_rejects_inconsistent_burn_accounting
+
+test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 82 filtered out; finished in 0.00s
+
+
+== stderr ==
+    Finished `test` profile [optimized + debuginfo] target(s) in 0.09s
+     Running unittests src/lib.rs (target/debug/deps/rgk_zk-2d7d6e784de2143c)
+
+thread 'real_zk::tests::allocation_1x1_rejects_inconsistent_burn_accounting' (33948783) panicked at crates/rgk-zk/src/real_zk.rs:7408:14:
+burn allocation constraint synthesis: Unsatisfiable
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+error: test failed, to rerun pass `-p rgk-zk --lib`

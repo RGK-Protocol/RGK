@@ -1,0 +1,6 @@
+== stdout ==
+
+== stderr ==
+    Blocking waiting for file lock on build directory
+    Checking rgk-asset v0.1.0 (/Users/arthur/RustroverProjects/rgk/crates/rgk-asset)
+    Finished `dev` profile [optimized + debuginfo] target(s) in 1.42s

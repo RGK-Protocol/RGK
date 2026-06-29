@@ -1,0 +1,1677 @@
+{
+  "contract_name": "RGKPrivateLaneGraphDiscovery",
+  "compiler_version": "0.1.0",
+  "script": [
+    8,
+    7,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    32,
+    17,
+    17,
+    17,
+    17,
+    17,
+    17,
+    17,
+    17,
+    17,
+    17,
+    17,
+    17,
+    17,
+    17,
+    17,
+    17,
+    17,
+    17,
+    17,
+    17,
+    17,
+    17,
+    17,
+    17,
+    17,
+    17,
+    17,
+    17,
+    17,
+    17,
+    17,
+    17,
+    32,
+    34,
+    34,
+    34,
+    34,
+    34,
+    34,
+    34,
+    34,
+    34,
+    34,
+    34,
+    34,
+    34,
+    34,
+    34,
+    34,
+    34,
+    34,
+    34,
+    34,
+    34,
+    34,
+    34,
+    34,
+    34,
+    34,
+    34,
+    34,
+    34,
+    34,
+    34,
+    34,
+    32,
+    204,
+    204,
+    204,
+    204,
+    204,
+    204,
+    204,
+    204,
+    204,
+    204,
+    204,
+    204,
+    204,
+    204,
+    204,
+    204,
+    204,
+    204,
+    204,
+    204,
+    204,
+    204,
+    204,
+    204,
+    204,
+    204,
+    204,
+    204,
+    204,
+    204,
+    204,
+    204,
+    32,
+    221,
+    221,
+    221,
+    221,
+    221,
+    221,
+    221,
+    221,
+    221,
+    221,
+    221,
+    221,
+    221,
+    221,
+    221,
+    221,
+    221,
+    221,
+    221,
+    221,
+    221,
+    221,
+    221,
+    221,
+    221,
+    221,
+    221,
+    221,
+    221,
+    221,
+    221,
+    221,
+    120,
+    120,
+    93,
+    121,
+    87,
+    121,
+    81,
+    147,
+    156,
+    105,
+    85,
+    121,
+    93,
+    121,
+    135,
+    105,
+    84,
+    121,
+    92,
+    121,
+    135,
+    105,
+    120,
+    91,
+    121,
+    135,
+    145,
+    105,
+    118,
+    90,
+    121,
+    135,
+    145,
+    105,
+    88,
+    121,
+    82,
+    121,
+    135,
+    145,
+    105,
+    87,
+    121,
+    120,
+    135,
+    145,
+    105,
+    185,
+    203,
+    81,
+    156,
+    105,
+    93,
+    121,
+    88,
+    205,
+    1,
+    8,
+    124,
+    126,
+    93,
+    121,
+    1,
+    32,
+    124,
+    126,
+    93,
+    121,
+    1,
+    32,
+    124,
+    126,
+    93,
+    121,
+    1,
+    32,
+    124,
+    126,
+    93,
+    121,
+    1,
+    32,
+    124,
+    126,
+    126,
+    126,
+    126,
+    126,
+    185,
+    118,
+    201,
+    118,
+    2,
+    28,
+    1,
+    148,
+    2,
+    141,
+    0,
+    147,
+    124,
+    188,
+    126,
+    170,
+    2,
+    0,
+    0,
+    1,
+    170,
+    126,
+    1,
+    32,
+    126,
+    124,
+    126,
+    1,
+    135,
+    126,
+    185,
+    0,
+    204,
+    195,
+    135,
+    105,
+    0,
+    122,
+    117,
+    0,
+    122,
+    117,
+    117,
+    117,
+    117,
+    117,
+    117,
+    117,
+    117,
+    117,
+    117,
+    117,
+    117,
+    117,
+    81
+  ],
+  "ast": {
+    "pragma": {
+      "name": "silverscript",
+      "value": "^0.1.0",
+      "span": "pragma silverscript ^0.1.0;",
+      "name_span": "silverscript",
+      "value_span": "^0.1.0"
+    },
+    "name": "RGKPrivateLaneGraphDiscovery",
+    "params": [],
+    "fields": [
+      {
+        "type_ref": {
+          "base": "int"
+        },
+        "name": "epoch",
+        "expr": {
+          "kind": "int",
+          "data": 7,
+          "span": "7"
+        },
+        "span": "int epoch = 7;",
+        "type_span": "int ",
+        "name_span": "epoch"
+      },
+      {
+        "type_ref": {
+          "base": "byte",
+          "array_dims": [
+            {
+              "kind": "fixed",
+              "value": 32
+            }
+          ]
+        },
+        "name": "asset_id",
+        "expr": {
+          "kind": "array",
+          "data": [
+            {
+              "kind": "byte",
+              "data": 17,
+              "span": "0x1111111111111111111111111111111111111111111111111111111111111111"
+            },
+            {
+              "kind": "byte",
+              "data": 17,
+              "span": "0x1111111111111111111111111111111111111111111111111111111111111111"
+            },
+            {
+              "kind": "byte",
+              "data": 17,
+              "span": "0x1111111111111111111111111111111111111111111111111111111111111111"
+            },
+            {
+              "kind": "byte",
+              "data": 17,
+              "span": "0x1111111111111111111111111111111111111111111111111111111111111111"
+            },
+            {
+              "kind": "byte",
+              "data": 17,
+              "span": "0x1111111111111111111111111111111111111111111111111111111111111111"
+            },
+            {
+              "kind": "byte",
+              "data": 17,
+              "span": "0x1111111111111111111111111111111111111111111111111111111111111111"
+            },
+            {
+              "kind": "byte",
+              "data": 17,
+              "span": "0x1111111111111111111111111111111111111111111111111111111111111111"
+            },
+            {
+              "kind": "byte",
+              "data": 17,
+              "span": "0x1111111111111111111111111111111111111111111111111111111111111111"
+            },
+            {
+              "kind": "byte",
+              "data": 17,
+              "span": "0x1111111111111111111111111111111111111111111111111111111111111111"
+            },
+            {
+              "kind": "byte",
+              "data": 17,
+              "span": "0x1111111111111111111111111111111111111111111111111111111111111111"
+            },
+            {
+              "kind": "byte",
+              "data": 17,
+              "span": "0x1111111111111111111111111111111111111111111111111111111111111111"
+            },
+            {
+              "kind": "byte",
+              "data": 17,
+              "span": "0x1111111111111111111111111111111111111111111111111111111111111111"
+            },
+            {
+              "kind": "byte",
+              "data": 17,
+              "span": "0x1111111111111111111111111111111111111111111111111111111111111111"
+            },
+            {
+              "kind": "byte",
+              "data": 17,
+              "span": "0x1111111111111111111111111111111111111111111111111111111111111111"
+            },
+            {
+              "kind": "byte",
+              "data": 17,
+              "span": "0x1111111111111111111111111111111111111111111111111111111111111111"
+            },
+            {
+              "kind": "byte",
+              "data": 17,
+              "span": "0x1111111111111111111111111111111111111111111111111111111111111111"
+            },
+            {
+              "kind": "byte",
+              "data": 17,
+              "span": "0x1111111111111111111111111111111111111111111111111111111111111111"
+            },
+            {
+              "kind": "byte",
+              "data": 17,
+              "span": "0x1111111111111111111111111111111111111111111111111111111111111111"
+            },
+            {
+              "kind": "byte",
+              "data": 17,
+              "span": "0x1111111111111111111111111111111111111111111111111111111111111111"
+            },
+            {
+              "kind": "byte",
+              "data": 17,
+              "span": "0x1111111111111111111111111111111111111111111111111111111111111111"
+            },
+            {
+              "kind": "byte",
+              "data": 17,
+              "span": "0x1111111111111111111111111111111111111111111111111111111111111111"
+            },
+            {
+              "kind": "byte",
+              "data": 17,
+              "span": "0x1111111111111111111111111111111111111111111111111111111111111111"
+            },
+            {
+              "kind": "byte",
+              "data": 17,
+              "span": "0x1111111111111111111111111111111111111111111111111111111111111111"
+            },
+            {
+              "kind": "byte",
+              "data": 17,
+              "span": "0x1111111111111111111111111111111111111111111111111111111111111111"
+            },
+            {
+              "kind": "byte",
+              "data": 17,
+              "span": "0x1111111111111111111111111111111111111111111111111111111111111111"
+            },
+            {
+              "kind": "byte",
+              "data": 17,
+              "span": "0x1111111111111111111111111111111111111111111111111111111111111111"
+            },
+            {
+              "kind": "byte",
+              "data": 17,
+              "span": "0x1111111111111111111111111111111111111111111111111111111111111111"
+            },
+            {
+              "kind": "byte",
+              "data": 17,
+              "span": "0x1111111111111111111111111111111111111111111111111111111111111111"
+            },
+            {
+              "kind": "byte",
+              "data": 17,
+              "span": "0x1111111111111111111111111111111111111111111111111111111111111111"
+            },
+            {
+              "kind": "byte",
+              "data": 17,
+              "span": "0x1111111111111111111111111111111111111111111111111111111111111111"
+            },
+            {
+              "kind": "byte",
+              "data": 17,
+              "span": "0x1111111111111111111111111111111111111111111111111111111111111111"
+            },
+            {
+              "kind": "byte",
+              "data": 17,
+              "span": "0x1111111111111111111111111111111111111111111111111111111111111111"
+            }
+          ],
+          "span": "0x1111111111111111111111111111111111111111111111111111111111111111"
+        },
+        "span": "byte[32] asset_id = 0x1111111111111111111111111111111111111111111111111111111111111111;",
+        "type_span": "byte[32]",
+        "name_span": "asset_id"
+      },
+      {
+        "type_ref": {
+          "base": "byte",
+          "array_dims": [
+            {
+              "kind": "fixed",
+              "value": 32
+            }
+          ]
+        },
+        "name": "lane_id",
+        "expr": {
+          "kind": "array",
+          "data": [
+            {
+              "kind": "byte",
+              "data": 34,
+              "span": "0x2222222222222222222222222222222222222222222222222222222222222222"
+            },
+            {
+              "kind": "byte",
+              "data": 34,
+              "span": "0x2222222222222222222222222222222222222222222222222222222222222222"
+            },
+            {
+              "kind": "byte",
+              "data": 34,
+              "span": "0x2222222222222222222222222222222222222222222222222222222222222222"
+            },
+            {
+              "kind": "byte",
+              "data": 34,
+              "span": "0x2222222222222222222222222222222222222222222222222222222222222222"
+            },
+            {
+              "kind": "byte",
+              "data": 34,
+              "span": "0x2222222222222222222222222222222222222222222222222222222222222222"
+            },
+            {
+              "kind": "byte",
+              "data": 34,
+              "span": "0x2222222222222222222222222222222222222222222222222222222222222222"
+            },
+            {
+              "kind": "byte",
+              "data": 34,
+              "span": "0x2222222222222222222222222222222222222222222222222222222222222222"
+            },
+            {
+              "kind": "byte",
+              "data": 34,
+              "span": "0x2222222222222222222222222222222222222222222222222222222222222222"
+            },
+            {
+              "kind": "byte",
+              "data": 34,
+              "span": "0x2222222222222222222222222222222222222222222222222222222222222222"
+            },
+            {
+              "kind": "byte",
+              "data": 34,
+              "span": "0x2222222222222222222222222222222222222222222222222222222222222222"
+            },
+            {
+              "kind": "byte",
+              "data": 34,
+              "span": "0x2222222222222222222222222222222222222222222222222222222222222222"
+            },
+            {
+              "kind": "byte",
+              "data": 34,
+              "span": "0x2222222222222222222222222222222222222222222222222222222222222222"
+            },
+            {
+              "kind": "byte",
+              "data": 34,
+              "span": "0x2222222222222222222222222222222222222222222222222222222222222222"
+            },
+            {
+              "kind": "byte",
+              "data": 34,
+              "span": "0x2222222222222222222222222222222222222222222222222222222222222222"
+            },
+            {
+              "kind": "byte",
+              "data": 34,
+              "span": "0x2222222222222222222222222222222222222222222222222222222222222222"
+            },
+            {
+              "kind": "byte",
+              "data": 34,
+              "span": "0x2222222222222222222222222222222222222222222222222222222222222222"
+            },
+            {
+              "kind": "byte",
+              "data": 34,
+              "span": "0x2222222222222222222222222222222222222222222222222222222222222222"
+            },
+            {
+              "kind": "byte",
+              "data": 34,
+              "span": "0x2222222222222222222222222222222222222222222222222222222222222222"
+            },
+            {
+              "kind": "byte",
+              "data": 34,
+              "span": "0x2222222222222222222222222222222222222222222222222222222222222222"
+            },
+            {
+              "kind": "byte",
+              "data": 34,
+              "span": "0x2222222222222222222222222222222222222222222222222222222222222222"
+            },
+            {
+              "kind": "byte",
+              "data": 34,
+              "span": "0x2222222222222222222222222222222222222222222222222222222222222222"
+            },
+            {
+              "kind": "byte",
+              "data": 34,
+              "span": "0x2222222222222222222222222222222222222222222222222222222222222222"
+            },
+            {
+              "kind": "byte",
+              "data": 34,
+              "span": "0x2222222222222222222222222222222222222222222222222222222222222222"
+            },
+            {
+              "kind": "byte",
+              "data": 34,
+              "span": "0x2222222222222222222222222222222222222222222222222222222222222222"
+            },
+            {
+              "kind": "byte",
+              "data": 34,
+              "span": "0x2222222222222222222222222222222222222222222222222222222222222222"
+            },
+            {
+              "kind": "byte",
+              "data": 34,
+              "span": "0x2222222222222222222222222222222222222222222222222222222222222222"
+            },
+            {
+              "kind": "byte",
+              "data": 34,
+              "span": "0x2222222222222222222222222222222222222222222222222222222222222222"
+            },
+            {
+              "kind": "byte",
+              "data": 34,
+              "span": "0x2222222222222222222222222222222222222222222222222222222222222222"
+            },
+            {
+              "kind": "byte",
+              "data": 34,
+              "span": "0x2222222222222222222222222222222222222222222222222222222222222222"
+            },
+            {
+              "kind": "byte",
+              "data": 34,
+              "span": "0x2222222222222222222222222222222222222222222222222222222222222222"
+            },
+            {
+              "kind": "byte",
+              "data": 34,
+              "span": "0x2222222222222222222222222222222222222222222222222222222222222222"
+            },
+            {
+              "kind": "byte",
+              "data": 34,
+              "span": "0x2222222222222222222222222222222222222222222222222222222222222222"
+            }
+          ],
+          "span": "0x2222222222222222222222222222222222222222222222222222222222222222"
+        },
+        "span": "byte[32] lane_id = 0x2222222222222222222222222222222222222222222222222222222222222222;",
+        "type_span": "byte[32]",
+        "name_span": "lane_id"
+      },
+      {
+        "type_ref": {
+          "base": "byte",
+          "array_dims": [
+            {
+              "kind": "fixed",
+              "value": 32
+            }
+          ]
+        },
+        "name": "scan_tag",
+        "expr": {
+          "kind": "array",
+          "data": [
+            {
+              "kind": "byte",
+              "data": 204,
+              "span": "0xcccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+            },
+            {
+              "kind": "byte",
+              "data": 204,
+              "span": "0xcccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+            },
+            {
+              "kind": "byte",
+              "data": 204,
+              "span": "0xcccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+            },
+            {
+              "kind": "byte",
+              "data": 204,
+              "span": "0xcccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+            },
+            {
+              "kind": "byte",
+              "data": 204,
+              "span": "0xcccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+            },
+            {
+              "kind": "byte",
+              "data": 204,
+              "span": "0xcccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+            },
+            {
+              "kind": "byte",
+              "data": 204,
+              "span": "0xcccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+            },
+            {
+              "kind": "byte",
+              "data": 204,
+              "span": "0xcccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+            },
+            {
+              "kind": "byte",
+              "data": 204,
+              "span": "0xcccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+            },
+            {
+              "kind": "byte",
+              "data": 204,
+              "span": "0xcccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+            },
+            {
+              "kind": "byte",
+              "data": 204,
+              "span": "0xcccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+            },
+            {
+              "kind": "byte",
+              "data": 204,
+              "span": "0xcccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+            },
+            {
+              "kind": "byte",
+              "data": 204,
+              "span": "0xcccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+            },
+            {
+              "kind": "byte",
+              "data": 204,
+              "span": "0xcccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+            },
+            {
+              "kind": "byte",
+              "data": 204,
+              "span": "0xcccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+            },
+            {
+              "kind": "byte",
+              "data": 204,
+              "span": "0xcccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+            },
+            {
+              "kind": "byte",
+              "data": 204,
+              "span": "0xcccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+            },
+            {
+              "kind": "byte",
+              "data": 204,
+              "span": "0xcccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+            },
+            {
+              "kind": "byte",
+              "data": 204,
+              "span": "0xcccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+            },
+            {
+              "kind": "byte",
+              "data": 204,
+              "span": "0xcccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+            },
+            {
+              "kind": "byte",
+              "data": 204,
+              "span": "0xcccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+            },
+            {
+              "kind": "byte",
+              "data": 204,
+              "span": "0xcccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+            },
+            {
+              "kind": "byte",
+              "data": 204,
+              "span": "0xcccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+            },
+            {
+              "kind": "byte",
+              "data": 204,
+              "span": "0xcccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+            },
+            {
+              "kind": "byte",
+              "data": 204,
+              "span": "0xcccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+            },
+            {
+              "kind": "byte",
+              "data": 204,
+              "span": "0xcccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+            },
+            {
+              "kind": "byte",
+              "data": 204,
+              "span": "0xcccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+            },
+            {
+              "kind": "byte",
+              "data": 204,
+              "span": "0xcccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+            },
+            {
+              "kind": "byte",
+              "data": 204,
+              "span": "0xcccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+            },
+            {
+              "kind": "byte",
+              "data": 204,
+              "span": "0xcccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+            },
+            {
+              "kind": "byte",
+              "data": 204,
+              "span": "0xcccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+            },
+            {
+              "kind": "byte",
+              "data": 204,
+              "span": "0xcccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+            }
+          ],
+          "span": "0xcccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+        },
+        "span": "byte[32] scan_tag = 0xcccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc;",
+        "type_span": "byte[32]",
+        "name_span": "scan_tag"
+      },
+      {
+        "type_ref": {
+          "base": "byte",
+          "array_dims": [
+            {
+              "kind": "fixed",
+              "value": 32
+            }
+          ]
+        },
+        "name": "graph_root",
+        "expr": {
+          "kind": "array",
+          "data": [
+            {
+              "kind": "byte",
+              "data": 221,
+              "span": "0xdddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd"
+            },
+            {
+              "kind": "byte",
+              "data": 221,
+              "span": "0xdddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd"
+            },
+            {
+              "kind": "byte",
+              "data": 221,
+              "span": "0xdddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd"
+            },
+            {
+              "kind": "byte",
+              "data": 221,
+              "span": "0xdddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd"
+            },
+            {
+              "kind": "byte",
+              "data": 221,
+              "span": "0xdddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd"
+            },
+            {
+              "kind": "byte",
+              "data": 221,
+              "span": "0xdddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd"
+            },
+            {
+              "kind": "byte",
+              "data": 221,
+              "span": "0xdddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd"
+            },
+            {
+              "kind": "byte",
+              "data": 221,
+              "span": "0xdddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd"
+            },
+            {
+              "kind": "byte",
+              "data": 221,
+              "span": "0xdddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd"
+            },
+            {
+              "kind": "byte",
+              "data": 221,
+              "span": "0xdddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd"
+            },
+            {
+              "kind": "byte",
+              "data": 221,
+              "span": "0xdddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd"
+            },
+            {
+              "kind": "byte",
+              "data": 221,
+              "span": "0xdddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd"
+            },
+            {
+              "kind": "byte",
+              "data": 221,
+              "span": "0xdddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd"
+            },
+            {
+              "kind": "byte",
+              "data": 221,
+              "span": "0xdddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd"
+            },
+            {
+              "kind": "byte",
+              "data": 221,
+              "span": "0xdddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd"
+            },
+            {
+              "kind": "byte",
+              "data": 221,
+              "span": "0xdddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd"
+            },
+            {
+              "kind": "byte",
+              "data": 221,
+              "span": "0xdddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd"
+            },
+            {
+              "kind": "byte",
+              "data": 221,
+              "span": "0xdddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd"
+            },
+            {
+              "kind": "byte",
+              "data": 221,
+              "span": "0xdddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd"
+            },
+            {
+              "kind": "byte",
+              "data": 221,
+              "span": "0xdddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd"
+            },
+            {
+              "kind": "byte",
+              "data": 221,
+              "span": "0xdddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd"
+            },
+            {
+              "kind": "byte",
+              "data": 221,
+              "span": "0xdddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd"
+            },
+            {
+              "kind": "byte",
+              "data": 221,
+              "span": "0xdddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd"
+            },
+            {
+              "kind": "byte",
+              "data": 221,
+              "span": "0xdddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd"
+            },
+            {
+              "kind": "byte",
+              "data": 221,
+              "span": "0xdddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd"
+            },
+            {
+              "kind": "byte",
+              "data": 221,
+              "span": "0xdddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd"
+            },
+            {
+              "kind": "byte",
+              "data": 221,
+              "span": "0xdddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd"
+            },
+            {
+              "kind": "byte",
+              "data": 221,
+              "span": "0xdddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd"
+            },
+            {
+              "kind": "byte",
+              "data": 221,
+              "span": "0xdddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd"
+            },
+            {
+              "kind": "byte",
+              "data": 221,
+              "span": "0xdddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd"
+            },
+            {
+              "kind": "byte",
+              "data": 221,
+              "span": "0xdddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd"
+            },
+            {
+              "kind": "byte",
+              "data": 221,
+              "span": "0xdddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd"
+            }
+          ],
+          "span": "0xdddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd"
+        },
+        "span": "byte[32] graph_root = 0xdddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd;",
+        "type_span": "byte[32]",
+        "name_span": "graph_root"
+      }
+    ],
+    "constants": [],
+    "functions": [
+      {
+        "name": "__covenant_policy_advance_scan_window",
+        "params": [
+          {
+            "type_ref": {
+              "base": "State"
+            },
+            "name": "prev_state",
+            "span": "State prev_state",
+            "type_span": "State ",
+            "name_span": "prev_state"
+          },
+          {
+            "type_ref": {
+              "base": "State"
+            },
+            "name": "new_state",
+            "span": "State new_state",
+            "type_span": "State ",
+            "name_span": "new_state"
+          },
+          {
+            "type_ref": {
+              "base": "byte",
+              "array_dims": [
+                {
+                  "kind": "fixed",
+                  "value": 32
+                }
+              ]
+            },
+            "name": "lane_discovery_proof",
+            "span": "byte[32] lane_discovery_proof",
+            "type_span": "byte[32]",
+            "name_span": "lane_discovery_proof"
+          },
+          {
+            "type_ref": {
+              "base": "byte",
+              "array_dims": [
+                {
+                  "kind": "fixed",
+                  "value": 32
+                }
+              ]
+            },
+            "name": "lane_graph_proof",
+            "span": "byte[32] lane_graph_proof",
+            "type_span": "byte[32]",
+            "name_span": "lane_graph_proof"
+          }
+        ],
+        "entrypoint": false,
+        "return_types": [],
+        "returns_tuple": false,
+        "body": [
+          {
+            "kind": "require",
+            "data": {
+              "expr": {
+                "kind": "binary",
+                "data": {
+                  "op": "eq",
+                  "left": {
+                    "kind": "field_access",
+                    "data": {
+                      "source": {
+                        "kind": "identifier",
+                        "data": "new_state",
+                        "span": "new_state"
+                      },
+                      "field": "epoch",
+                      "field_span": "epoch"
+                    },
+                    "span": "new_state.epoch"
+                  },
+                  "right": {
+                    "kind": "binary",
+                    "data": {
+                      "op": "add",
+                      "left": {
+                        "kind": "field_access",
+                        "data": {
+                          "source": {
+                            "kind": "identifier",
+                            "data": "prev_state",
+                            "span": "prev_state"
+                          },
+                          "field": "epoch",
+                          "field_span": "epoch"
+                        },
+                        "span": "prev_state.epoch"
+                      },
+                      "right": {
+                        "kind": "int",
+                        "data": 1,
+                        "span": "1"
+                      }
+                    },
+                    "span": "prev_state.epoch + 1"
+                  }
+                },
+                "span": "new_state.epoch == prev_state.epoch + 1"
+              },
+              "message": null,
+              "span": "require(new_state.epoch == prev_state.epoch + 1);",
+              "message_span": null
+            }
+          },
+          {
+            "kind": "require",
+            "data": {
+              "expr": {
+                "kind": "binary",
+                "data": {
+                  "op": "eq",
+                  "left": {
+                    "kind": "field_access",
+                    "data": {
+                      "source": {
+                        "kind": "identifier",
+                        "data": "prev_state",
+                        "span": "prev_state"
+                      },
+                      "field": "asset_id",
+                      "field_span": "asset_id"
+                    },
+                    "span": "prev_state.asset_id"
+                  },
+                  "right": {
+                    "kind": "field_access",
+                    "data": {
+                      "source": {
+                        "kind": "identifier",
+                        "data": "new_state",
+                        "span": "new_state"
+                      },
+                      "field": "asset_id",
+                      "field_span": "asset_id"
+                    },
+                    "span": "new_state.asset_id"
+                  }
+                },
+                "span": "prev_state.asset_id == new_state.asset_id"
+              },
+              "message": null,
+              "span": "require(prev_state.asset_id == new_state.asset_id);",
+              "message_span": null
+            }
+          },
+          {
+            "kind": "require",
+            "data": {
+              "expr": {
+                "kind": "binary",
+                "data": {
+                  "op": "eq",
+                  "left": {
+                    "kind": "field_access",
+                    "data": {
+                      "source": {
+                        "kind": "identifier",
+                        "data": "prev_state",
+                        "span": "prev_state"
+                      },
+                      "field": "lane_id",
+                      "field_span": "lane_id"
+                    },
+                    "span": "prev_state.lane_id"
+                  },
+                  "right": {
+                    "kind": "field_access",
+                    "data": {
+                      "source": {
+                        "kind": "identifier",
+                        "data": "new_state",
+                        "span": "new_state"
+                      },
+                      "field": "lane_id",
+                      "field_span": "lane_id"
+                    },
+                    "span": "new_state.lane_id"
+                  }
+                },
+                "span": "prev_state.lane_id == new_state.lane_id"
+              },
+              "message": null,
+              "span": "require(prev_state.lane_id == new_state.lane_id);",
+              "message_span": null
+            }
+          },
+          {
+            "kind": "require",
+            "data": {
+              "expr": {
+                "kind": "binary",
+                "data": {
+                  "op": "ne",
+                  "left": {
+                    "kind": "field_access",
+                    "data": {
+                      "source": {
+                        "kind": "identifier",
+                        "data": "prev_state",
+                        "span": "prev_state"
+                      },
+                      "field": "scan_tag",
+                      "field_span": "scan_tag"
+                    },
+                    "span": "prev_state.scan_tag"
+                  },
+                  "right": {
+                    "kind": "field_access",
+                    "data": {
+                      "source": {
+                        "kind": "identifier",
+                        "data": "new_state",
+                        "span": "new_state"
+                      },
+                      "field": "scan_tag",
+                      "field_span": "scan_tag"
+                    },
+                    "span": "new_state.scan_tag"
+                  }
+                },
+                "span": "prev_state.scan_tag != new_state.scan_tag"
+              },
+              "message": null,
+              "span": "require(prev_state.scan_tag != new_state.scan_tag);",
+              "message_span": null
+            }
+          },
+          {
+            "kind": "require",
+            "data": {
+              "expr": {
+                "kind": "binary",
+                "data": {
+                  "op": "ne",
+                  "left": {
+                    "kind": "field_access",
+                    "data": {
+                      "source": {
+                        "kind": "identifier",
+                        "data": "prev_state",
+                        "span": "prev_state"
+                      },
+                      "field": "graph_root",
+                      "field_span": "graph_root"
+                    },
+                    "span": "prev_state.graph_root"
+                  },
+                  "right": {
+                    "kind": "field_access",
+                    "data": {
+                      "source": {
+                        "kind": "identifier",
+                        "data": "new_state",
+                        "span": "new_state"
+                      },
+                      "field": "graph_root",
+                      "field_span": "graph_root"
+                    },
+                    "span": "new_state.graph_root"
+                  }
+                },
+                "span": "prev_state.graph_root != new_state.graph_root"
+              },
+              "message": null,
+              "span": "require(prev_state.graph_root != new_state.graph_root);",
+              "message_span": null
+            }
+          },
+          {
+            "kind": "require",
+            "data": {
+              "expr": {
+                "kind": "binary",
+                "data": {
+                  "op": "ne",
+                  "left": {
+                    "kind": "identifier",
+                    "data": "lane_discovery_proof",
+                    "span": "lane_discovery_proof"
+                  },
+                  "right": {
+                    "kind": "field_access",
+                    "data": {
+                      "source": {
+                        "kind": "identifier",
+                        "data": "prev_state",
+                        "span": "prev_state"
+                      },
+                      "field": "scan_tag",
+                      "field_span": "scan_tag"
+                    },
+                    "span": "prev_state.scan_tag"
+                  }
+                },
+                "span": "lane_discovery_proof != prev_state.scan_tag"
+              },
+              "message": null,
+              "span": "require(lane_discovery_proof != prev_state.scan_tag);",
+              "message_span": null
+            }
+          },
+          {
+            "kind": "require",
+            "data": {
+              "expr": {
+                "kind": "binary",
+                "data": {
+                  "op": "ne",
+                  "left": {
+                    "kind": "identifier",
+                    "data": "lane_graph_proof",
+                    "span": "lane_graph_proof"
+                  },
+                  "right": {
+                    "kind": "field_access",
+                    "data": {
+                      "source": {
+                        "kind": "identifier",
+                        "data": "prev_state",
+                        "span": "prev_state"
+                      },
+                      "field": "graph_root",
+                      "field_span": "graph_root"
+                    },
+                    "span": "prev_state.graph_root"
+                  }
+                },
+                "span": "lane_graph_proof != prev_state.graph_root"
+              },
+              "message": null,
+              "span": "require(lane_graph_proof != prev_state.graph_root);",
+              "message_span": null
+            }
+          }
+        ],
+        "return_type_spans": [],
+        "span": "#[covenant.singleton(mode = verification)]\n    function advance_scan_window(\n        State prev_state,\n        State new_state,\n        byte[32] lane_discovery_proof,\n        byte[32] lane_graph_proof\n    ) {\n        require(new_state.epoch == prev_state.epoch + 1);\n        require(prev_state.asset_id == new_state.asset_id);\n        require(prev_state.lane_id == new_state.lane_id);\n        require(prev_state.scan_tag != new_state.scan_tag);\n        require(prev_state.graph_root != new_state.graph_root);\n        require(lane_discovery_proof != prev_state.scan_tag);\n        require(lane_graph_proof != prev_state.graph_root);\n    }",
+        "name_span": "advance_scan_window",
+        "body_span": "require(new_state.epoch == prev_state.epoch + 1);\n        require(prev_state.asset_id == new_state.asset_id);\n        require(prev_state.lane_id == new_state.lane_id);\n        require(prev_state.scan_tag != new_state.scan_tag);\n        require(prev_state.graph_root != new_state.graph_root);\n        require(lane_discovery_proof != prev_state.scan_tag);\n        require(lane_graph_proof != prev_state.graph_root);"
+      },
+      {
+        "name": "__covenant_entrypoint_auth_advance_scan_window",
+        "params": [
+          {
+            "type_ref": {
+              "base": "State"
+            },
+            "name": "new_state",
+            "span": "State new_state",
+            "type_span": "State ",
+            "name_span": "new_state"
+          },
+          {
+            "type_ref": {
+              "base": "byte",
+              "array_dims": [
+                {
+                  "kind": "fixed",
+                  "value": 32
+                }
+              ]
+            },
+            "name": "lane_discovery_proof",
+            "span": "byte[32] lane_discovery_proof",
+            "type_span": "byte[32]",
+            "name_span": "lane_discovery_proof"
+          },
+          {
+            "type_ref": {
+              "base": "byte",
+              "array_dims": [
+                {
+                  "kind": "fixed",
+                  "value": 32
+                }
+              ]
+            },
+            "name": "lane_graph_proof",
+            "span": "byte[32] lane_graph_proof",
+            "type_span": "byte[32]",
+            "name_span": "lane_graph_proof"
+          }
+        ],
+        "entrypoint": true,
+        "return_types": [],
+        "returns_tuple": false,
+        "body": [
+          {
+            "kind": "variable_definition",
+            "data": {
+              "type_ref": {
+                "base": "int"
+              },
+              "modifiers": [],
+              "name": "__auth_out_count",
+              "expr": {
+                "kind": "call",
+                "data": {
+                  "name": "OpAuthOutputCount",
+                  "args": [
+                    {
+                      "kind": "nullary",
+                      "data": "active_input_index",
+                      "span": "<synthetic>"
+                    }
+                  ],
+                  "name_span": "<synthetic>"
+                },
+                "span": "<synthetic>"
+              },
+              "span": "<synthetic>",
+              "type_span": "<synthetic>",
+              "modifier_spans": [],
+              "name_span": "<synthetic>"
+            }
+          },
+          {
+            "kind": "variable_definition",
+            "data": {
+              "type_ref": {
+                "base": "State"
+              },
+              "modifiers": [],
+              "name": "prev_state",
+              "expr": {
+                "kind": "state_object",
+                "data": [
+                  {
+                    "name": "epoch",
+                    "expr": {
+                      "kind": "identifier",
+                      "data": "epoch",
+                      "span": "<synthetic>"
+                    },
+                    "span": "<synthetic>",
+                    "name_span": "<synthetic>"
+                  },
+                  {
+                    "name": "asset_id",
+                    "expr": {
+                      "kind": "identifier",
+                      "data": "asset_id",
+                      "span": "<synthetic>"
+                    },
+                    "span": "<synthetic>",
+                    "name_span": "<synthetic>"
+                  },
+                  {
+                    "name": "lane_id",
+                    "expr": {
+                      "kind": "identifier",
+                      "data": "lane_id",
+                      "span": "<synthetic>"
+                    },
+                    "span": "<synthetic>",
+                    "name_span": "<synthetic>"
+                  },
+                  {
+                    "name": "scan_tag",
+                    "expr": {
+                      "kind": "identifier",
+                      "data": "scan_tag",
+                      "span": "<synthetic>"
+                    },
+                    "span": "<synthetic>",
+                    "name_span": "<synthetic>"
+                  },
+                  {
+                    "name": "graph_root",
+                    "expr": {
+                      "kind": "identifier",
+                      "data": "graph_root",
+                      "span": "<synthetic>"
+                    },
+                    "span": "<synthetic>",
+                    "name_span": "<synthetic>"
+                  }
+                ],
+                "span": "<synthetic>"
+              },
+              "span": "<synthetic>",
+              "type_span": "<synthetic>",
+              "modifier_spans": [],
+              "name_span": "<synthetic>"
+            }
+          },
+          {
+            "kind": "function_call",
+            "data": {
+              "name": "__covenant_policy_advance_scan_window",
+              "args": [
+                {
+                  "kind": "identifier",
+                  "data": "prev_state",
+                  "span": "<synthetic>"
+                },
+                {
+                  "kind": "identifier",
+                  "data": "new_state",
+                  "span": "<synthetic>"
+                },
+                {
+                  "kind": "identifier",
+                  "data": "lane_discovery_proof",
+                  "span": "<synthetic>"
+                },
+                {
+                  "kind": "identifier",
+                  "data": "lane_graph_proof",
+                  "span": "<synthetic>"
+                }
+              ],
+              "span": "<synthetic>",
+              "name_span": "<synthetic>"
+            }
+          },
+          {
+            "kind": "require",
+            "data": {
+              "expr": {
+                "kind": "binary",
+                "data": {
+                  "op": "eq",
+                  "left": {
+                    "kind": "identifier",
+                    "data": "__auth_out_count",
+                    "span": "<synthetic>"
+                  },
+                  "right": {
+                    "kind": "int",
+                    "data": 1,
+                    "span": "<synthetic>"
+                  }
+                },
+                "span": "<synthetic>"
+              },
+              "message": null,
+              "span": "<synthetic>",
+              "message_span": null
+            }
+          },
+          {
+            "kind": "variable_definition",
+            "data": {
+              "type_ref": {
+                "base": "int"
+              },
+              "modifiers": [],
+              "name": "__cov_out_idx",
+              "expr": {
+                "kind": "call",
+                "data": {
+                  "name": "OpAuthOutputIdx",
+                  "args": [
+                    {
+                      "kind": "nullary",
+                      "data": "active_input_index",
+                      "span": "<synthetic>"
+                    },
+                    {
+                      "kind": "int",
+                      "data": 0,
+                      "span": "<synthetic>"
+                    }
+                  ],
+                  "name_span": "<synthetic>"
+                },
+                "span": "<synthetic>"
+              },
+              "span": "<synthetic>",
+              "type_span": "<synthetic>",
+              "modifier_spans": [],
+              "name_span": "<synthetic>"
+            }
+          },
+          {
+            "kind": "function_call",
+            "data": {
+              "name": "validateOutputState",
+              "args": [
+                {
+                  "kind": "identifier",
+                  "data": "__cov_out_idx",
+                  "span": "<synthetic>"
+                },
+                {
+                  "kind": "identifier",
+                  "data": "new_state",
+                  "span": "<synthetic>"
+                }
+              ],
+              "span": "<synthetic>",
+              "name_span": "<synthetic>"
+            }
+          }
+        ],
+        "return_type_spans": [],
+        "span": "#[covenant.singleton(mode = verification)]\n    function advance_scan_window(\n        State prev_state,\n        State new_state,\n        byte[32] lane_discovery_proof,\n        byte[32] lane_graph_proof\n    ) {\n        require(new_state.epoch == prev_state.epoch + 1);\n        require(prev_state.asset_id == new_state.asset_id);\n        require(prev_state.lane_id == new_state.lane_id);\n        require(prev_state.scan_tag != new_state.scan_tag);\n        require(prev_state.graph_root != new_state.graph_root);\n        require(lane_discovery_proof != prev_state.scan_tag);\n        require(lane_graph_proof != prev_state.graph_root);\n    }",
+        "name_span": "advance_scan_window",
+        "body_span": "require(new_state.epoch == prev_state.epoch + 1);\n        require(prev_state.asset_id == new_state.asset_id);\n        require(prev_state.lane_id == new_state.lane_id);\n        require(prev_state.scan_tag != new_state.scan_tag);\n        require(prev_state.graph_root != new_state.graph_root);\n        require(lane_discovery_proof != prev_state.scan_tag);\n        require(lane_graph_proof != prev_state.graph_root);"
+      }
+    ],
+    "span": "contract RGKPrivateLaneGraphDiscovery() {\n    int epoch = 7;\n    byte[32] asset_id = 0x1111111111111111111111111111111111111111111111111111111111111111;\n    byte[32] lane_id = 0x2222222222222222222222222222222222222222222222222222222222222222;\n    byte[32] scan_tag = 0xcccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc;\n    byte[32] graph_root = 0xdddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd;\n\n    #[covenant.singleton(mode = verification)]\n    function advance_scan_window(\n        State prev_state,\n        State new_state,\n        byte[32] lane_discovery_proof,\n        byte[32] lane_graph_proof\n    ) {\n        require(new_state.epoch == prev_state.epoch + 1);\n        require(prev_state.asset_id == new_state.asset_id);\n        require(prev_state.lane_id == new_state.lane_id);\n        require(prev_state.scan_tag != new_state.scan_tag);\n        require(prev_state.graph_root != new_state.graph_root);\n        require(lane_discovery_proof != prev_state.scan_tag);\n        require(lane_graph_proof != prev_state.graph_root);\n    }\n}",
+    "name_span": "RGKPrivateLaneGraphDiscovery"
+  },
+  "abi": [
+    {
+      "name": "__covenant_entrypoint_auth_advance_scan_window",
+      "inputs": [
+        {
+          "name": "new_state",
+          "type_name": "State"
+        },
+        {
+          "name": "lane_discovery_proof",
+          "type_name": "byte[32]"
+        },
+        {
+          "name": "lane_graph_proof",
+          "type_name": "byte[32]"
+        }
+      ]
+    }
+  ],
+  "without_selector": true,
+  "state_layout": {
+    "start": 0,
+    "len": 141
+  },
+  "debug_info": null
+}

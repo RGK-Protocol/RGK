@@ -1,0 +1,15 @@
+[package]
+name = "rgk-tx"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+description = "RGK transaction builders — initial covenant UTXO, transition tx, receipt-bound spend, fee/change outputs"
+
+[dependencies]
+rgk-core.workspace = true
+rgk-receipt.workspace = true
+rgk-covenant.workspace = true
+thiserror.workspace = true
+sha2.workspace = true

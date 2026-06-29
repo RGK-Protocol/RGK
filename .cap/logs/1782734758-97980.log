@@ -1,0 +1,15 @@
+== stdout ==
+Diff in /Users/arthur/RustroverProjects/rgk/crates/rgk-covenant/src/lib.rs:1540:
+ 
+         let decoded = AdvancedCovenantExecutionRecord::decode_canonical(&bytes).unwrap();
+         assert_eq!(decoded, record);
+-        assert_eq!(decoded.plan.execution_commitment, record.plan.execution_commitment);
++        assert_eq!(
++            decoded.plan.execution_commitment,
++            record.plan.execution_commitment
++        );
+ 
+         let mut trailing = bytes.clone();
+         trailing.push(0);
+
+== stderr ==

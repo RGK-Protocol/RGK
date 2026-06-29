@@ -1,0 +1,28 @@
+== stdout ==
+
+== stderr ==
+   Compiling kaspa-wrpc-client v1.2.2-toc.4 (/Users/arthur/RustroverProjects/rusty-kaspa/rpc/wrpc/client)
+   Compiling rgk-kaspa v0.1.0 (/Users/arthur/RustroverProjects/rgk/crates/rgk-kaspa)
+   Compiling rgk-sync v0.1.0 (/Users/arthur/RustroverProjects/rgk/crates/rgk-sync)
+   Compiling rgk-resolver v0.1.0 (/Users/arthur/RustroverProjects/rgk/crates/rgk-resolver)
+   Compiling rgk-e2e v0.1.0 (/Users/arthur/RustroverProjects/rgk/tests/rgk-e2e)
+error[E0382]: borrow of moved value: `advanced_cursor`
+    --> tests/rgk-e2e/tests/live_covenant.rs:1192:32
+     |
+1020 |     let (advanced_cursor, added_chain_blocks, observed_spends) = {
+     |          --------------- move occurs because `advanced_cursor` has type `ScanCursor`, which does not implement the `Copy` trait
+...
+1183 |             Some(advanced_cursor),
+     |                  --------------- value moved here
+...
+1192 |             covenant_id_bytes, advanced_cursor.daa_score
+     |                                ^^^^^^^^^^^^^^^^^^^^^^^^^ value borrowed here after move
+     |
+     = note: this error originates in the macro `$crate::format_args_nl` which comes from the expansion of the macro `eprintln` (in Nightly builds, run with -Z macro-backtrace for more info)
+help: consider cloning the value if the performance cost is acceptable
+     |
+1183 |             Some(advanced_cursor.clone()),
+     |                                 ++++++++
+
+For more information about this error, try `rustc --explain E0382`.
+error: could not compile `rgk-e2e` (test "live_covenant") due to 1 previous error

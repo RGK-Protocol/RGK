@@ -1,0 +1,10 @@
+== stdout ==
+
+== stderr ==
+    Blocking waiting for file lock on package cache
+    Blocking waiting for file lock on package cache
+    Blocking waiting for file lock on package cache
+    Blocking waiting for file lock on package cache
+   Compiling rgk-covenant v0.1.0 (/Users/arthur/RustroverProjects/rgk/crates/rgk-covenant)
+    Finished `bench` profile [optimized] target(s) in 8.35s
+  Executable benches/covenant_hot_paths.rs (target/release/deps/covenant_hot_paths-b52e413f2364f773)

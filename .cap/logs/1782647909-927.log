@@ -1,0 +1,23 @@
+== stdout ==
+
+== stderr ==
+    Blocking waiting for file lock on package cache
+    Blocking waiting for file lock on package cache
+    Blocking waiting for file lock on package cache
+    Blocking waiting for file lock on build directory
+    Checking rgk-indexer v0.1.0 (/Users/arthur/RustroverProjects/rgk/crates/rgk-indexer)
+    Checking rgk-zk v0.1.0 (/Users/arthur/RustroverProjects/rgk/crates/rgk-zk)
+    Checking rgk-rgb v0.1.0 (/Users/arthur/RustroverProjects/rgk/crates/rgk-rgb)
+    Checking rgk-tx v0.1.0 (/Users/arthur/RustroverProjects/rgk/crates/rgk-tx)
+    Checking rgk-resolver v0.1.0 (/Users/arthur/RustroverProjects/rgk/crates/rgk-resolver)
+    Checking rgk-e2e v0.1.0 (/Users/arthur/RustroverProjects/rgk/tests/rgk-e2e)
+warning: unused import: `KaspaChainId`
+  --> tests/rgk-e2e/tests/live_covenant.rs:55:30
+   |
+55 |     replay_nonce, Canonical, KaspaChainId, KaspaCovenantId, KaspaOutpoint, ProofMode,
+   |                              ^^^^^^^^^^^^
+   |
+   = note: `#[warn(unused_imports)]` (part of `#[warn(unused)]`) on by default
+
+warning: `rgk-e2e` (test "live_covenant") generated 1 warning (run `cargo fix --test "live_covenant" -p rgk-e2e` to apply 1 suggestion)
+    Finished `dev` profile [optimized + debuginfo] target(s) in 2.26s

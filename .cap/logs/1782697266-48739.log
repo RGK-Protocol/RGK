@@ -1,0 +1,36 @@
+== stdout ==
+
+running 15 tests
+test tests::node_down_propagates ... ok
+test tests::open_when_indexed_and_utxo_present ... ok
+test tests::competing_branch_when_observed_spend_disagrees_with_indexed_transition ... ok
+test tests::policy_migration_required_when_indexed_transition_changes_receipt_policy ... ok
+test tests::competing_branch_when_continuation_txid_does_not_match_observed_spend ... ok
+test tests::reorg_risk_when_spent_below_safety_depth ... ok
+test tests::resolve_by_view_key_discovers_only_matching_private_lane ... ok
+test tests::resolve_lane_returns_registered_lane_state ... ok
+test tests::resolve_public_lineage_returns_only_public_lanes_for_asset ... ok
+test tests::transitioned_invalid_when_continuation_proof_is_missing ... ok
+test tests::unknown_when_not_indexed ... ok
+test tests::transitioned_valid_uses_latest_indexed_spent_outpoint ... ok
+test tests::verify_receipt_against_indexer_rejects_mismatch ... ok
+test tests::valid_policy_migration_proof_allows_explicit_policy_change ... ok
+test tests::verify_receipt_against_indexer_rejects_replay_before_old_state_mismatch ... ok
+
+test result: ok. 15 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+
+== stderr ==
+    Blocking waiting for file lock on build directory
+   Compiling rgk-kaspa v0.1.0 (/Users/arthur/RustroverProjects/rgk/crates/rgk-kaspa)
+   Compiling rgk-indexer v0.1.0 (/Users/arthur/RustroverProjects/rgk/crates/rgk-indexer)
+   Compiling rgk-zk v0.1.0 (/Users/arthur/RustroverProjects/rgk/crates/rgk-zk)
+   Compiling rgk-resolver v0.1.0 (/Users/arthur/RustroverProjects/rgk/crates/rgk-resolver)
+    Finished `test` profile [optimized + debuginfo] target(s) in 3.66s
+     Running unittests src/lib.rs (target/debug/deps/rgk_resolver-e5622bd245dff2fe)
+   Doc-tests rgk_resolver

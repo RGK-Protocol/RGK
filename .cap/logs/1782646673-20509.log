@@ -1,0 +1,98 @@
+== stdout ==
+Kaspa full node daemon (rusty-kaspa) v1.2.2-toc.4
+
+Usage: kaspad [OPTIONS]
+
+Options:
+  -C, --configfile <CONFIG_FILE>
+          Path of config file. [env: KASPAD_CONFIGFILE=]
+  -b, --appdir <DATA_DIR>
+          Directory to store data. [env: KASPAD_APPDIR=]
+      --logdir <LOG_DIR>
+          Directory to log output. [env: KASPAD_LOGDIR=]
+      --nologfiles
+          Disable logging to files. [env: KASPAD_NOLOGFILES=]
+  -t, --async-threads=<async_threads>
+          Specify number of async threads (default: 14). [env: KASPAD_ASYNC_THREADS=]
+  -d, --loglevel=<LEVEL>
+          Logging level for all subsystems {off, error, warn, info, debug, trace}
+          -- You may also specify <subsystem>=<level>,<subsystem2>=<level>,... to set the log level for individual subsystems. [env: KASPAD_LOG_LEVEL=] [default: info]
+      --rpclisten[=<IP[:PORT]>]
+          Interface:port to listen for gRPC connections (default port: 16110, testnet: 16210). [env: KASPAD_RPCLISTEN=]
+      --rpclisten-borsh[=<IP[:PORT]>]
+          Interface:port to listen for wRPC Borsh connections (default port: 17110, testnet: 17210). [env: KASPAD_RPCLISTEN_BORSH=]
+      --rpclisten-json[=<IP[:PORT]>]
+          Interface:port to listen for wRPC JSON connections (default port: 18110, testnet: 18210). [env: KASPAD_RPCLISTEN_JSON=]
+      --unsaferpc
+          Enable RPC commands which affect the state of the node [env: KASPAD_UNSAFERPC=]
+      --connect=<IP[:PORT]>
+          Connect only to the specified peers at startup. [env: KASPAD_CONNECTPEERS=]
+      --addpeer=<IP[:PORT]>
+          Add peers to connect with at startup. [env: KASPAD_ADDPEERS=]
+      --listen=<IP[:PORT]>
+          Add an interface:port to listen for connections (default all interfaces port: 16111, testnet: 16211). [env: KASPAD_LISTEN=]
+      --outpeers=<outpeers>
+          Target number of outbound peers (default: 8). [env: KASPAD_OUTPEERS=]
+      --maxinpeers=<maxinpeers>
+          Max number of inbound peers (default: 128). [env: KASPAD_MAXINPEERS=]
+      --rpcmaxclients=<rpcmaxclients>
+          Max number of RPC clients for standard connections (default: 128). [env: KASPAD_RPCMAXCLIENTS=]
+      --reset-db
+          Reset database before starting node. It's needed when switching between subnetworks. [env: KASPAD_RESET_DB=]
+      --enable-unsynced-mining
+          Allow the node to accept blocks from RPC while not synced (this flag is mainly used for testing) [env: KASPAD_ENABLE_UNSYNCED_MINING=]
+      --utxoindex
+          Enable the UTXO index [env: KASPAD_UTXOINDEX=]
+      --max-tracked-addresses=<max-tracked-addresses>
+          Max (preallocated) number of addresses being tracked for UTXO changed events (default: 0, maximum: 14680063). 
+          Setting to 0 prevents the preallocation and sets the maximum to 1835007, leading to 0 memory footprint as long as unused but to sub-optimal footprint if used. [env: KASPAD_MAX_TRACKED_ADDRESSES=]
+      --testnet
+          Use the test network [env: KASPAD_TESTNET=]
+      --netsuffix=<netsuffix>
+          Testnet network suffix number [env: KASPAD_NETSUFFIX=]
+      --devnet
+          Use the development test network [env: KASPAD_DEVNET=]
+      --simnet
+          Use the simulation test network [env: KASPAD_SIMNET=]
+      --archival
+          Run as an archival node: avoids deleting old block data when moving the pruning point (Warning: heavy disk usage) [env: KASPAD_ARCHIVAL=]
+      --sanity
+          Enable various sanity checks which might be compute-intensive (mostly performed during pruning) [env: KASPAD_SANITY=]
+      --yes
+          Answer yes to all interactive console questions [env: KASPAD_NONINTERACTIVE=]
+      --uacomment=<user_agent_comments>
+          Comment to add to the user agent -- See BIP 14 for more information. [env: KASPAD_USER_AGENT_COMMENTS=]
+      --ua-rule=<RULE>
+          User agent admission rule. Forms: allow;regex:<regex>, reject;regex:<regex>, allow;ver:<name><op><version>, reject;ver:<name><op><version>. Version operators: <, <=, >, >=, ==. Example: --ua-rule='reject;ver:kaspad<1.1.1'. Policy: if allow rules exist and none match, reject; if any reject rule matches, reject; otherwise accept. [env: KASPAD_UA_RULE=]
+      --externalip=<externalip>
+          Add a socket address(ip:port) to the list of local addresses we claim to listen on to peers [env: KASPAD_EXTERNALIP=]
+      --perf-metrics
+          Enable performance metrics: cpu, memory, disk io usage [env: KASPAD_PERF_METRICS=]
+      --perf-metrics-interval-sec=<perf-metrics-interval-sec>
+          Interval in seconds for performance metrics collection. [env: KASPAD_PERF_METRICS_INTERVAL_SEC=]
+      --disable-upnp
+          Disable upnp [env: KASPAD_DISABLE_UPNP=]
+      --nodnsseed
+          Disable DNS seeding for peers [env: KASPAD_NODNSSEED=]
+      --nogrpc
+          Disable gRPC server [env: KASPAD_NOGRPC=]
+      --ram-scale=<ram-scale>
+          Apply a scale factor to memory allocation bounds. Nodes with limited RAM (~4-8GB) should set this to ~0.3-0.5 respectively. Nodes with
+          a large RAM (~64GB) can set this value to ~3.0-4.0 and gain superior performance especially for syncing peers faster [env: KASPAD_RAM_SCALE=]
+      --retention-period-days=<retention-period-days>
+          The number of total days of data to keep.
+      --override-params-file=<override-params-file>
+          Path to a JSON file containing override parameters.
+      --rocksdb-preset=<rocksdb-preset>
+          RocksDB configuration preset: 'default' (SSD/NVMe) or 'hdd' (optimized for hard disk drives with BlobDB, compression, rate limiting). HDD preset recommended for archival nodes on HDD storage (see docs/archival.md). [env: KASPAD_ROCKSDB_PRESET=]
+      --rocksdb-wal-dir=<rocksdb-wal-dir>
+          Custom WAL (Write-Ahead Log) directory for RocksDB. Useful for hybrid setups: database on HDD, WAL on fast NVMe SSD. Example: --rocksdb-wal-dir=/mnt/nvme/kaspa-wal [env: KASPAD_ROCKSDB_WAL_DIR=]
+      --rocksdb-cache-size=<rocksdb-cache-size>
+          RocksDB block cache size in MB. Default: 256MB for HDD preset (scales with --ram-scale). Increase for public RPC nodes with heavy query loads. Example: --rocksdb-cache-size=2048 for 2GB cache. [env: KASPAD_ROCKSDB_CACHE_SIZE=]
+  -h, --help
+          Print help
+  -V, --version
+          Print version
+
+
+== stderr ==

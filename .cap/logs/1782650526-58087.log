@@ -1,0 +1,57 @@
+== stdout ==
+
+running 1 test
+test live_simnet_full_covenant_lifecycle ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 1.67s
+
+
+== stderr ==
+   Compiling kaspa-wrpc-client v1.2.2-toc.4 (/Users/arthur/RustroverProjects/rusty-kaspa/rpc/wrpc/client)
+   Compiling rgk-kaspa v0.1.0 (/Users/arthur/RustroverProjects/rgk/crates/rgk-kaspa)
+   Compiling rgk-sync v0.1.0 (/Users/arthur/RustroverProjects/rgk/crates/rgk-sync)
+   Compiling rgk-resolver v0.1.0 (/Users/arthur/RustroverProjects/rgk/crates/rgk-resolver)
+   Compiling rgk-e2e v0.1.0 (/Users/arthur/RustroverProjects/rgk/tests/rgk-e2e)
+    Finished `test` profile [optimized + debuginfo] target(s) in 1.42s
+     Running tests/live_covenant.rs (target/debug/deps/live_covenant-5c3bef5fb485087e)
+live: connected to simnet wRPC
+live: fixed keypair address = kaspasim:qzzt7atzyc4m662qppt53ua7dta99t33w923s8kwxxmxx5wvl7jtqvn0x5as6
+live: fixed pubkey x-only = [84, bf, 75, 62, 26, 2b, bd, 69, 40, 08, 57, 48, f3, be, 6a, fa, 52, ae, 31, 71, 55, 18, 1e, ce, 31, b6, 63, 51, cc, ff, a4, b0]
+live: generated keypair, simnet address: kaspasim:qzzt7atzyc4m662qppt53ua7dta99t33w923s8kwxxmxx5wvl7jtqvn0x5as6
+live: mined block, report: accepted=Success
+live: reached DAA score 36037 (target 1)
+live: coinbase block 1 mined; mining 2000 more so the FIRST coinbase UTXO matures (need DAA >= 1001 to spend it)...
+live: mined 100/2000 blocks (0.1s)
+live: mined 200/2000 blocks (0.2s)
+live: mined 300/2000 blocks (0.2s)
+live: mined 400/2000 blocks (0.3s)
+live: mined 500/2000 blocks (0.4s)
+live: mined 600/2000 blocks (0.5s)
+live: mined 700/2000 blocks (0.5s)
+live: mined 800/2000 blocks (0.6s)
+live: mined 900/2000 blocks (0.7s)
+live: mined 1000/2000 blocks (0.7s)
+live: mined 1100/2000 blocks (0.8s)
+live: mined 1200/2000 blocks (0.9s)
+live: mined 1300/2000 blocks (1.0s)
+live: mined 1400/2000 blocks (1.1s)
+live: mined 1500/2000 blocks (1.1s)
+live: mined 1600/2000 blocks (1.2s)
+live: mined 1700/2000 blocks (1.3s)
+live: mined 1800/2000 blocks (1.3s)
+live: mined 1900/2000 blocks (1.4s)
+live: mined 2000/2000 blocks (1.5s)
+live: mined 2000 blocks in 1.5s
+live: reached DAA score 38037 (target 2001)
+live: oldest coinbase UTXO is now mature (DAA >= 2001)
+live: selected coinbase UTXO at DAA 20 (oldest, mature)
+live: fetched coinbase UTXO txid=[f4, 57, 29, fc, 63, ce, 31, f2, 70, 43, 5d, 7e, 22, 93, ac, 6b, bc, 02, f3, 5c, 8a, 78, 96, 17, f1, 34, 84, d2, 16, 66, 76, b4] index=0 value=5000000000
+live: computed covenant_id = [10, 6a, c5, b6, ca, f3, 74, 42, 4a, 63, 1e, 97, 7a, 70, 4d, 31, a7, 74, 52, 46, 06, d4, c7, 09, 30, 09, 43, c5, ac, 3c, 14, 65] for the genesis output (value=4996000000, fee=4000000)
+live: signed covenant tx, txid = [15, 2a, 82, bc, 1e, 7f, dc, 8a, cc, af, 57, e1, 9a, c0, 60, 87, bd, 11, 03, 7b, 99, 11, 18, 73, 72, 1f, 67, 06, d6, 36, e6, d9]
+live: covenant tx ACCEPTED by node: txid=[15, 2a, 82, bc, 1e, 7f, dc, 8a, cc, af, 57, e1, 9a, c0, 60, 87, bd, 11, 03, 7b, 99, 11, 18, 73, 72, 1f, 67, 06, d6, 36, e6, d9]
+live: mined block, report: accepted=Success
+live: reached DAA score 38038 (target 2)
+live: confirmation block 2 mined
+live: covenant output confirmed at DAA score 38038 with covenant_id=[10, 6a, c5, b6, ca, f3, 74, 42, 4a, 63, 1e, 97, 7a, 70, 4d, 31, a7, 74, 52, 46, 06, d4, c7, 09, 30, 09, 43, c5, ac, 3c, 14, 65]
+live: resolver state = TransitionedValid { covenant: [16, 106, 197, 182, 202, 243, 116, 66, 74, 99, 30, 151, 122, 112, 77, 49, 167, 116, 82, 70, 6, 212, 199, 9, 48, 9, 67, 197, 172, 60, 20, 101], spent_outpoint: KaspaOutpoint { transaction_id: [244, 87, 41, 252, 99, 206, 49, 242, 112, 67, 93, 126, 34, 147, 172, 107, 188, 2, 243, 92, 138, 120, 150, 23, 241, 52, 132, 210, 22, 102, 118, 180], index: 0 }, new_outpoint: KaspaOutpoint { transaction_id: [21, 42, 130, 188, 30, 127, 220, 138, 204, 175, 87, 225, 154, 192, 96, 135, 189, 17, 3, 123, 153, 17, 24, 115, 114, 31, 103, 6, 214, 54, 230, 217], index: 0 }, receipt_id: [202, 9, 105, 88, 253, 33, 7, 189, 91, 45, 42, 214, 182, 216, 22, 13, 161, 241, 162, 18, 145, 16, 159, 234, 208, 65, 111, 129, 6, 58, 167, 55], new_state: RgkStateCommitment { version: 0, chain_id: KaspaLocalToccata, covenant_id: [16, 106, 197, 182, 202, 243, 116, 66, 74, 99, 30, 151, 122, 112, 77, 49, 167, 116, 82, 70, 6, 212, 199, 9, 48, 9, 67, 197, 172, 60, 20, 101], rgb_contract_id: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], state_digest: [176, 176, 176, 176, 176, 176, 176, 176, 176, 176, 176, 176, 176, 176, 176, 176, 176, 176, 176, 176, 176, 176, 176, 176, 176, 176, 176, 176, 176, 176, 176, 176], receipt_policy: VerifierOnly }, confirmation_depth: 1 }
+live: covenant transition classified as TransitionedValid from the confirmed live Kaspa Toccata simnet spend (covenant_id=[10, 6a, c5, b6, ca, f3, 74, 42, 4a, 63, 1e, 97, 7a, 70, 4d, 31, a7, 74, 52, 46, 06, d4, c7, 09, 30, 09, 43, c5, ac, 3c, 14, 65])

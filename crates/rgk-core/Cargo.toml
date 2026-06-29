@@ -1,0 +1,26 @@
+[package]
+name = "rgk-core"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+description = "RGK canonical types and domain-separated deterministic encoding (dependency-free core)"
+
+[dependencies]
+sha2.workspace = true
+hex.workspace = true
+thiserror.workspace = true
+
+[features]
+default = ["std"]
+std = []
+# `serde` support is opt-in so the core stays usable from `no_std`-ish contexts.
+serde = ["dep:serde"]
+# No unsafe code anywhere in this crate. Enforced by `#![forbid(unsafe_code)]`.
+
+[dependencies.serde]
+version = "1"
+default-features = false
+features = ["derive", "alloc"]
+optional = true

@@ -1,0 +1,6 @@
+== stdout ==
+
+== stderr ==
+    Blocking waiting for file lock on package cache
+    Blocking waiting for file lock on package cache
+error: package ID specification `rgb-lib` did not match any packages

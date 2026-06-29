@@ -1,0 +1,14 @@
+== stdout ==
+
+== stderr ==
+    Checking kaspa-notify v1.2.2-toc.4 (/Users/arthur/RustroverProjects/rusty-kaspa/notify)
+    Checking kaspa-consensus-client v1.2.2-toc.4 (/Users/arthur/RustroverProjects/rusty-kaspa/consensus/client)
+    Checking rgk-zk v0.1.0 (/Users/arthur/RustroverProjects/rgk/crates/rgk-zk)
+    Checking rgk-resolver v0.1.0 (/Users/arthur/RustroverProjects/rgk/crates/rgk-resolver)
+    Checking kaspa-index-core v1.2.2-toc.4 (/Users/arthur/RustroverProjects/rusty-kaspa/indexes/core)
+    Checking kaspa-consensus-notify v1.2.2-toc.4 (/Users/arthur/RustroverProjects/rusty-kaspa/consensus/notify)
+    Checking kaspa-consensus-wasm v1.2.2-toc.4 (/Users/arthur/RustroverProjects/rusty-kaspa/consensus/wasm)
+    Checking kaspa-rpc-core v1.2.2-toc.4 (/Users/arthur/RustroverProjects/rusty-kaspa/rpc/core)
+    Checking kaspa-wrpc-client v1.2.2-toc.4 (/Users/arthur/RustroverProjects/rusty-kaspa/rpc/wrpc/client)
+    Checking rgk-e2e v0.1.0 (/Users/arthur/RustroverProjects/rgk/tests/rgk-e2e)
+    Finished `dev` profile [optimized + debuginfo] target(s) in 3.98s

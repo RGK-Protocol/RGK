@@ -1,0 +1,25 @@
+== stdout ==
+
+running 1 test
+test real_zk::tests::same_receipt_id_different_body_cannot_prove ... FAILED
+
+failures:
+
+failures:
+    real_zk::tests::same_receipt_id_different_body_cannot_prove
+
+test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 13 filtered out; finished in 8.95s
+
+
+== stderr ==
+    Blocking waiting for file lock on package cache
+   Compiling ark-crypto-primitives v0.5.0
+   Compiling ark-groth16 v0.5.0
+   Compiling rgk-zk v0.1.0 (/Users/arthur/RustroverProjects/rgk/crates/rgk-zk)
+    Finished `test` profile [optimized + debuginfo] target(s) in 2.78s
+     Running unittests src/lib.rs (target/debug/deps/rgk_zk-59c9df7f9170f138)
+
+thread 'real_zk::tests::same_receipt_id_different_body_cannot_prove' (21366326) panicked at /Users/arthur/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/ark-groth16-0.5.0/src/prover.rs:193:9:
+assertion failed: cs.is_satisfied().unwrap()
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+error: test failed, to rerun pass `-p rgk-zk --lib`

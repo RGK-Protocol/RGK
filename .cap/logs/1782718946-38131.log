@@ -1,0 +1,15 @@
+== stdout ==
+
+running 1 test
+test native::tests::nft_mint_issue_binds_collection_template_and_metadata ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 47 filtered out; finished in 0.00s
+
+
+== stderr ==
+    Blocking waiting for file lock on package cache
+    Blocking waiting for file lock on package cache
+    Blocking waiting for file lock on package cache
+    Blocking waiting for file lock on build directory
+    Finished `test` profile [optimized + debuginfo] target(s) in 1.11s
+     Running unittests src/lib.rs (target/debug/deps/rgk_asset-62819fe3dc6f14f9)

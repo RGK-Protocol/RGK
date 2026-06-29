@@ -1,0 +1,9 @@
+== stdout ==
+total 0
+drwxr-xr-x@  5 arthur  staff  160 Jun 28 16:13 .
+drwxr-xr-x@ 16 arthur  staff  512 Jun 28 19:36 ..
+lrwxr-xr-x@  1 arthur  staff   40 Jun 28 16:13 rgb-core -> /Users/arthur/RustroverProjects/rgb-core
+lrwxr-xr-x@  1 arthur  staff   39 Jun 28 16:13 rgb-lib -> /Users/arthur/RustroverProjects/rgb-lib
+lrwxr-xr-x@  1 arthur  staff   43 Jun 28 16:13 rusty-kaspa-toccata -> /Users/arthur/RustroverProjects/rusty-kaspa
+
+== stderr ==

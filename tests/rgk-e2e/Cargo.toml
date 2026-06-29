@@ -1,0 +1,70 @@
+[package]
+name = "rgk-e2e"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+description = "RGK local end-to-end harness — covenant-backed receipt flow against live or fixture Kaspa"
+
+[dependencies]
+rgk-core.workspace = true
+rgk-receipt.workspace = true
+rgk-covenant.workspace = true
+rgk-kaspa.workspace = true
+rgk-asset.workspace = true
+rgk-zk.workspace = true
+rgk-indexer.workspace = true
+rgk-sync.workspace = true
+rgk-resolver.workspace = true
+rgk-tx.workspace = true
+thiserror.workspace = true
+sha2.workspace = true
+# Live e2e harness against a running kaspad simnet. Optional because the
+# upstream `kaspa-wrpc-client` pulls in `kaspa-consensus-wasm`,
+# `workflow-rpc` (tokio + tungstenite), and a wasm-bindgen chain. That compile
+# budget is opt-in: `cargo test -p rgk-e2e --features live-kaspa-wrpc`.
+kaspa-wrpc-client = { path = "../../../rusty-kaspa/rpc/wrpc/client", default-features = false, optional = true }
+kaspa-consensus-core = { path = "../../../rusty-kaspa/consensus/core", default-features = false, optional = true }
+kaspa-rpc-core = { path = "../../../rusty-kaspa/rpc/core", default-features = false, optional = true }
+kaspa-txscript = { path = "../../../rusty-kaspa/crypto/txscript", default-features = false, optional = true }
+kaspa-addresses = { path = "../../../rusty-kaspa/crypto/addresses", default-features = false, optional = true }
+kaspa-hashes = { path = "../../../rusty-kaspa/crypto/hashes", default-features = false, optional = true }
+kaspa-consensus-client = { path = "../../../rusty-kaspa/consensus/client", default-features = false, optional = true }
+secp256k1 = { version = "0.29", default-features = false, features = ["std", "rand"], optional = true }
+rand = { version = "0.8", optional = true }
+tokio = { version = "1", features = ["macros", "rt-multi-thread", "time"], optional = true }
+
+[dev-dependencies]
+criterion = "0.7"
+
+[features]
+default = ["std"]
+std = []
+live = ["live-kaspa-wrpc"]
+# Enables tests/live_kaspa.rs + tests/live_covenant.rs which connect to a
+# running kaspad simnet via wRPC, mine real coinbase blocks to a generated
+# keypair, build + sign covenant-bearing transactions, and verify that
+# RgkResolver classifies the confirmed Toccata covenant transition as
+# `NativeTransitionedValid`. Set `RGK_LIVE_KASPA_URL` to
+# `ws://127.0.0.1:18311/v2/kaspa/simnet/no-tls/wrpc/borsh` before running.
+live-kaspa-wrpc = [
+    "rgk-kaspa/wrpc",
+    "rgk-sync/wrpc",
+    "dep:kaspa-wrpc-client",
+    "dep:kaspa-consensus-core",
+    "dep:kaspa-rpc-core",
+    "dep:kaspa-txscript",
+    "dep:kaspa-addresses",
+    "dep:kaspa-hashes",
+    "dep:kaspa-consensus-client",
+    "dep:secp256k1",
+    "dep:rand",
+    "dep:tokio",
+]
+persistent-indexer = ["rgk-indexer/persistent"]
+real-zk = ["rgk-zk/real-zk"]
+
+[[bench]]
+name = "local_e2e"
+harness = false

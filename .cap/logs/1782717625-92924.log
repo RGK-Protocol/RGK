@@ -1,0 +1,14 @@
+== stdout ==
+exit: 1
+file effects: 4
+  modified examples/silverscript/artifacts/allocation_audit_certificate_recovery.json (unknown, unknown)
+  modified examples/silverscript/artifacts/burn_authorised_lifecycle.json (unknown, unknown)
+  modified examples/silverscript/artifacts/fungible_batch_transfer_shapes.json (unknown, unknown)
+  modified examples/silverscript/artifacts/metadata_ownership_guardrails.json (unknown, unknown)
+summary:
+  source files changed: no
+  lockfiles touched: no
+  ignored files changed: no
+  git available: no
+
+== stderr ==
