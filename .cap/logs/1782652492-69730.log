@@ -1,9 +1,0 @@
-== stdout ==
-
-== stderr ==
-    Blocking waiting for file lock on package cache
-    Blocking waiting for file lock on package cache
-    Blocking waiting for file lock on build directory
-    Checking rgk-kaspa v0.1.0 (/Users/arthur/RustroverProjects/rgk/crates/rgk-kaspa)
-    Checking rgk-sync v0.1.0 (/Users/arthur/RustroverProjects/rgk/crates/rgk-sync)
-    Finished `dev` profile [optimized + debuginfo] target(s) in 1.96s

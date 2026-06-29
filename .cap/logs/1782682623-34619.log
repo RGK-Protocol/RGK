@@ -1,6 +1,0 @@
-== stdout ==
-
-== stderr ==
-   Compiling rgk-e2e v0.1.0 (/Users/arthur/RustroverProjects/rgk/tests/rgk-e2e)
-    Finished `test` profile [optimized + debuginfo] target(s) in 1.61s
-  Executable tests/live_covenant.rs (target/debug/deps/live_covenant-7bf44a871ab07a5e)

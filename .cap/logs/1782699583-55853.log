@@ -1,4 +1,0 @@
-== stdout ==
-
-== stderr ==
-failed to parse constructor args /var/folders/kq/dz44fm994nz94zw2dfqnz_g00000gn/T/tmp.62U6Se3es2/args.json: unknown variant `byte[]`, expected one of `int`, `bool`, `byte`, `string`, `date_literal`, `identifier`, `array`, `call`, `new`, `split`, `slice`, `append`, `array_index`, `unary`, `binary`, `if_else`, `nullary`, `introspection`, `state_object`, `field_access`, `number_with_unit`, `unary_suffix` at line 1 column 91

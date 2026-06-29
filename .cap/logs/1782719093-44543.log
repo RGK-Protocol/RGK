@@ -1,5 +1,0 @@
-== stdout ==
-[verify-silverscript-artifacts] ok: /Users/arthur/RustroverProjects/rgk/examples/silverscript/artifacts/manifest.tsv rows=10 compiler=d25bd3427a093c17327ca3d6b9e1aa5f7688c863
-[verify-example-matrix] ok: /Users/arthur/RustroverProjects/rgk/examples/contract-matrix.tsv rows=10
-
-== stderr ==

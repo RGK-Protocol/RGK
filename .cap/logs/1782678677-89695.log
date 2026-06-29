@@ -1,6 +1,0 @@
-== stdout ==
-
-== stderr ==
-   Compiling rgk-zk v0.1.0 (/Users/arthur/RustroverProjects/rgk/crates/rgk-zk)
-    Finished `test` profile [optimized + debuginfo] target(s) in 2.01s
-  Executable unittests src/lib.rs (target/debug/deps/rgk_zk-2d7d6e784de2143c)

@@ -1,8 +1,0 @@
-== stdout ==
-[setup] updating /Users/arthur/RustroverProjects/rgk/external/rusty-kaspa-toccata -> origin/toccata
-0ae28f939e61994a11eb8eb6dd775255e2924afb
-[setup] cloning https://github.com/kaspanet/silverscript.git -> /Users/arthur/RustroverProjects/rgk/external/silverscript @ d25bd3427a093c17327ca3d6b9e1aa5f7688c863
-d25bd3427a093c17327ca3d6b9e1aa5f7688c863
-[setup] external repositories ready under /Users/arthur/RustroverProjects/rgk/external
-
-== stderr ==

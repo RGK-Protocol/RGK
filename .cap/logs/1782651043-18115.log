@@ -1,7 +1,0 @@
-== stdout ==
-total 32
-drwxr-xr-x@ 3 arthur  staff     96 Jun 28 20:36 .
-drwxr-xr-x@ 4 arthur  staff    128 Jun 28 20:36 ..
--rw-r--r--@ 1 arthur  staff  14801 Jun 28 20:38 lib.rs
-
-== stderr ==

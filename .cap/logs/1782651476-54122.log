@@ -1,7 +1,0 @@
-== stdout ==
-tick initialised=true added_chain_blocks=0 observed_spends=0 start_daa=40040 end_daa=40040 end_hash_prefix=30ad725816dbb8f6
-
-== stderr ==
-   Compiling rgk-sync v0.1.0 (/Users/arthur/RustroverProjects/rgk/crates/rgk-sync)
-    Finished `dev` profile [optimized + debuginfo] target(s) in 1.79s
-     Running `target/debug/rgk-sync --url 'ws://127.0.0.1:18311/v2/kaspa/simnet/no-tls/wrpc/borsh' --network local-toccata --db /tmp/rgk-sync-smoke.vfmG58 --once`

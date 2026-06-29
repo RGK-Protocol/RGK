@@ -1,6 +1,0 @@
-== stdout ==
-tick initialised=false added_chain_blocks=0 observed_spends=0 start_daa=40040 end_daa=40040 end_hash_prefix=30ad725816dbb8f6
-
-== stderr ==
-    Finished `dev` profile [optimized + debuginfo] target(s) in 0.25s
-     Running `target/debug/rgk-sync --url 'ws://127.0.0.1:18311/v2/kaspa/simnet/no-tls/wrpc/borsh' --network local-toccata --db /tmp/rgk-sync-smoke.vfmG58 --once`

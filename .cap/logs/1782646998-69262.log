@@ -1,6 +1,0 @@
-== stdout ==
-[e2e-local] mode: live
-[e2e-local] live node unreachable at 127.0.0.1:18111
-[e2e-local] start it with: ./scripts/run-kaspa-local.sh --background
-
-== stderr ==

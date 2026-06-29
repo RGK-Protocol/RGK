@@ -1,7 +1,0 @@
-== stdout ==
-
-== stderr ==
-    Checking rgk-zk v0.1.0 (/Users/arthur/RustroverProjects/rgk/crates/rgk-zk)
-    Checking rgk-resolver v0.1.0 (/Users/arthur/RustroverProjects/rgk/crates/rgk-resolver)
-    Checking rgk-e2e v0.1.0 (/Users/arthur/RustroverProjects/rgk/tests/rgk-e2e)
-    Finished `dev` profile [optimized + debuginfo] target(s) in 2.52s

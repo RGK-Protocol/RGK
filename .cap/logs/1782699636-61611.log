@@ -1,4 +1,0 @@
-== stdout ==
-
-== stderr ==
-compile error: unsupported feature: mode=verification with binding=auth on singleton function 'transfer' expects parameters '(State prev_state, State new_state, ...)'

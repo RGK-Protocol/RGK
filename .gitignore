@@ -5,8 +5,12 @@ Cargo.lock
 # External checkouts are symlinked, never committed.
 /external
 
+# Local capture/session logs.
+/.cap/logs/
+
 # Local node datadirs produced by the e2e harness.
 /.krgb-localnet
+/.rgk-localnet/
 /datadir
 
 # Editor / OS cruft.

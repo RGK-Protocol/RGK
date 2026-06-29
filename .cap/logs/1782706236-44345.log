@@ -1,8 +1,0 @@
-== stdout ==
-
-== stderr ==
-error: unexpected argument 'real_zk::tests::production_allocation_strategy_is_bounded_and_fail_closed' found
-
-Usage: cargo test [OPTIONS] [TESTNAME] [-- [ARGS]...]
-
-For more information, try '--help'.

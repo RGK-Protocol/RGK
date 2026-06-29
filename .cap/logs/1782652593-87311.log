@@ -1,6 +1,0 @@
-== stdout ==
--rw-r--r--@ 1 arthur  staff    60 Jun 28 21:07 scripts/devnet-toccata-overrides.json
--rwxr-xr-x@ 1 arthur  staff  3280 Jun 28 21:10 scripts/e2e-devnet.sh
--rwxr-xr-x@ 1 arthur  staff  2554 Jun 28 21:08 scripts/run-kaspa-devnet.sh
-
-== stderr ==
