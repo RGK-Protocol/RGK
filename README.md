@@ -168,15 +168,6 @@ verified report. RGK also does not claim one recursive proof for arbitrary-size
 allocation vectors; larger conserving full-state transfers use segmented audit
 certificates.
 
-## What RGK Is Not
-
-* It is not a Kaspa port of another asset protocol.
-* It does not claim full equivalence with any external asset protocol.
-* It does not call external RGB runtime libraries or tooling in the hot path.
-* It is not a Bitcoin / Kaspa bridge.
-* It is not automatically post-quantum. The current ZK path uses Toccata's
-  Groth16 precompile.
-
 ## Repository Map
 
 | Path | What lives there |
@@ -233,4 +224,4 @@ bash scripts/verify-launch-readiness.sh --allow-blocked
 
 ## License
 
-Dual MIT / Apache-2.0.
+MIT.
