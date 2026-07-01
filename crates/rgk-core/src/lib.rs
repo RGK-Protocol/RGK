@@ -19,7 +19,7 @@
 //!
 //! ## What does NOT live here
 //!
-//! No external chain or asset-protocol types, no async, no I/O. This crate
+//! No external chain or non-RGK asset-model types, no async, no I/O. This crate
 //! only defines the *canonical boundary objects* and the rules for encoding
 //! them. The integration crates adapt upstream chain types into these canonical
 //! forms.

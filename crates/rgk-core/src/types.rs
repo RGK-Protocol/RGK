@@ -6,8 +6,8 @@
 //!
 //! Naming note: the task brief proposed `RgkAssetRef`, `RgkStateCommitment`
 //! and `RgkReceipt`. We keep those exact type names because they describe the
-//! native protocol surface. Native RGK asset and schema identifiers are
-//! 32-byte commitments, Kaspa's covenant id is `kaspa_hashes::Hash`
+//! native protocol surface. Native RGK asset labels and grammar identifiers
+//! are 32-byte commitments, Kaspa's covenant id is `kaspa_hashes::Hash`
 //! (32 bytes), and a Kaspa outpoint is `{ transaction_id: Hash, index: u32 }`.
 
 use alloc::format;
@@ -20,8 +20,9 @@ use crate::encoding::{Canonical, Reader, Writer};
 use crate::error::DecodeError;
 use crate::policy::{ProofMode, ReceiptPolicy};
 
-/// A reference to a native RGK asset: its 32-byte [`RgkAssetId`] plus the
-/// 32-byte [`RgkSchemaId`].
+/// A reference to a native RGK asset: its lineage-bound 32-byte
+/// [`RgkAssetId`] label plus the 32-byte native grammar id
+/// [`RgkSchemaId`].
 ///
 /// Both ids are RGK domain-separated commitments stored as raw `[u8;32]`.
 #[derive(Copy, Clone, Debug, PartialEq, Eq, Hash)]
@@ -30,7 +31,7 @@ pub struct RgkAssetRef {
     pub schema_id: RgkSchemaId,
 }
 
-/// Native RGK asset id (32-byte domain-separated commitment hash).
+/// Native RGK asset label (32-byte domain-separated commitment hash).
 pub type RgkAssetId = Bytes32;
 /// Native RGK asset grammar id (32-byte domain-separated commitment hash).
 pub type RgkSchemaId = Bytes32;

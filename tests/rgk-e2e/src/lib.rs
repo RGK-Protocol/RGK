@@ -40,7 +40,7 @@
 use rgk_asset::native::{
     BlindedLaneId, LanePrivacyPolicy, RgkAllocation, RgkAssetIssue, RgkContinuationAllocationShape,
     RgkContinuationCommitment, RgkContinuationPlan, RgkContinuationReport,
-    RgkContinuationShapeRoot, RgkCovenantSeal, RgkIssueReport, RgkMetadataCommitment,
+    RgkContinuationShapeRoot, RgkCovenantAnchor, RgkIssueReport, RgkMetadataCommitment,
     RgkOwnerCommitment, RgkProductionZkTransferPlan, RgkProofPolicy, RgkTransitionReport,
 };
 use rgk_asset::{domain_hash_domain, RgkScanTag, RgkStateDigest, RGK_FUNGIBLE_ASSET_SCHEMA_ID};
@@ -75,6 +75,8 @@ pub const TESTNET_STAGING_VERIFIER_ONLY_MIN_FUNDING_VALUE: u64 = LIVE_VERIFIER_T
 #[cfg(feature = "live-kaspa-wrpc")]
 pub const TESTNET_STAGING_REAL_ZK_MIN_FUNDING_VALUE: u64 =
     LIVE_VERIFIER_TRANSITION_FEE + LIVE_ZK_TRANSITION_FEE + LIVE_MIN_CONTINUATION_OUTPUT_VALUE;
+#[cfg(feature = "live-kaspa-wrpc")]
+pub const TESTNET_STAGING_WALLET_ROLES: [&str; 3] = ["funding", "change", "observer"];
 
 #[cfg(feature = "live-kaspa-wrpc")]
 pub fn deterministic_live_staging_keypair(
@@ -95,11 +97,169 @@ pub fn deterministic_live_staging_keypair(
 }
 
 #[cfg(feature = "live-kaspa-wrpc")]
+fn deterministic_role_keypair(
+    address_prefix: kaspa_addresses::Prefix,
+    network: &str,
+    role: &str,
+) -> (secp256k1::Keypair, kaspa_addresses::Address) {
+    if role == "funding" {
+        return deterministic_live_staging_keypair(address_prefix);
+    }
+
+    let secp = secp256k1::Secp256k1::new();
+    for nonce in 0u8..=u8::MAX {
+        let mut payload = Vec::new();
+        payload.extend_from_slice(network.as_bytes());
+        payload.push(0);
+        payload.extend_from_slice(role.as_bytes());
+        payload.push(0);
+        payload.push(nonce);
+        let secret_bytes = domain_hash_domain("rgk:e2e:testnet-staging-wallet-sk:v1", &payload);
+        if let Ok(sk) = secp256k1::SecretKey::from_slice(&secret_bytes) {
+            let keypair = secp256k1::Keypair::from_secret_key(&secp, &sk);
+            let address = kaspa_addresses::Address::new(
+                address_prefix,
+                kaspa_addresses::Version::PubKey,
+                &keypair.x_only_public_key().0.serialize(),
+            );
+            return (keypair, address);
+        }
+    }
+    panic!("deterministic testnet staging role key derivation exhausted");
+}
+
+#[cfg(feature = "live-kaspa-wrpc")]
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct TestnetStagingWallet {
+    pub role: &'static str,
+    pub address: String,
+    pub x_only_public_key: Bytes32,
+    pub secret_fingerprint: Bytes32,
+    pub required_min_value_real_zk: u64,
+    pub required_min_value_verifier_only: u64,
+    pub purpose: &'static str,
+}
+
+#[cfg(feature = "live-kaspa-wrpc")]
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct TestnetStagingWalletSet {
+    pub network: String,
+    pub chain_id: &'static str,
+    pub wallets: Vec<TestnetStagingWallet>,
+    pub wallet_set_id: Bytes32,
+}
+
+#[cfg(feature = "live-kaspa-wrpc")]
+impl TestnetStagingWalletSet {
+    pub fn new(network: &str) -> Result<Self, String> {
+        match network {
+            "testnet-10" | "testnet-12" => {}
+            other => {
+                return Err(format!(
+                    "unsupported public testnet network {other}; expected testnet-10 or testnet-12"
+                ));
+            }
+        }
+
+        let wallets = TESTNET_STAGING_WALLET_ROLES
+            .into_iter()
+            .map(|role| {
+                let (keypair, address) =
+                    deterministic_role_keypair(kaspa_addresses::Prefix::Testnet, network, role);
+                let secret_bytes = keypair.secret_key().secret_bytes();
+                let x_only_public_key = keypair.x_only_public_key().0.serialize();
+                let secret_fingerprint = domain_hash_domain(
+                    "rgk:e2e:testnet-staging-wallet-secret-fingerprint:v1",
+                    &secret_bytes,
+                );
+                let (required_min_value_real_zk, required_min_value_verifier_only, purpose) =
+                    match role {
+                        "funding" => (
+                            TESTNET_STAGING_REAL_ZK_MIN_FUNDING_VALUE,
+                            TESTNET_STAGING_VERIFIER_ONLY_MIN_FUNDING_VALUE,
+                            "public-testnet-funding",
+                        ),
+                        "change" => (0, 0, "reserved-change-output-isolation"),
+                        "observer" => (0, 0, "observer-reporting-no-funding"),
+                        _ => unreachable!("staging wallet role is fixed"),
+                    };
+                TestnetStagingWallet {
+                    role,
+                    address: address.to_string(),
+                    x_only_public_key,
+                    secret_fingerprint,
+                    required_min_value_real_zk,
+                    required_min_value_verifier_only,
+                    purpose,
+                }
+            })
+            .collect::<Vec<_>>();
+
+        let mut payload = Vec::new();
+        payload.extend_from_slice(network.as_bytes());
+        payload.push(0);
+        payload.extend_from_slice(b"KaspaTestnet");
+        for wallet in &wallets {
+            payload.push(0);
+            payload.extend_from_slice(wallet.role.as_bytes());
+            payload.push(0);
+            payload.extend_from_slice(wallet.address.as_bytes());
+            payload.push(0);
+            payload.extend_from_slice(&wallet.x_only_public_key);
+            payload.extend_from_slice(&wallet.secret_fingerprint);
+            payload.extend_from_slice(&wallet.required_min_value_real_zk.to_le_bytes());
+            payload.extend_from_slice(&wallet.required_min_value_verifier_only.to_le_bytes());
+        }
+        let wallet_set_id = domain_hash_domain("rgk:e2e:testnet-staging-wallet-set:v1", &payload);
+
+        Ok(Self {
+            network: network.to_string(),
+            chain_id: "KaspaTestnet",
+            wallets,
+            wallet_set_id,
+        })
+    }
+
+    pub fn funding_wallet(&self) -> &TestnetStagingWallet {
+        self.wallets
+            .iter()
+            .find(|wallet| wallet.role == "funding")
+            .expect("funding wallet exists")
+    }
+
+    pub fn render(&self) -> String {
+        use rgk_core::to_hex;
+        let mut out = format!(
+            "RGK public testnet staging wallet set\nnetwork={}\nchain_id={}\nwallet_set_id=0x{}\nwallet_count={}\n",
+            self.network,
+            self.chain_id,
+            to_hex(&self.wallet_set_id),
+            self.wallets.len()
+        );
+        for wallet in &self.wallets {
+            out.push_str(&format!(
+                "wallet_role={} address={} xonly=0x{} secret_fingerprint=0x{} required_min_value_real_zk={} required_min_value_verifier_only={} purpose={}\n",
+                wallet.role,
+                wallet.address,
+                to_hex(&wallet.x_only_public_key),
+                to_hex(&wallet.secret_fingerprint),
+                wallet.required_min_value_real_zk,
+                wallet.required_min_value_verifier_only,
+                wallet.purpose
+            ));
+        }
+        out
+    }
+}
+
+#[cfg(feature = "live-kaspa-wrpc")]
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct TestnetStagingPreflight {
     pub network: String,
     pub chain_id: &'static str,
     pub address: String,
+    pub wallet_set_id: Bytes32,
+    pub wallet_count: usize,
     pub required_min_value_real_zk: u64,
     pub required_min_value_verifier_only: u64,
     pub required_non_coinbase_utxo: bool,
@@ -129,9 +289,8 @@ impl TestnetStagingPreflight {
                 ));
             }
         }
-        let (_keypair, address) =
-            deterministic_live_staging_keypair(kaspa_addresses::Prefix::Testnet);
-        let address = address.to_string();
+        let wallet_set = TestnetStagingWalletSet::new(network)?;
+        let address = wallet_set.funding_wallet().address.clone();
         let mut payload = Vec::new();
         payload.extend_from_slice(network.as_bytes());
         payload.push(0);
@@ -139,6 +298,8 @@ impl TestnetStagingPreflight {
         payload.push(0);
         payload.extend_from_slice(address.as_bytes());
         payload.push(0);
+        payload.extend_from_slice(&wallet_set.wallet_set_id);
+        payload.extend_from_slice(&(wallet_set.wallets.len() as u64).to_le_bytes());
         payload.extend_from_slice(&TESTNET_STAGING_REAL_ZK_MIN_FUNDING_VALUE.to_le_bytes());
         payload.extend_from_slice(&TESTNET_STAGING_VERIFIER_ONLY_MIN_FUNDING_VALUE.to_le_bytes());
         payload.push(1);
@@ -154,6 +315,8 @@ impl TestnetStagingPreflight {
             network: network.to_string(),
             chain_id: "KaspaTestnet",
             address,
+            wallet_set_id: wallet_set.wallet_set_id,
+            wallet_count: wallet_set.wallets.len(),
             required_min_value_real_zk: TESTNET_STAGING_REAL_ZK_MIN_FUNDING_VALUE,
             required_min_value_verifier_only: TESTNET_STAGING_VERIFIER_ONLY_MIN_FUNDING_VALUE,
             required_non_coinbase_utxo: true,
@@ -176,10 +339,12 @@ impl TestnetStagingPreflight {
     pub fn render(&self) -> String {
         use rgk_core::to_hex;
         format!(
-            "RGK public testnet staging preflight\nnetwork={}\nchain_id={}\naddress={}\nscope=testnet-only deterministic staging key\nfunding_status=external-funding-required\nrequired_non_coinbase_utxo={}\nrequired_utxo_index={}\nrequired_confirmation_depth={}\nrequired_min_value_real_zk={}\nrequired_min_value_verifier_only={}\nrequired_live_kaspa_wrpc_feature={}\nrequired_real_zk_feature={}\nrequired_persistent_indexer_feature={}\nrequired_local_mining={}\nrequired_live_test={}\nendpoint_env={}\nnetwork_env={}\nstaging_script={}\nevidence_verifier={}\nexpected_report={}\npreflight_id=0x{}\n",
+            "RGK public testnet staging preflight\nnetwork={}\nchain_id={}\naddress={}\nscope=testnet-only deterministic staging key\nwallet_set_id=0x{}\nwallet_count={}\nfunding_status=external-funding-required\nrequired_non_coinbase_utxo={}\nrequired_utxo_index={}\nrequired_confirmation_depth={}\nrequired_min_value_real_zk={}\nrequired_min_value_verifier_only={}\nrequired_live_kaspa_wrpc_feature={}\nrequired_real_zk_feature={}\nrequired_persistent_indexer_feature={}\nrequired_local_mining={}\nrequired_live_test={}\nendpoint_env={}\nnetwork_env={}\nstaging_script={}\nevidence_verifier={}\nexpected_report={}\npreflight_id=0x{}\n",
             self.network,
             self.chain_id,
             self.address,
+            to_hex(&self.wallet_set_id),
+            self.wallet_count,
             self.required_non_coinbase_utxo,
             self.required_utxo_index,
             self.required_confirmation_depth,
@@ -803,11 +968,105 @@ fn e2e_summary_renders_all_fields() {
 
 #[cfg(feature = "live-kaspa-wrpc")]
 #[test]
+fn testnet_staging_wallet_set_is_stable() {
+    let wallet_set = TestnetStagingWalletSet::new("testnet-12").unwrap();
+    assert_eq!(wallet_set.network, "testnet-12");
+    assert_eq!(wallet_set.chain_id, "KaspaTestnet");
+    assert_eq!(
+        rgk_core::to_hex(&wallet_set.wallet_set_id),
+        "319ad15d9e723bbc441ad7bea195c3ca95b0ec4ccafd6f48bb4cca11d4ece352"
+    );
+    assert_eq!(wallet_set.wallets.len(), 3);
+    assert_eq!(wallet_set.wallets[0].role, "funding");
+    assert_eq!(wallet_set.wallets[1].role, "change");
+    assert_eq!(wallet_set.wallets[2].role, "observer");
+    assert_eq!(
+        wallet_set.wallets[0].address,
+        "kaspatest:qzzt7atzyc4m662qppt53ua7dta99t33w923s8kwxxmxx5wvl7jtqz95u8ald"
+    );
+    assert_eq!(
+        rgk_core::to_hex(&wallet_set.wallets[0].x_only_public_key),
+        "84bf7562262bbd6940085748f3be6afa52ae317155181ece31b66351ccffa4b0"
+    );
+    assert_eq!(
+        rgk_core::to_hex(&wallet_set.wallets[0].secret_fingerprint),
+        "6ada37542b9cc1154d6c9659fb3e1346d503c342134abe8fdfd5de9878e10bac"
+    );
+    assert_eq!(
+        wallet_set.wallets[1].address,
+        "kaspatest:qrvpsckmgwn4cr4jtsm5uls6qe8asmu4gth5rs6tcc3kulhemel557wahjvte"
+    );
+    assert_eq!(
+        rgk_core::to_hex(&wallet_set.wallets[1].x_only_public_key),
+        "d81862db43a75c0eb25c374e7e1a064fd86f9542ef41c34bc6236e7ef9de7f4a"
+    );
+    assert_eq!(
+        rgk_core::to_hex(&wallet_set.wallets[1].secret_fingerprint),
+        "b59dd8d084986c234680dfbd907aa1cc770c1c9ba5d506ad8458be1a39129ce2"
+    );
+    assert_eq!(
+        wallet_set.wallets[2].address,
+        "kaspatest:qr5vg4qmfypldkrxenn2ruqjq5uh2p2dp63plaanpf0y0z660xt254sg5g833"
+    );
+    assert_eq!(
+        rgk_core::to_hex(&wallet_set.wallets[2].x_only_public_key),
+        "e8c4541b4903f6d866cce6a1f012053975054d0ea21ff7b30a5e478b5a7996aa"
+    );
+    assert_eq!(
+        rgk_core::to_hex(&wallet_set.wallets[2].secret_fingerprint),
+        "3446f807dd9862347162668ef58245a732584fd80c54c8bb0dd8bb9a2df16813"
+    );
+    assert!(wallet_set
+        .wallets
+        .iter()
+        .all(|wallet| wallet.address.starts_with("kaspatest:")));
+    let unique_addresses = wallet_set
+        .wallets
+        .iter()
+        .map(|wallet| wallet.address.as_str())
+        .collect::<std::collections::BTreeSet<_>>();
+    assert_eq!(unique_addresses.len(), wallet_set.wallets.len());
+    assert_eq!(
+        wallet_set.funding_wallet().required_min_value_real_zk,
+        TESTNET_STAGING_REAL_ZK_MIN_FUNDING_VALUE
+    );
+    assert_eq!(
+        wallet_set.funding_wallet().required_min_value_verifier_only,
+        TESTNET_STAGING_VERIFIER_ONLY_MIN_FUNDING_VALUE
+    );
+    assert_eq!(
+        wallet_set.wallets[1].required_min_value_real_zk, 0,
+        "change wallet is generated for staging reports, not funding"
+    );
+    assert_eq!(
+        wallet_set.wallets[2].required_min_value_real_zk, 0,
+        "observer wallet is generated for staging reports, not funding"
+    );
+
+    let rebuilt = TestnetStagingWalletSet::new("testnet-12").unwrap();
+    assert_eq!(wallet_set, rebuilt);
+
+    let rendered = wallet_set.render();
+    assert!(rendered.contains("RGK public testnet staging wallet set"));
+    assert!(rendered.contains("wallet_count=3"));
+    assert!(rendered.contains("wallet_role=funding address=kaspatest:"));
+    assert!(rendered.contains("wallet_role=change address=kaspatest:"));
+    assert!(rendered.contains("wallet_role=observer address=kaspatest:"));
+    assert!(!rendered.contains("secret_key="));
+    assert!(!rendered.contains("private_key="));
+}
+
+#[cfg(feature = "live-kaspa-wrpc")]
+#[test]
 fn testnet_staging_preflight_manifest_is_stable() {
+    let wallet_set = TestnetStagingWalletSet::new("testnet-12").unwrap();
     let preflight = TestnetStagingPreflight::new("testnet-12").unwrap();
     assert_eq!(preflight.network, "testnet-12");
     assert_eq!(preflight.chain_id, "KaspaTestnet");
     assert!(preflight.address.starts_with("kaspatest:"));
+    assert_eq!(preflight.address, wallet_set.funding_wallet().address);
+    assert_eq!(preflight.wallet_set_id, wallet_set.wallet_set_id);
+    assert_eq!(preflight.wallet_count, wallet_set.wallets.len());
     assert_eq!(
         preflight.required_min_value_real_zk,
         TESTNET_STAGING_REAL_ZK_MIN_FUNDING_VALUE
@@ -827,6 +1086,10 @@ fn testnet_staging_preflight_manifest_is_stable() {
         preflight.required_live_test,
         "live_toccata_full_covenant_lifecycle"
     );
+    assert_eq!(
+        rgk_core::to_hex(&preflight.preflight_id),
+        "2c993d20f2726efdb0983868126544163e44c474f4b4ab4cf28901e749c29212"
+    );
 
     let rebuilt = TestnetStagingPreflight::new("testnet-12").unwrap();
     assert_eq!(preflight, rebuilt);
@@ -834,6 +1097,8 @@ fn testnet_staging_preflight_manifest_is_stable() {
     let rendered = preflight.render();
     assert!(rendered.contains("RGK public testnet staging preflight"));
     assert!(rendered.contains("funding_status=external-funding-required"));
+    assert!(rendered.contains("wallet_set_id=0x"));
+    assert!(rendered.contains("wallet_count=3"));
     assert!(rendered.contains("required_local_mining=false"));
     assert!(rendered.contains("required_live_test=live_toccata_full_covenant_lifecycle"));
     assert!(rendered.contains("endpoint_env=RGK_LIVE_KASPA_URL"));
@@ -1028,7 +1293,7 @@ pub fn native_asset_allocation(
     note_payload.extend_from_slice(&covenant_outpoint.index.to_le_bytes());
     note_payload.extend_from_slice(&amount.to_le_bytes());
     RgkAllocation {
-        seal: RgkCovenantSeal {
+        anchor: RgkCovenantAnchor {
             chain,
             covenant_outpoint,
             covenant_id,

@@ -9,7 +9,7 @@ use kaspa_txscript::{
 use rgk_asset::{
     allocation_transcript_empty_root, private_lane_graph_empty_root, LanePrivacyPolicy,
     RgkAllocation, RgkAllocationTranscriptSide, RgkAssetIssue, RgkContinuationAllocationShape,
-    RgkContinuationPlan, RgkCovenantSeal, RgkMetadataCommitment, RgkOwnerCommitment,
+    RgkContinuationPlan, RgkCovenantAnchor, RgkMetadataCommitment, RgkOwnerCommitment,
     RgkProofPolicy, RGK_FUNGIBLE_ASSET_SCHEMA_ID,
 };
 use rgk_core::{
@@ -30,7 +30,7 @@ use rgk_zk::real_zk::{
     SemanticTransitionCircuit, SupportedAllocationVectorCircuit, SupportedAllocationVectorWitness,
     TwoInTwoOutAllocationCircuit, TwoInTwoOutAllocationWitness,
 };
-use rgk_zk::SemanticTransitionStatement;
+use rgk_zk::{R0SuccinctPrecompileStack, SemanticTransitionStatement};
 
 fn sample_receipt() -> RgkReceipt {
     RgkReceipt {
@@ -111,7 +111,7 @@ fn allocation(
     note: [u8; 32],
 ) -> RgkAllocation {
     RgkAllocation {
-        seal: RgkCovenantSeal {
+        anchor: RgkCovenantAnchor {
             chain: KASPA_LOCAL_TOCCATA,
             covenant_outpoint: KaspaOutpoint {
                 transaction_id: outpoint_txid,
@@ -939,6 +939,66 @@ fn build_groth16_precompile_script(stack: &Groth16PrecompileStack) -> Vec<u8> {
     builder.drain()
 }
 
+fn decode_hex_fixture(input: &str) -> Vec<u8> {
+    let hex = input.trim();
+    assert_eq!(hex.len() % 2, 0, "hex fixture must have whole bytes");
+    (0..hex.len())
+        .step_by(2)
+        .map(|i| u8::from_str_radix(&hex[i..i + 2], 16).expect("hex fixture byte"))
+        .collect()
+}
+
+fn fixture_bytes32(input: &str) -> [u8; 32] {
+    decode_hex_fixture(input)
+        .try_into()
+        .expect("fixture is 32 bytes")
+}
+
+fn fixture_control_index(input: &str) -> [u8; 4] {
+    decode_hex_fixture(input)
+        .try_into()
+        .expect("fixture control index is 4 bytes")
+}
+
+fn r0_succinct_precompile_stack() -> R0SuccinctPrecompileStack {
+    R0SuccinctPrecompileStack::new(
+        fixture_bytes32(include_str!(
+            "../../../../rusty-kaspa/crypto/txscript/src/zk_precompiles/tests/data/succinct.claim.hex"
+        )),
+        fixture_control_index(include_str!(
+            "../../../../rusty-kaspa/crypto/txscript/src/zk_precompiles/tests/data/succinct.control_index.hex"
+        )),
+        decode_hex_fixture(include_str!(
+            "../../../../rusty-kaspa/crypto/txscript/src/zk_precompiles/tests/data/succinct.control_digests.hex"
+        )),
+        decode_hex_fixture(include_str!(
+            "../../../../rusty-kaspa/crypto/txscript/src/zk_precompiles/tests/data/succinct.seal.hex"
+        )),
+        fixture_bytes32(include_str!(
+            "../../../../rusty-kaspa/crypto/txscript/src/zk_precompiles/tests/data/succinct.journal.hex"
+        )),
+        fixture_bytes32(include_str!(
+            "../../../../rusty-kaspa/crypto/txscript/src/zk_precompiles/tests/data/succinct.image.hex"
+        )),
+        fixture_bytes32(include_str!(
+            "../../../../rusty-kaspa/crypto/txscript/src/zk_precompiles/tests/data/succinct.control_id.hex"
+        )),
+        decode_hex_fixture(include_str!(
+            "../../../../rusty-kaspa/crypto/txscript/src/zk_precompiles/tests/data/succinct.hashfn.hex"
+        ))[0],
+    )
+    .expect("R0 Succinct fixture stack")
+}
+
+fn build_r0_succinct_precompile_script(stack: &R0SuccinctPrecompileStack) -> Vec<u8> {
+    let mut builder = ScriptBuilder::with_flags(zk_flags());
+    for item in stack.script_push_items() {
+        builder.add_data(item).expect("R0 Succinct stack item");
+    }
+    builder.add_op(OpZkPrecompile).expect("OpZkPrecompile");
+    builder.drain()
+}
+
 fn execute_script(script: &[u8]) -> Result<(), String> {
     let sig_cache = Cache::new(10_000);
     let reused_values = SigHashReusedValuesUnsync::new();
@@ -949,6 +1009,33 @@ fn execute_script(script: &[u8]) -> Result<(), String> {
         zk_flags(),
     );
     vm.execute().map_err(|e| format!("{e:?}"))
+}
+
+#[test]
+fn r0_succinct_fixture_executes_in_upstream_toccata_vm() {
+    let stack = r0_succinct_precompile_stack();
+    let script = build_r0_succinct_precompile_script(&stack);
+
+    execute_script(&script).expect("upstream VM accepts R0 Succinct fixture");
+    eprintln!(
+        "[zk-precompile-vm] r0_succinct control_digests={} seal_bytes={} script_bytes={}",
+        stack.control_digest_count(),
+        stack.seal.len(),
+        script.len()
+    );
+}
+
+#[test]
+fn r0_succinct_fixture_rejects_changed_journal() {
+    let mut stack = r0_succinct_precompile_stack();
+    stack.journal[0] ^= 0x01;
+    let script = build_r0_succinct_precompile_script(&stack);
+
+    let err = execute_script(&script).expect_err("upstream VM rejects changed R0 journal");
+    assert!(
+        err.contains("R0: journal digest mismatch detected") || err.contains("Verification failed"),
+        "unexpected txscript error: {err}"
+    );
 }
 
 #[test]

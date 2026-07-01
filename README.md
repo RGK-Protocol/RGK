@@ -1,19 +1,20 @@
 # RGK - Really Good Kaspa
 
-RGK is a Kaspa-native client-side asset protocol.
+RGK is a Kaspa-native covenant-lineage asset system.
 
 It lets wallets issue and move assets while Kaspa Toccata covenants anchor the
 lineage on chain. The chain proves that a covenant spend happened in the right
 place; RGK clients verify what that spend means for the asset.
 
-RGK borrows good ideas from RGB: client-side validation, receipts, and
-single-use seals. It does not run RGB libraries in the hot path. The asset
-grammar, receipt format, resolver, proof policy, and covenant handoff are native
-RGK code built for Kaspa Toccata.
+RGK is not a compatibility layer. Its canonical asset identity is the Kaspa
+covenant lineage / lane. `asset_id` is native label material committed into
+that lineage, not an external contract id or the primary identity.
 
 ## The Short Version
 
 * Asset state is validated by clients, not reconstructed from public chain data.
+* Asset identity is the covenant lineage / lane; `asset_id` is lineage-bound
+  label material.
 * Toccata covenants preserve the lineage and output shape that RGK expects.
 * Receipts bind the validated asset transition to the covenant spend.
 * The indexer records observed chain evidence.
@@ -30,7 +31,7 @@ flowchart LR
     subgraph Client["Client-side RGK"]
         Issue["Issue asset<br/>supply, allocations, policy"]
         Plan["Continuation plan<br/>old state + next shape"]
-        Transition["Transition<br/>close old seals, open new ones"]
+        Transition["Transition<br/>spend old covenant outputs, create continuation outputs"]
         Receipt["Receipt<br/>typed commitment to the transition"]
     end
 
@@ -56,10 +57,10 @@ transfer needs both pieces:
 * a native RGK transition that passes asset rules, and
 * chain evidence that the matching covenant spend actually happened.
 
-### Two-Phase Continuation Seal
+### Two-Phase Continuation Output
 
 RGK has to commit to the next output before the future transaction id exists.
-That would normally be circular, so the continuation seal is built in two
+That would normally be circular, so the continuation output is built in two
 phases.
 
 ```mermaid
@@ -89,7 +90,8 @@ opaque values; wallets with the right view key can discover their own lane.
 ```mermaid
 flowchart TB
     State["RGK state digest"]
-    State --> Asset["asset id"]
+    State --> Identity["covenant lineage / lane"]
+    State --> Asset["lineage-bound asset label"]
     State --> Supply["total supply"]
     State --> Allocations["allocation root"]
     State --> Policy["proof policy commitment"]
@@ -139,13 +141,17 @@ The native path is in place:
   policy, metadata and owner commitments, and lane id.
 * `RgkContinuationPlan` binds the previous allocation set and next output shape
   before the continuation txid exists.
-* `RgkTransition` finalizes the plan after the txid exists, closes old seals,
-  opens new allocations, and binds ordered inputs, ordered outputs, policy,
-  privacy mode, lane id, and witness txid.
+* `RgkTransition` finalizes the plan after the txid exists, spends old
+  covenant outputs, creates new allocation outputs, and binds ordered inputs,
+  ordered outputs, policy, privacy mode, lane id, and witness txid.
 * `RgkReceipt` carries the typed statement consumed by the covenant, indexer,
   and resolver.
 * `RgkResolver` classifies live evidence as valid, invalid, replayed, competing,
   unconfirmed, or at reorg risk.
+* Wallet allocation strategy planning selects fixed allocation-vector proofs for
+  evidenced shapes or segmented allocation-audit certificates for larger
+  conserving full-state transfers, with native strategy commitments, canonical
+  strategy-record handoff bytes, and fail-closed burn/empty-side checks.
 
 The ZK and audit surface is evidence-backed for the shapes currently claimed:
 
@@ -168,6 +174,10 @@ verified report. RGK also does not claim one recursive proof for arbitrary-size
 allocation vectors; larger conserving full-state transfers use segmented audit
 certificates.
 
+The launch readiness verifier covers internal-readiness, local/devnet,
+public-staging preflight, and optional funding-readiness gates. Strict mode
+remains non-zero until the funded public testnet report verifies.
+
 ## Repository Map
 
 | Path | What lives there |
@@ -177,11 +187,11 @@ certificates.
 | `crates/rgk-covenant` | Toccata covenant state and script builder |
 | `crates/rgk-kaspa` | Chain backend trait and live wRPC backend |
 | `crates/rgk-asset` | Native RGK asset grammar |
-| `crates/rgk-zk` | ZK statement encoding and Groth16 receipt path |
+| `crates/rgk-zk` | ZK statement encoding, Groth16 receipt path, and Toccata R0 Succinct stack material |
 | `crates/rgk-indexer` | In-memory and sled indexers |
 | `crates/rgk-sync` | Restart-safe scanner service |
 | `crates/rgk-resolver` | Native state reconstruction |
-| `crates/rgk-tx` | Unsigned transaction builders |
+| `crates/rgk-tx` | Unsigned builders plus Toccata v1 transaction, Borsh wire, and hash boundary |
 | `tests/rgk-e2e` | Fixture and live e2e harness |
 | `scripts` | Kaspa setup, local node, devnet, and e2e scripts |
 | `docs` | Architecture, specs, security notes, and runbooks |
@@ -203,10 +213,14 @@ Before calling a release or launch path healthy, run the broader gates:
 cargo test --workspace --no-default-features
 cargo test --workspace --all-features
 RUSTDOCFLAGS='-D warnings' cargo doc --workspace --all-features --no-deps
+bash scripts/e2e-privacy-observer.sh
+bash scripts/verify-privacy-observer-evidence.sh
+bash scripts/e2e-internal-readiness.sh
+bash scripts/verify-internal-readiness-evidence.sh
 bash scripts/verify-silverscript-artifacts.sh
 bash scripts/verify-example-matrix.sh
-bash scripts/verify-launch-readiness.sh --allow-blocked
 ./scripts/e2e-devnet.sh --start-kaspa
+bash scripts/verify-launch-readiness.sh --allow-blocked
 ```
 
 ## Further Reading
@@ -216,6 +230,7 @@ bash scripts/verify-launch-readiness.sh --allow-blocked
 * `docs/RECEIPT-SPEC.md` - receipt wire format
 * `docs/COVENANT-SPEC.md` - covenant state and script contract
 * `docs/ZK-BOUNDARY.md` - what the ZK path proves
+* `docs/ZK-PROOF-PLAN.md` - proof-path planning, cost budgets, and VK governance
 * `docs/SECURITY.md` - threat model and trust assumptions
 * `docs/VERIFICATION-BUDGET.md` - bounded verification costs
 * `docs/E2E.md` - local and devnet runbook

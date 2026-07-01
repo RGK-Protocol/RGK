@@ -38,6 +38,25 @@ Fixture mode:
 ./scripts/e2e-local.sh
 ```
 
+## Local Internal Readiness Evidence
+
+```bash
+bash scripts/e2e-internal-readiness.sh
+```
+
+The script writes `target/rgk-internal-readiness/latest.txt` and records the
+local launch checklist gates that do not depend on public-network funding:
+formatting, native vocabulary, checked Silverscript artifacts, examples matrix
+coverage, native grammar tests with default and no-default features, focused
+clippy gates, workspace no-default/all-features tests, `rgk-e2e` all-features
+library tests, and rustdoc with warnings denied. It intentionally keeps the
+node-dependent live lifecycle in the devnet/public-staging scripts. Verify it
+with:
+
+```bash
+bash scripts/verify-internal-readiness-evidence.sh
+```
+
 ## Local Devnet Evidence
 
 ```bash
@@ -46,7 +65,10 @@ Fixture mode:
 
 The script writes `target/rgk-devnet-evidence/latest.txt` and then runs
 `scripts/verify-devnet-evidence.sh` against that report. The refreshed native
-evidence must show:
+evidence is intentionally local/devnet scoped. It does not include the public
+testnet preflight or funded public staging checks; those remain part of the
+separate public-staging and launch-readiness gates. The devnet report must
+show:
 
 * `network_id`
 * server version
@@ -69,6 +91,9 @@ evidence must show:
   verification, and bundle-backed verification when `real-zk` is enabled
 * allocation audit certificate indexer attachment and persistent recovery when
   `real-zk` and `persistent-indexer` are enabled
+* production allocation strategy-record canonical handoff and tamper rejection
+* Toccata v1 transaction Borsh wire and txid/hash projection tests against parent
+  `rusty-kaspa`
 * NFT marketplace sale terms binding payment asset, price, royalty policy,
   royalty amount, seller/buyer handoff, and sale authorisation
 * continuation output confirmed
@@ -78,36 +103,111 @@ evidence must show:
 * examples coverage matrix verifier pass
 * `verify-devnet-evidence` pass
 
+## Local Protocol Gate
+
+```bash
+bash scripts/e2e-internal-readiness.sh
+bash scripts/verify-internal-readiness-evidence.sh
+```
+
+This gate covers non-public-network protocol checks, including `rgk-tx`
+Toccata v1 transaction Borsh-wire, storage-mass, txid/hash, and sighash
+projections against the parent `rusty-kaspa` consensus core, covenant tests,
+and focused clippy checks for the transaction/covenant boundary. Public
+testnet and mainnet evidence are not part of this gate.
+
 ## Public Testnet Staging
 
 The live covenant harness can run against a public Kaspa testnet endpoint, but
-it cannot mine funds there. First print the deterministic funding address:
+it cannot mine funds there. First generate and verify the deterministic
+testnet-only wallet-set report:
+
+```bash
+bash scripts/e2e-testnet-staging.sh --wallets
+```
+
+The report is written to
+`target/rgk-testnet-staging-evidence/wallets.txt` and is checked by
+`scripts/verify-testnet-staging-wallets.sh`. The frozen wallet/preflight
+snapshot is recorded in [`TESTNET-STAGING-REPORT.md`](TESTNET-STAGING-REPORT.md).
+It contains three deterministic testnet roles:
+
+* `funding` - the address used by the live covenant test and the only role that
+  needs public testnet funds;
+* `change` - a reserved address for change-output isolation in staging reports;
+* `observer` - a no-funding address for observer/reporting provenance.
+
+Then print the deterministic funding address:
 
 ```bash
 bash scripts/e2e-testnet-staging.sh --print-address
 ```
 
-Fund the printed `kaspatest:` address on public testnet with at least
-`required_min_value_real_zk`. The address is derived from a deterministic
-testnet-only staging key and must not be used for mainnet funds. The preflight
-manifest also binds the expected `KaspaTestnet` chain id, one-confirmation live
-test contract, `live-kaspa-wrpc`/`real-zk`/`persistent-indexer` feature set, and
-`required_local_mining=false` so public staging cannot be replaced by local
-mining evidence. Then run:
+For the exact faucet URLs and follow-up commands, generate the funding helper:
 
 ```bash
-RGK_LIVE_KASPA_URL="wss://host.example/v2/kaspa/testnet/no-tls/wrpc/borsh" \
+bash scripts/e2e-testnet-staging.sh --funding-help testnet-10
+```
+
+or, for the default target:
+
+```bash
+bash scripts/e2e-testnet-staging.sh --funding-help testnet-12
+```
+
+Fund the printed `kaspatest:` address on public testnet with at least
+`required_min_value_real_zk`. The address is derived from the deterministic
+testnet-only staging wallet set and must not be used for mainnet funds. The
+preflight manifest also binds the wallet-set id, expected `KaspaTestnet` chain
+id, one-confirmation live test contract,
+`live-kaspa-wrpc`/`real-zk`/`persistent-indexer` feature set, and
+`required_local_mining=false` so public staging cannot be replaced by local
+mining evidence.
+
+Before running the full lifecycle, check the selected public endpoint and
+funding UTXO without submitting a transaction:
+
+```bash
+RGK_LIVE_KASPA_URL="wss://host.example/v2/kaspa/testnet-12/no-tls/wrpc/borsh" \
+  bash scripts/e2e-testnet-staging.sh --funding-readiness
+```
+
+This writes `target/rgk-testnet-staging-evidence/funding-readiness.txt` and
+checks it with `scripts/verify-testnet-funding-readiness.sh`. A report with
+`funding_readiness=ok` proves the endpoint network, `utxoindex`, and a
+spendable non-coinbase UTXO meeting the real-ZK funding minimum. A blocked
+report records the precise reason and is not full public staging evidence.
+The launch gate also checks that funding-readiness uses the same network,
+wallet-set id, and funding address as the preflight report. If staging targets
+`testnet-10`, regenerate `--wallets` and `--preflight` with `testnet-10`
+instead of mixing them with the default `testnet-12` reports.
+Then run:
+
+```bash
+RGK_LIVE_KASPA_URL="wss://host.example/v2/kaspa/testnet-12/no-tls/wrpc/borsh" \
   bash scripts/e2e-testnet-staging.sh
 ```
 
 The script writes `target/rgk-testnet-staging-evidence/latest.txt`, runs the
 full live covenant lifecycle with `RGK_LIVE_KASPA_NETWORK=testnet-12` by
-default, waits for real public confirmations instead of mining, and checks the
-report with
+default, records the wallet-set report and preflight manifest, waits for real
+public confirmations instead of mining, and checks the report with
 `scripts/verify-testnet-staging-evidence.sh`.
 
-Until that report exists from a real public endpoint, public staging remains
-open.
+The live covenant harness uses the native Toccata subnetwork with gas `0` by
+default. To stage a based-app user lane, set
+`RGK_LIVE_KASPA_SUBNETWORK_NAMESPACE` to a four-byte hex namespace such as
+`00000100` and set `RGK_LIVE_KASPA_GAS` to a non-zero value. A non-zero gas
+value without a user-lane namespace fails before submission. Devnet and public
+staging verifiers require the report line
+`live: Toccata tx subnetwork=... gas=... mode=...` so the chosen transaction
+lane is explicit evidence rather than an implicit default.
+
+Until that report verifies from a real public endpoint, public staging remains
+open. `scripts/verify-launch-readiness.sh --allow-blocked` may still pass for
+CI only when the preflight and funding-readiness reports match and
+`funding_readiness=blocked`; if funding is ready, a stale or partial public
+report is a failed gate.
 
 ## Fixture Flow
 
@@ -154,7 +254,7 @@ The 3x2, 4x2, and 4x4 paths go through the supported-shape dispatch API used by
 wallet/prover code. Local
 devnet evidence also verifies a 2-segment / 4-node lane-graph proof chain,
 spent/new allocation transcript segment proofs, a spent/new conservation chain
-with final equality, the live 1x1 spent/new exclusion grid cell, and the
+with final equality, the live 1x1 spent/new exclusion grid pair, and the
 allocation audit bundle plus canonical certificate round-trip, indexer
 attachment, resolver exposure, and sled recovery for a confirmed transition.
 

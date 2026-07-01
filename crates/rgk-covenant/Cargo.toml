@@ -12,6 +12,7 @@ rgk-core.workspace = true
 rgk-receipt.workspace = true
 thiserror.workspace = true
 sha2.workspace = true
+kaspa-hashes = { path = "../../../rusty-kaspa/crypto/hashes", default-features = false }
 
 [dev-dependencies]
 criterion = "0.7"

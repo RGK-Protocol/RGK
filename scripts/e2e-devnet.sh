@@ -74,11 +74,6 @@ REPORT="${EVIDENCE_DIR}/latest.txt"
 export RGK_LIVE_DEVNET_URL="${DEVNET_URL}"
 
 echo "[e2e-devnet] live devnet RPC: ${RGK_LIVE_DEVNET_URL}"
-echo "[e2e-devnet] running public testnet staging preflight"
-bash "${ROOT}/scripts/e2e-testnet-staging.sh" --preflight testnet-12 \
-    2>&1 | tee -a "${REPORT}"
-cargo test -p rgk-e2e --features live-kaspa-wrpc --lib testnet_staging_preflight_manifest_is_stable -- --exact --nocapture \
-    2>&1 | tee -a "${REPORT}"
 echo "[e2e-devnet] running live_devnet test"
 cargo test -p rgk-e2e --features live-kaspa-wrpc,persistent-indexer --test live_devnet -- --nocapture \
     2>&1 | tee -a "${REPORT}"
@@ -160,6 +155,9 @@ cargo test -p rgk-asset native::tests::segmented_allocation_strategy_requires_co
     2>&1 | tee -a "${REPORT}"
 cargo test -p rgk-asset native::tests::production_allocation_strategy_commitment_binds_counts_and_segment_grid -- --exact --nocapture \
     2>&1 | tee -a "${REPORT}"
+cargo test -p rgk-asset native::tests::production_allocation_strategy_record_round_trips_and_rejects_tamper -- --exact --nocapture \
+    2>&1 | tee -a "${REPORT}"
+echo "native allocation: production allocation strategy record handoff" | tee -a "${REPORT}"
 
 echo "[e2e-devnet] running 4x2 allocation-vector VM fixture"
 cargo test -p rgk-e2e --features live-kaspa-wrpc,real-zk --test zk_precompile_vm rgk_allocation_4x2_groth16_proof_executes_in_upstream_toccata_vm -- --exact --nocapture \

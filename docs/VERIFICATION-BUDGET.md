@@ -6,7 +6,7 @@ RGK validation must stay bounded and fail-closed.
 
 | Object | Bound |
 | --- | --- |
-| asset id | 32 bytes |
+| `asset_id` label | 32 bytes |
 | schema id | 32 bytes |
 | state digest | 32 bytes |
 | transition digest | 32 bytes |
@@ -26,7 +26,7 @@ RGK validation must stay bounded and fail-closed.
 * missing replay nonce rejected
 * no-op transition rejected
 * supply mismatch rejected
-* closed seal reuse rejected
+* spent covenant-output reuse rejected
 * unconstrained image id rejected
 * replay rejected
 

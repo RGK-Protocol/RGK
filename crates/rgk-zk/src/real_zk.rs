@@ -10,8 +10,8 @@
 //! The circuit proves **knowledge of the private canonical receipt body whose
 //! domain-tagged SHA-256 digest equals the public `receipt_id`**. The SHA-256
 //! computation itself is constrained inside R1CS using arkworks' SHA-256
-//! gadget; the resolver still independently re-computes the same digest
-//! off-chain as a defence-in-depth check.
+//! gadget; the resolver still independently re-computes the same digest as a
+//! client-local defence-in-depth check.
 //!
 //! What this gives us concretely:
 //! * A real Groth16 proof over BN254.
@@ -120,7 +120,7 @@ const ALLOCATION_CONSERVATION_SEGMENT_PUBLIC_INPUT_LEN: usize = 192;
 const ALLOCATION_CONSERVATION_FINAL_PUBLIC_INPUT_LEN: usize = 80;
 const ALLOCATION_EXCLUSION_SEGMENT_PAIR_PUBLIC_INPUT_LEN: usize = 232;
 const ALLOCATION_AUDIT_CERTIFICATE_MAGIC: &[u8; 8] = b"rgk:aac1";
-const MAX_ALLOCATION_AUDIT_CERTIFICATE_PROOF_CELLS: usize = 16_384;
+const MAX_ALLOCATION_AUDIT_CERTIFICATE_PROOF_ENTRIES: usize = 16_384;
 const MAX_ALLOCATION_AUDIT_STACK_PUBLIC_INPUTS: usize = 8_192;
 const LANE_DISCOVERY_PUBLIC_INPUT_LEN: usize = LaneDiscoveryStatement::PUBLIC_INPUT_LEN;
 const LANE_GRAPH_DISCOVERY_ROOT_LEN: usize = 32;
@@ -822,10 +822,10 @@ impl<const ALLOCS: usize> AllocationTranscriptSegmentStatement<ALLOCS> {
             ));
         }
 
-        let chain_id = allocations[0].seal.chain;
+        let chain_id = allocations[0].anchor.chain;
         if allocations
             .iter()
-            .any(|allocation| allocation.seal.chain != chain_id)
+            .any(|allocation| allocation.anchor.chain != chain_id)
         {
             return Err("allocation transcript segment contains mixed chain ids".to_string());
         }
@@ -1320,11 +1320,11 @@ impl<const SPENT: usize, const NEW: usize> AllocationExclusionSegmentPairStateme
             return Err("allocation exclusion total counts must cover their segments".to_string());
         }
 
-        let chain_id = spent_allocations[0].seal.chain;
+        let chain_id = spent_allocations[0].anchor.chain;
         if spent_allocations
             .iter()
             .chain(new_allocations.iter())
-            .any(|allocation| allocation.seal.chain != chain_id)
+            .any(|allocation| allocation.anchor.chain != chain_id)
         {
             return Err(
                 "allocation exclusion segment-pair proof contains mixed chain ids".to_string(),
@@ -1468,7 +1468,7 @@ pub struct AllocationAuditBundleReport {
     pub chain_id: KaspaChainId,
     pub spent_segments: usize,
     pub new_segments: usize,
-    pub exclusion_cells: usize,
+    pub exclusion_pairs: usize,
     pub spent_total_count: u64,
     pub new_total_count: u64,
     pub spent_final_root: Bytes32,
@@ -1524,7 +1524,7 @@ impl AllocationAuditProofKind {
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
-pub struct AllocationAuditProofCell {
+pub struct AllocationAuditProofEntry {
     pub kind: AllocationAuditProofKind,
     pub spent_segment_index: Option<u64>,
     pub new_segment_index: Option<u64>,
@@ -1536,11 +1536,11 @@ pub struct AllocationAuditProofCell {
 pub struct AllocationAuditCertificate {
     pub certificate_id: Bytes32,
     pub report: AllocationAuditBundleReport,
-    pub proofs: Vec<AllocationAuditProofCell>,
+    pub proofs: Vec<AllocationAuditProofEntry>,
 }
 
 impl AllocationAuditCertificate {
-    pub fn proof_cell_count(&self) -> usize {
+    pub fn proof_entry_count(&self) -> usize {
         self.proofs.len()
     }
 
@@ -1589,7 +1589,7 @@ impl AllocationAuditCertificate {
             .read_bytes32()
             .map_err(allocation_audit_certificate_decode_err)?;
         let report = decode_allocation_audit_report(&mut r)?;
-        let proofs = decode_allocation_audit_proof_cells(&mut r)?;
+        let proofs = decode_allocation_audit_proof_entries(&mut r)?;
         r.ensure_consumed()
             .map_err(allocation_audit_certificate_decode_err)?;
         let expected_id = allocation_audit_certificate_id(&report, &proofs)?;
@@ -1669,7 +1669,7 @@ pub fn verify_allocation_audit_bundle<const SPENT: usize, const NEW: usize>(
         chain_id: spent_chain.chain_id,
         spent_segments: bundle.spent_transcripts.len(),
         new_segments: bundle.new_transcripts.len(),
-        exclusion_cells: bundle.exclusions.len(),
+        exclusion_pairs: bundle.exclusions.len(),
         spent_total_count: spent_chain.total_count,
         new_total_count: new_chain.total_count,
         spent_final_root: spent_chain.final_root,
@@ -1685,7 +1685,7 @@ pub fn build_allocation_audit_certificate<const SPENT: usize, const NEW: usize>(
 ) -> Result<AllocationAuditCertificate, String> {
     let report = verify_allocation_audit_bundle(bundle)?;
     let mut proofs = Vec::new();
-    append_allocation_audit_certificate_cells(bundle, stacks, &mut proofs)?;
+    append_allocation_audit_certificate_entries(bundle, stacks, &mut proofs)?;
     let certificate_id = allocation_audit_certificate_id(&report, &proofs)?;
     Ok(AllocationAuditCertificate {
         certificate_id,
@@ -1702,19 +1702,19 @@ pub fn verify_allocation_audit_certificate<const SPENT: usize, const NEW: usize>
     if certificate.report != expected_report {
         return Err("allocation audit certificate report does not match bundle".to_string());
     }
-    let mut expected_cells = Vec::new();
-    append_allocation_audit_manifest_cells(bundle, &mut expected_cells);
-    if certificate.proofs.len() != expected_cells.len() {
+    let mut expected_entries = Vec::new();
+    append_allocation_audit_manifest_entries(bundle, &mut expected_entries);
+    if certificate.proofs.len() != expected_entries.len() {
         return Err(format!(
-            "allocation audit certificate has {} proof cells, expected {}",
+            "allocation audit certificate has {} proof entries, expected {}",
             certificate.proofs.len(),
-            expected_cells.len()
+            expected_entries.len()
         ));
     }
     for (index, (actual, expected)) in certificate
         .proofs
         .iter()
-        .zip(expected_cells.iter())
+        .zip(expected_entries.iter())
         .enumerate()
     {
         if actual.kind != expected.kind
@@ -1723,7 +1723,7 @@ pub fn verify_allocation_audit_certificate<const SPENT: usize, const NEW: usize>
             || actual.public_inputs != expected.public_inputs
         {
             return Err(format!(
-                "allocation audit certificate proof cell {index} does not match the bundle manifest"
+                "allocation audit certificate proof entry {index} does not match the bundle manifest"
             ));
         }
         verify_groth16_stack_against_public_inputs(
@@ -1754,22 +1754,22 @@ pub fn verify_allocation_audit_certificate_self_contained<const SPENT: usize, co
     let mut final_conservation = None;
     let mut exclusions = Vec::new();
 
-    for (cell_index, cell) in certificate.proofs.iter().enumerate() {
-        verify_groth16_stack_against_public_inputs(cell.kind, &cell.stack, &cell.public_inputs)?;
-        match cell.kind {
+    for (entry_index, entry) in certificate.proofs.iter().enumerate() {
+        verify_groth16_stack_against_public_inputs(entry.kind, &entry.stack, &entry.public_inputs)?;
+        match entry.kind {
             AllocationAuditProofKind::SpentTranscriptSegment => {
                 let statement = parse_allocation_transcript_public_inputs::<SPENT>(
-                    &cell.public_inputs,
-                    "allocation audit spent transcript cell",
+                    &entry.public_inputs,
+                    "allocation audit spent transcript entry",
                 )?;
                 if statement.side != RgkAllocationTranscriptSide::Spent {
                     return Err(format!(
-                        "allocation audit certificate proof cell {cell_index} has the wrong transcript side"
+                        "allocation audit certificate proof entry {entry_index} has the wrong transcript side"
                     ));
                 }
-                check_allocation_audit_cell_indices(
-                    cell_index,
-                    cell,
+                check_allocation_audit_entry_indices(
+                    entry_index,
+                    entry,
                     Some(statement.segment_index),
                     None,
                 )?;
@@ -1777,17 +1777,17 @@ pub fn verify_allocation_audit_certificate_self_contained<const SPENT: usize, co
             }
             AllocationAuditProofKind::NewTranscriptSegment => {
                 let statement = parse_allocation_transcript_public_inputs::<NEW>(
-                    &cell.public_inputs,
-                    "allocation audit new transcript cell",
+                    &entry.public_inputs,
+                    "allocation audit new transcript entry",
                 )?;
                 if statement.side != RgkAllocationTranscriptSide::New {
                     return Err(format!(
-                        "allocation audit certificate proof cell {cell_index} has the wrong transcript side"
+                        "allocation audit certificate proof entry {entry_index} has the wrong transcript side"
                     ));
                 }
-                check_allocation_audit_cell_indices(
-                    cell_index,
-                    cell,
+                check_allocation_audit_entry_indices(
+                    entry_index,
+                    entry,
                     None,
                     Some(statement.segment_index),
                 )?;
@@ -1795,17 +1795,17 @@ pub fn verify_allocation_audit_certificate_self_contained<const SPENT: usize, co
             }
             AllocationAuditProofKind::SpentConservationSegment => {
                 let statement = parse_allocation_conservation_public_inputs::<SPENT>(
-                    &cell.public_inputs,
-                    "allocation audit spent conservation cell",
+                    &entry.public_inputs,
+                    "allocation audit spent conservation entry",
                 )?;
                 if statement.transcript.side != RgkAllocationTranscriptSide::Spent {
                     return Err(format!(
-                        "allocation audit certificate proof cell {cell_index} has the wrong conservation side"
+                        "allocation audit certificate proof entry {entry_index} has the wrong conservation side"
                     ));
                 }
-                check_allocation_audit_cell_indices(
-                    cell_index,
-                    cell,
+                check_allocation_audit_entry_indices(
+                    entry_index,
+                    entry,
                     Some(statement.transcript.segment_index),
                     None,
                 )?;
@@ -1813,17 +1813,17 @@ pub fn verify_allocation_audit_certificate_self_contained<const SPENT: usize, co
             }
             AllocationAuditProofKind::NewConservationSegment => {
                 let statement = parse_allocation_conservation_public_inputs::<NEW>(
-                    &cell.public_inputs,
-                    "allocation audit new conservation cell",
+                    &entry.public_inputs,
+                    "allocation audit new conservation entry",
                 )?;
                 if statement.transcript.side != RgkAllocationTranscriptSide::New {
                     return Err(format!(
-                        "allocation audit certificate proof cell {cell_index} has the wrong conservation side"
+                        "allocation audit certificate proof entry {entry_index} has the wrong conservation side"
                     ));
                 }
-                check_allocation_audit_cell_indices(
-                    cell_index,
-                    cell,
+                check_allocation_audit_entry_indices(
+                    entry_index,
+                    entry,
                     None,
                     Some(statement.transcript.segment_index),
                 )?;
@@ -1832,25 +1832,25 @@ pub fn verify_allocation_audit_certificate_self_contained<const SPENT: usize, co
             AllocationAuditProofKind::ConservationFinal => {
                 if final_conservation.is_some() {
                     return Err(
-                        "allocation audit certificate has duplicate final conservation cells"
+                        "allocation audit certificate has duplicate final conservation entries"
                             .to_string(),
                     );
                 }
                 let statement = parse_allocation_conservation_final_public_inputs(
-                    &cell.public_inputs,
-                    "allocation audit final conservation cell",
+                    &entry.public_inputs,
+                    "allocation audit final conservation entry",
                 )?;
-                check_allocation_audit_cell_indices(cell_index, cell, None, None)?;
+                check_allocation_audit_entry_indices(entry_index, entry, None, None)?;
                 final_conservation = Some(statement);
             }
             AllocationAuditProofKind::ExclusionSegmentPair => {
                 let statement = parse_allocation_exclusion_public_inputs::<SPENT, NEW>(
-                    &cell.public_inputs,
-                    "allocation audit exclusion cell",
+                    &entry.public_inputs,
+                    "allocation audit exclusion pair",
                 )?;
-                check_allocation_audit_cell_indices(
-                    cell_index,
-                    cell,
+                check_allocation_audit_entry_indices(
+                    entry_index,
+                    entry,
                     Some(statement.spent_segment_index),
                     Some(statement.new_segment_index),
                 )?;
@@ -1867,7 +1867,7 @@ pub fn verify_allocation_audit_certificate_self_contained<const SPENT: usize, co
         .sort_by_key(|statement| (statement.spent_segment_index, statement.new_segment_index));
 
     let final_conservation = final_conservation.ok_or_else(|| {
-        "allocation audit certificate is missing final conservation cell".to_string()
+        "allocation audit certificate is missing final conservation entry".to_string()
     })?;
     let bundle = AllocationAuditBundle {
         spent_transcripts: &spent_transcripts,
@@ -1884,19 +1884,19 @@ pub fn verify_allocation_audit_certificate_self_contained<const SPENT: usize, co
         );
     }
 
-    let mut expected_cells = Vec::new();
-    append_allocation_audit_manifest_cells(&bundle, &mut expected_cells);
-    if certificate.proofs.len() != expected_cells.len() {
+    let mut expected_entries = Vec::new();
+    append_allocation_audit_manifest_entries(&bundle, &mut expected_entries);
+    if certificate.proofs.len() != expected_entries.len() {
         return Err(format!(
-            "allocation audit certificate has {} proof cells, expected {}",
+            "allocation audit certificate has {} proof entries, expected {}",
             certificate.proofs.len(),
-            expected_cells.len()
+            expected_entries.len()
         ));
     }
     for (index, (actual, expected)) in certificate
         .proofs
         .iter()
-        .zip(expected_cells.iter())
+        .zip(expected_entries.iter())
         .enumerate()
     {
         if actual.kind != expected.kind
@@ -1905,7 +1905,7 @@ pub fn verify_allocation_audit_certificate_self_contained<const SPENT: usize, co
             || actual.public_inputs != expected.public_inputs
         {
             return Err(format!(
-                "allocation audit certificate proof cell {index} is not in deterministic manifest order"
+                "allocation audit certificate proof entry {index} is not in deterministic manifest order"
             ));
         }
     }
@@ -2027,15 +2027,15 @@ fn parse_allocation_exclusion_public_inputs<const SPENT: usize, const NEW: usize
     Ok(statement)
 }
 
-fn check_allocation_audit_cell_indices(
-    cell_index: usize,
-    cell: &AllocationAuditProofCell,
+fn check_allocation_audit_entry_indices(
+    entry_index: usize,
+    entry: &AllocationAuditProofEntry,
     expected_spent: Option<u64>,
     expected_new: Option<u64>,
 ) -> Result<(), String> {
-    if cell.spent_segment_index != expected_spent || cell.new_segment_index != expected_new {
+    if entry.spent_segment_index != expected_spent || entry.new_segment_index != expected_new {
         return Err(format!(
-            "allocation audit certificate proof cell {cell_index} has inconsistent segment indices"
+            "allocation audit certificate proof entry {entry_index} has inconsistent segment indices"
         ));
     }
     Ok(())
@@ -2115,10 +2115,10 @@ fn ensure_canonical_public_inputs(
     Ok(())
 }
 
-fn append_allocation_audit_certificate_cells<const SPENT: usize, const NEW: usize>(
+fn append_allocation_audit_certificate_entries<const SPENT: usize, const NEW: usize>(
     bundle: &AllocationAuditBundle<'_, SPENT, NEW>,
     stacks: &AllocationAuditBundleStacks<'_>,
-    proofs: &mut Vec<AllocationAuditProofCell>,
+    proofs: &mut Vec<AllocationAuditProofEntry>,
 ) -> Result<(), String> {
     check_stack_count(
         "spent transcript",
@@ -2151,7 +2151,7 @@ fn append_allocation_audit_certificate_cells<const SPENT: usize, const NEW: usiz
         .iter()
         .zip(stacks.spent_transcripts.iter())
     {
-        proofs.push(verified_allocation_audit_proof_cell(
+        proofs.push(verified_allocation_audit_proof_entry(
             AllocationAuditProofKind::SpentTranscriptSegment,
             Some(statement.segment_index),
             None,
@@ -2164,7 +2164,7 @@ fn append_allocation_audit_certificate_cells<const SPENT: usize, const NEW: usiz
         .iter()
         .zip(stacks.new_transcripts.iter())
     {
-        proofs.push(verified_allocation_audit_proof_cell(
+        proofs.push(verified_allocation_audit_proof_entry(
             AllocationAuditProofKind::NewTranscriptSegment,
             None,
             Some(statement.segment_index),
@@ -2177,7 +2177,7 @@ fn append_allocation_audit_certificate_cells<const SPENT: usize, const NEW: usiz
         .iter()
         .zip(stacks.spent_conservation.iter())
     {
-        proofs.push(verified_allocation_audit_proof_cell(
+        proofs.push(verified_allocation_audit_proof_entry(
             AllocationAuditProofKind::SpentConservationSegment,
             Some(statement.transcript.segment_index),
             None,
@@ -2190,7 +2190,7 @@ fn append_allocation_audit_certificate_cells<const SPENT: usize, const NEW: usiz
         .iter()
         .zip(stacks.new_conservation.iter())
     {
-        proofs.push(verified_allocation_audit_proof_cell(
+        proofs.push(verified_allocation_audit_proof_entry(
             AllocationAuditProofKind::NewConservationSegment,
             None,
             Some(statement.transcript.segment_index),
@@ -2198,7 +2198,7 @@ fn append_allocation_audit_certificate_cells<const SPENT: usize, const NEW: usiz
             stack,
         )?);
     }
-    proofs.push(verified_allocation_audit_proof_cell(
+    proofs.push(verified_allocation_audit_proof_entry(
         AllocationAuditProofKind::ConservationFinal,
         None,
         None,
@@ -2206,7 +2206,7 @@ fn append_allocation_audit_certificate_cells<const SPENT: usize, const NEW: usiz
         stacks.final_conservation,
     )?);
     for (statement, stack) in bundle.exclusions.iter().zip(stacks.exclusions.iter()) {
-        proofs.push(verified_allocation_audit_proof_cell(
+        proofs.push(verified_allocation_audit_proof_entry(
             AllocationAuditProofKind::ExclusionSegmentPair,
             Some(statement.spent_segment_index),
             Some(statement.new_segment_index),
@@ -2217,12 +2217,12 @@ fn append_allocation_audit_certificate_cells<const SPENT: usize, const NEW: usiz
     Ok(())
 }
 
-fn append_allocation_audit_manifest_cells<const SPENT: usize, const NEW: usize>(
+fn append_allocation_audit_manifest_entries<const SPENT: usize, const NEW: usize>(
     bundle: &AllocationAuditBundle<'_, SPENT, NEW>,
-    proofs: &mut Vec<AllocationAuditProofCell>,
+    proofs: &mut Vec<AllocationAuditProofEntry>,
 ) {
     for statement in bundle.spent_transcripts {
-        proofs.push(allocation_audit_manifest_cell(
+        proofs.push(allocation_audit_manifest_entry(
             AllocationAuditProofKind::SpentTranscriptSegment,
             Some(statement.segment_index),
             None,
@@ -2230,7 +2230,7 @@ fn append_allocation_audit_manifest_cells<const SPENT: usize, const NEW: usize>(
         ));
     }
     for statement in bundle.new_transcripts {
-        proofs.push(allocation_audit_manifest_cell(
+        proofs.push(allocation_audit_manifest_entry(
             AllocationAuditProofKind::NewTranscriptSegment,
             None,
             Some(statement.segment_index),
@@ -2238,7 +2238,7 @@ fn append_allocation_audit_manifest_cells<const SPENT: usize, const NEW: usize>(
         ));
     }
     for statement in bundle.spent_conservation {
-        proofs.push(allocation_audit_manifest_cell(
+        proofs.push(allocation_audit_manifest_entry(
             AllocationAuditProofKind::SpentConservationSegment,
             Some(statement.transcript.segment_index),
             None,
@@ -2246,21 +2246,21 @@ fn append_allocation_audit_manifest_cells<const SPENT: usize, const NEW: usize>(
         ));
     }
     for statement in bundle.new_conservation {
-        proofs.push(allocation_audit_manifest_cell(
+        proofs.push(allocation_audit_manifest_entry(
             AllocationAuditProofKind::NewConservationSegment,
             None,
             Some(statement.transcript.segment_index),
             statement.public_inputs(),
         ));
     }
-    proofs.push(allocation_audit_manifest_cell(
+    proofs.push(allocation_audit_manifest_entry(
         AllocationAuditProofKind::ConservationFinal,
         None,
         None,
         bundle.final_conservation.public_inputs(),
     ));
     for statement in bundle.exclusions {
-        proofs.push(allocation_audit_manifest_cell(
+        proofs.push(allocation_audit_manifest_entry(
             AllocationAuditProofKind::ExclusionSegmentPair,
             Some(statement.spent_segment_index),
             Some(statement.new_segment_index),
@@ -2278,13 +2278,13 @@ fn check_stack_count(label: &str, got: usize, expected: usize) -> Result<(), Str
     Ok(())
 }
 
-fn allocation_audit_manifest_cell(
+fn allocation_audit_manifest_entry(
     kind: AllocationAuditProofKind,
     spent_segment_index: Option<u64>,
     new_segment_index: Option<u64>,
     public_inputs: Vec<u8>,
-) -> AllocationAuditProofCell {
-    AllocationAuditProofCell {
+) -> AllocationAuditProofEntry {
+    AllocationAuditProofEntry {
         kind,
         spent_segment_index,
         new_segment_index,
@@ -2293,15 +2293,15 @@ fn allocation_audit_manifest_cell(
     }
 }
 
-fn verified_allocation_audit_proof_cell(
+fn verified_allocation_audit_proof_entry(
     kind: AllocationAuditProofKind,
     spent_segment_index: Option<u64>,
     new_segment_index: Option<u64>,
     public_inputs: Vec<u8>,
     stack: &Groth16PrecompileStack,
-) -> Result<AllocationAuditProofCell, String> {
+) -> Result<AllocationAuditProofEntry, String> {
     verify_groth16_stack_against_public_inputs(kind, stack, &public_inputs)?;
-    Ok(AllocationAuditProofCell {
+    Ok(AllocationAuditProofEntry {
         kind,
         spent_segment_index,
         new_segment_index,
@@ -2382,7 +2382,7 @@ fn groth16_stack_public_inputs_as_fr(
 
 fn allocation_audit_certificate_id(
     report: &AllocationAuditBundleReport,
-    proofs: &[AllocationAuditProofCell],
+    proofs: &[AllocationAuditProofEntry],
 ) -> Result<Bytes32, String> {
     let payload = allocation_audit_certificate_body(report, proofs)?;
     Ok(rgk_asset::domain_hash_domain(
@@ -2393,18 +2393,18 @@ fn allocation_audit_certificate_id(
 
 fn allocation_audit_certificate_body(
     report: &AllocationAuditBundleReport,
-    proofs: &[AllocationAuditProofCell],
+    proofs: &[AllocationAuditProofEntry],
 ) -> Result<Vec<u8>, String> {
     let mut w = Writer::new();
     encode_allocation_audit_report(report, &mut w)?;
     write_certificate_len(
         &mut w,
-        "allocation audit certificate proof cells",
+        "allocation audit certificate proof entries",
         proofs.len(),
-        MAX_ALLOCATION_AUDIT_CERTIFICATE_PROOF_CELLS,
+        MAX_ALLOCATION_AUDIT_CERTIFICATE_PROOF_ENTRIES,
     )?;
     for proof in proofs {
-        encode_allocation_audit_proof_cell(proof, &mut w)?;
+        encode_allocation_audit_proof_entry(proof, &mut w)?;
     }
     Ok(w.into_vec())
 }
@@ -2416,7 +2416,7 @@ fn encode_allocation_audit_report(
     report.chain_id.encode(w);
     write_usize_as_u64(w, "spent segment count", report.spent_segments)?;
     write_usize_as_u64(w, "new segment count", report.new_segments)?;
-    write_usize_as_u64(w, "exclusion cell count", report.exclusion_cells)?;
+    write_usize_as_u64(w, "exclusion pair count", report.exclusion_pairs)?;
     w.write_u64(report.spent_total_count);
     w.write_u64(report.new_total_count);
     w.write_bytes32(&report.spent_final_root);
@@ -2433,8 +2433,8 @@ fn decode_allocation_audit_report(
     let spent_segments =
         read_usize_from_u64(r, "allocation audit certificate spent segment count")?;
     let new_segments = read_usize_from_u64(r, "allocation audit certificate new segment count")?;
-    let exclusion_cells =
-        read_usize_from_u64(r, "allocation audit certificate exclusion cell count")?;
+    let exclusion_pairs =
+        read_usize_from_u64(r, "allocation audit certificate exclusion pair count")?;
     let spent_total_count = r
         .read_u64()
         .map_err(allocation_audit_certificate_decode_err)?;
@@ -2457,7 +2457,7 @@ fn decode_allocation_audit_report(
         chain_id,
         spent_segments,
         new_segments,
-        exclusion_cells,
+        exclusion_pairs,
         spent_total_count,
         new_total_count,
         spent_final_root,
@@ -2467,8 +2467,8 @@ fn decode_allocation_audit_report(
     })
 }
 
-fn encode_allocation_audit_proof_cell(
-    proof: &AllocationAuditProofCell,
+fn encode_allocation_audit_proof_entry(
+    proof: &AllocationAuditProofEntry,
     w: &mut Writer,
 ) -> Result<(), String> {
     w.write_u8(proof.kind.as_u8());
@@ -2494,30 +2494,30 @@ fn encode_allocation_audit_proof_cell(
     Ok(())
 }
 
-fn decode_allocation_audit_proof_cells(
+fn decode_allocation_audit_proof_entries(
     r: &mut Reader<'_>,
-) -> Result<Vec<AllocationAuditProofCell>, String> {
+) -> Result<Vec<AllocationAuditProofEntry>, String> {
     let len = read_bounded_len(
         r,
-        "allocation audit certificate proof cells",
-        MAX_ALLOCATION_AUDIT_CERTIFICATE_PROOF_CELLS,
+        "allocation audit certificate proof entries",
+        MAX_ALLOCATION_AUDIT_CERTIFICATE_PROOF_ENTRIES,
     )?;
     let mut proofs = Vec::with_capacity(len);
     for index in 0..len {
-        proofs.push(decode_allocation_audit_proof_cell(r, index)?);
+        proofs.push(decode_allocation_audit_proof_entry(r, index)?);
     }
     Ok(proofs)
 }
 
-fn decode_allocation_audit_proof_cell(
+fn decode_allocation_audit_proof_entry(
     r: &mut Reader<'_>,
     index: usize,
-) -> Result<AllocationAuditProofCell, String> {
+) -> Result<AllocationAuditProofEntry, String> {
     let kind_tag = r
         .read_u8()
         .map_err(allocation_audit_certificate_decode_err)?;
     let kind = AllocationAuditProofKind::from_u8(kind_tag).ok_or_else(|| {
-        format!("allocation audit certificate proof cell {index} has unknown kind {kind_tag}")
+        format!("allocation audit certificate proof entry {index} has unknown kind {kind_tag}")
     })?;
     let spent_segment_index = read_optional_u64(r, "spent segment index")?;
     let new_segment_index = read_optional_u64(r, "new segment index")?;
@@ -2539,7 +2539,7 @@ fn decode_allocation_audit_proof_cell(
             "allocation audit stack public input",
         )?);
     }
-    Ok(AllocationAuditProofCell {
+    Ok(AllocationAuditProofEntry {
         kind,
         spent_segment_index,
         new_segment_index,
@@ -3552,13 +3552,13 @@ impl<const SPENT: usize, const NEW: usize> ConstraintSynthesizer<Fr>
 
 fn encode_native_allocation(allocation: &RgkAllocation) -> Vec<u8> {
     let mut payload = Vec::with_capacity(ALLOCATION_WITNESS_LEN);
-    payload.push(allocation.seal.chain as u8);
-    payload.extend_from_slice(&allocation.seal.covenant_outpoint.transaction_id);
-    payload.extend_from_slice(&allocation.seal.covenant_outpoint.index.to_le_bytes());
-    payload.extend_from_slice(&allocation.seal.covenant_id);
-    payload.extend_from_slice(&allocation.seal.witness_txid);
-    payload.extend_from_slice(&allocation.seal.daa_score.to_le_bytes());
-    payload.extend_from_slice(&allocation.seal.confirmation_depth.to_le_bytes());
+    payload.push(allocation.anchor.chain as u8);
+    payload.extend_from_slice(&allocation.anchor.covenant_outpoint.transaction_id);
+    payload.extend_from_slice(&allocation.anchor.covenant_outpoint.index.to_le_bytes());
+    payload.extend_from_slice(&allocation.anchor.covenant_id);
+    payload.extend_from_slice(&allocation.anchor.witness_txid);
+    payload.extend_from_slice(&allocation.anchor.daa_score.to_le_bytes());
+    payload.extend_from_slice(&allocation.anchor.confirmation_depth.to_le_bytes());
     payload.extend_from_slice(&allocation.amount.to_le_bytes());
     payload.extend_from_slice(&allocation.encrypted_note_commitment);
     payload
@@ -3566,10 +3566,10 @@ fn encode_native_allocation(allocation: &RgkAllocation) -> Vec<u8> {
 
 fn allocation_sort_key(allocation: &RgkAllocation) -> (KaspaOutpoint, Bytes32, Bytes32, u64, u64) {
     (
-        allocation.seal.covenant_outpoint,
-        allocation.seal.covenant_id,
-        allocation.seal.witness_txid,
-        allocation.seal.daa_score,
+        allocation.anchor.covenant_outpoint,
+        allocation.anchor.covenant_id,
+        allocation.anchor.witness_txid,
+        allocation.anchor.daa_score,
         allocation.amount,
     )
 }
@@ -3849,13 +3849,13 @@ fn verify_allocation_exclusion_grid<const SPENT: usize, const NEW: usize>(
     exclusions: &[AllocationExclusionSegmentPairStatement<SPENT, NEW>],
     chain_id: KaspaChainId,
 ) -> Result<(), String> {
-    let expected_cells = spent_transcripts
+    let expected_entries = spent_transcripts
         .len()
         .checked_mul(new_transcripts.len())
         .ok_or_else(|| "allocation exclusion grid size overflow".to_string())?;
-    if exclusions.len() != expected_cells {
+    if exclusions.len() != expected_entries {
         return Err(format!(
-            "allocation exclusion grid has {} cells, expected {expected_cells}",
+            "allocation exclusion grid has {} pairs, expected {expected_entries}",
             exclusions.len()
         ));
     }
@@ -3865,11 +3865,11 @@ fn verify_allocation_exclusion_grid<const SPENT: usize, const NEW: usize>(
         if exclusion.chain_id != chain_id {
             return Err("allocation exclusion grid contains a mixed chain id".to_string());
         }
-        let cell = (exclusion.spent_segment_index, exclusion.new_segment_index);
-        if seen.contains(&cell) {
+        let pair = (exclusion.spent_segment_index, exclusion.new_segment_index);
+        if seen.contains(&pair) {
             return Err(format!(
-                "duplicate allocation exclusion grid cell spent={} new={}",
-                cell.0, cell.1
+                "duplicate allocation exclusion grid pair spent={} new={}",
+                pair.0, pair.1
             ));
         }
         let spent = spent_transcripts
@@ -3877,7 +3877,7 @@ fn verify_allocation_exclusion_grid<const SPENT: usize, const NEW: usize>(
             .find(|segment| segment.segment_index == exclusion.spent_segment_index)
             .ok_or_else(|| {
                 format!(
-                    "allocation exclusion cell references unknown spent segment {}",
+                    "allocation exclusion pair references unknown spent segment {}",
                     exclusion.spent_segment_index
                 )
             })?;
@@ -3886,7 +3886,7 @@ fn verify_allocation_exclusion_grid<const SPENT: usize, const NEW: usize>(
             .find(|segment| segment.segment_index == exclusion.new_segment_index)
             .ok_or_else(|| {
                 format!(
-                    "allocation exclusion cell references unknown new segment {}",
+                    "allocation exclusion pair references unknown new segment {}",
                     exclusion.new_segment_index
                 )
             })?;
@@ -3897,8 +3897,8 @@ fn verify_allocation_exclusion_grid<const SPENT: usize, const NEW: usize>(
             || exclusion.spent_amount_commitment != spent.segment_amount_commitment
         {
             return Err(format!(
-                "allocation exclusion cell spent={} new={} does not bind the spent transcript segment",
-                cell.0, cell.1
+                "allocation exclusion pair spent={} new={} does not bind the spent transcript segment",
+                pair.0, pair.1
             ));
         }
         if exclusion.new_previous_root != new.previous_root
@@ -3907,18 +3907,18 @@ fn verify_allocation_exclusion_grid<const SPENT: usize, const NEW: usize>(
             || exclusion.new_amount_commitment != new.segment_amount_commitment
         {
             return Err(format!(
-                "allocation exclusion cell spent={} new={} does not bind the new transcript segment",
-                cell.0, cell.1
+                "allocation exclusion pair spent={} new={} does not bind the new transcript segment",
+                pair.0, pair.1
             ));
         }
-        seen.push(cell);
+        seen.push(pair);
     }
 
     for spent in spent_transcripts {
         for new in new_transcripts {
             if !seen.contains(&(spent.segment_index, new.segment_index)) {
                 return Err(format!(
-                    "allocation exclusion grid is missing cell spent={} new={}",
+                    "allocation exclusion grid is missing pair spent={} new={}",
                     spent.segment_index, new.segment_index
                 ));
             }
@@ -3988,7 +3988,7 @@ fn enforce_allocation_transition(
     }
     enforce_distinct_outpoints(spent_allocations)?;
     enforce_distinct_outpoints(new_allocations)?;
-    enforce_closed_seals_not_reused(spent_allocations, new_allocations)?;
+    enforce_spent_anchors_not_reused(spent_allocations, new_allocations)?;
     enforce_allocation_supply_delta(statement, spent_allocations, new_allocations)?;
 
     let spent_root = allocation_root_digest(spent_allocations)?;
@@ -4218,7 +4218,7 @@ fn enforce_allocation_exclusion_segment_pair<const SPENT: usize, const NEW: usiz
     }
     enforce_distinct_outpoints(spent_allocations)?;
     enforce_distinct_outpoints(new_allocations)?;
-    enforce_closed_seals_not_reused(spent_allocations, new_allocations)?;
+    enforce_spent_anchors_not_reused(spent_allocations, new_allocations)?;
 
     sum_allocation_amounts(spent_allocations)?.enforce_equal(&le_bytes_as_fr(spent_amount)?)?;
     sum_allocation_amounts(new_allocations)?.enforce_equal(&le_bytes_as_fr(new_amount)?)?;
@@ -4307,7 +4307,7 @@ fn enforce_distinct_outpoints(allocations: &[&[UInt8<Fr>]]) -> Result<(), Synthe
     Ok(())
 }
 
-fn enforce_closed_seals_not_reused(
+fn enforce_spent_anchors_not_reused(
     spent_allocations: &[&[UInt8<Fr>]],
     new_allocations: &[&[UInt8<Fr>]],
 ) -> Result<(), SynthesisError> {
@@ -5479,9 +5479,9 @@ pub fn supported_allocation_groth16_precompile_stack(
     semantic_groth16_precompile_stack(vk, proof, circuit.public_inputs())
 }
 
-/// Compatibility tagged proof blob: `[tag_byte || proof_bytes_compressed]`.
+/// Tagged proof blob for opaque receipt plumbing: `[tag_byte || proof_bytes_compressed]`.
 ///
-/// This is useful for compatibility with the opaque `ZkProof` wrapper, but it
+/// This is useful for plumbing through the opaque `ZkProof` wrapper, but it
 /// is **not** the complete Toccata Groth16 stack. Use
 /// [`groth16_precompile_stack`] when executing `OpZkPrecompile`.
 pub fn encode_for_precompile(proof: &Proof<Bn254>) -> Vec<u8> {
@@ -5577,7 +5577,7 @@ mod tests {
     use rgk_asset::{
         allocation_transcript_empty_root, private_lane_graph_empty_root, LanePrivacyPolicy,
         RgkAllocation, RgkAssetIssue, RgkBurnProof, RgkContinuationAllocationShape,
-        RgkContinuationPlan, RgkCovenantSeal, RgkMetadataCommitment, RgkOwnerCommitment,
+        RgkContinuationPlan, RgkCovenantAnchor, RgkMetadataCommitment, RgkOwnerCommitment,
         RgkProofPolicy, RGK_FUNGIBLE_ASSET_SCHEMA_ID,
     };
     use rgk_core::{KaspaOutpoint, KASPA_LOCAL_TOCCATA};
@@ -6034,7 +6034,7 @@ mod tests {
                         spent_amount_blindings[spent_index],
                         new_amount_blindings[new_index],
                     )
-                    .expect("allocation audit exclusion cell"),
+                    .expect("allocation audit exclusion pair"),
                 );
             }
         }
@@ -6319,7 +6319,7 @@ mod tests {
         note: [u8; 32],
     ) -> RgkAllocation {
         RgkAllocation {
-            seal: RgkCovenantSeal {
+            anchor: RgkCovenantAnchor {
                 chain: KASPA_LOCAL_TOCCATA,
                 covenant_outpoint: KaspaOutpoint {
                     transaction_id: outpoint_txid,
@@ -7189,13 +7189,13 @@ mod tests {
         assert_eq!(encoded[0], ZK_TAG_GROTH16);
         assert!(
             encoded.len() > 1,
-            "compatibility proof blob must contain proof bytes"
+            "transport proof blob must contain proof bytes"
         );
         eprintln!("[real-zk] proof size: {} bytes", encoded.len());
     }
 
     #[test]
-    fn groth16_precompile_stack_shape_is_toccata_compatible() {
+    fn groth16_precompile_stack_shape_matches_toccata() {
         let receipt = sample_receipt();
         let receipt_id = rgk_core::receipt_commitment(&receipt);
         let circuit = ReceiptCircuit::from_receipt(&receipt, receipt_id);
@@ -7305,7 +7305,7 @@ mod tests {
     }
 
     #[test]
-    fn semantic_groth16_precompile_stack_shape_is_toccata_compatible() {
+    fn semantic_groth16_precompile_stack_shape_matches_toccata() {
         let statement = sample_semantic_statement();
         let circuit = SemanticTransitionCircuit::from_statement(&statement);
         let Groth16Setup { pk, vk } = setup_semantic(&circuit).expect("semantic setup");
@@ -7376,7 +7376,7 @@ mod tests {
     }
 
     #[test]
-    fn lane_discovery_precompile_stack_shape_is_toccata_compatible() {
+    fn lane_discovery_precompile_stack_shape_matches_toccata() {
         let (statement, witness) = sample_lane_discovery();
         let circuit = LaneDiscoveryCircuit::from_statement_and_witness(&statement, witness)
             .expect("lane discovery circuit");
@@ -7478,7 +7478,7 @@ mod tests {
     }
 
     #[test]
-    fn lane_graph_discovery_precompile_stack_shape_is_toccata_compatible() {
+    fn lane_graph_discovery_precompile_stack_shape_matches_toccata() {
         let (statement, witness) = sample_lane_graph_discovery();
         let circuit =
             LaneGraphDiscoveryCircuit::<2>::from_statement_and_witness(&statement, witness)
@@ -7590,7 +7590,7 @@ mod tests {
     }
 
     #[test]
-    fn lane_graph_segment_precompile_stack_shape_is_toccata_compatible() {
+    fn lane_graph_segment_precompile_stack_shape_matches_toccata() {
         let (statement, witness) = sample_lane_graph_segment();
         let circuit = LaneGraphSegmentCircuit::<2>::from_statement_and_witness(&statement, witness)
             .expect("lane graph segment circuit");
@@ -7714,7 +7714,7 @@ mod tests {
     }
 
     #[test]
-    fn allocation_transcript_segment_precompile_stack_shape_is_toccata_compatible() {
+    fn allocation_transcript_segment_precompile_stack_shape_matches_toccata() {
         let (statement, witness, _) = sample_allocation_transcript_segment();
         let circuit = AllocationTranscriptSegmentCircuit::<2>::from_statement_and_witness(
             &statement, witness,
@@ -7864,7 +7864,7 @@ mod tests {
     }
 
     #[test]
-    fn allocation_conservation_segment_precompile_stack_shape_is_toccata_compatible() {
+    fn allocation_conservation_segment_precompile_stack_shape_matches_toccata() {
         let (statement, witness, _) = sample_allocation_conservation_segment();
         let circuit = AllocationConservationSegmentCircuit::<2>::from_statement_and_witness(
             &statement, witness,
@@ -8093,7 +8093,7 @@ mod tests {
     }
 
     #[test]
-    fn allocation_exclusion_segment_pair_precompile_stack_shape_is_toccata_compatible() {
+    fn allocation_exclusion_segment_pair_precompile_stack_shape_matches_toccata() {
         let (statement, witness, _, _) = sample_allocation_exclusion_segment_pair();
         let circuit = AllocationExclusionSegmentPairCircuit::<2, 2>::from_statement_and_witness(
             &statement, witness,
@@ -8122,7 +8122,7 @@ mod tests {
     }
 
     #[test]
-    fn allocation_exclusion_segment_pair_rejects_reused_closed_seal() {
+    fn allocation_exclusion_segment_pair_rejects_reused_spent_anchor() {
         use ark_relations::r1cs::ConstraintSystem;
 
         let (statement, mut witness, _, _) = sample_allocation_exclusion_segment_pair();
@@ -8198,7 +8198,7 @@ mod tests {
             .expect("allocation exclusion constraint synthesis");
         assert!(
             cs.is_satisfied().expect("constraint satisfaction check"),
-            "allocation exclusion circuit must treat the full txid+index as the closed outpoint"
+            "allocation exclusion circuit must treat the full txid+index as the spent outpoint"
         );
     }
 
@@ -8233,7 +8233,7 @@ mod tests {
         assert_eq!(report.chain_id, KASPA_LOCAL_TOCCATA);
         assert_eq!(report.spent_segments, 2);
         assert_eq!(report.new_segments, 2);
-        assert_eq!(report.exclusion_cells, 4);
+        assert_eq!(report.exclusion_pairs, 4);
         assert_eq!(report.spent_total_count, 2);
         assert_eq!(report.new_total_count, 2);
         assert_eq!(
@@ -8259,23 +8259,23 @@ mod tests {
     }
 
     #[test]
-    fn allocation_audit_bundle_rejects_missing_exclusion_cell() {
+    fn allocation_audit_bundle_rejects_missing_exclusion_pair() {
         let mut fixture = sample_allocation_audit_bundle_grid();
         fixture.exclusions.pop();
 
         let err = verify_allocation_audit_bundle(&fixture.bundle())
-            .expect_err("missing exclusion cell must be rejected");
-        assert!(err.contains("allocation exclusion grid has 3 cells, expected 4"));
+            .expect_err("missing exclusion pair must be rejected");
+        assert!(err.contains("allocation exclusion grid has 3 pairs, expected 4"));
     }
 
     #[test]
-    fn allocation_audit_bundle_rejects_duplicate_exclusion_cell() {
+    fn allocation_audit_bundle_rejects_duplicate_exclusion_pair() {
         let mut fixture = sample_allocation_audit_bundle_grid();
         fixture.exclusions[3] = fixture.exclusions[0].clone();
 
         let err = verify_allocation_audit_bundle(&fixture.bundle())
-            .expect_err("duplicate exclusion cell must be rejected");
-        assert!(err.contains("duplicate allocation exclusion grid cell spent=0 new=0"));
+            .expect_err("duplicate exclusion pair must be rejected");
+        assert!(err.contains("duplicate allocation exclusion grid pair spent=0 new=0"));
     }
 
     #[test]
@@ -8313,11 +8313,11 @@ mod tests {
             .expect("rebuilt allocation audit certificate");
 
         assert_eq!(certificate.certificate_id, rebuilt.certificate_id);
-        assert_eq!(certificate.proof_cell_count(), 6);
+        assert_eq!(certificate.proof_entry_count(), 6);
         assert!(certificate.total_verifying_key_bytes() > certificate.total_proof_bytes());
         assert_eq!(report.spent_segments, 1);
         assert_eq!(report.new_segments, 1);
-        assert_eq!(report.exclusion_cells, 1);
+        assert_eq!(report.exclusion_pairs, 1);
     }
 
     #[test]
@@ -8537,7 +8537,7 @@ mod tests {
     }
 
     #[test]
-    fn allocation_1x1_precompile_stack_shape_is_toccata_compatible() {
+    fn allocation_1x1_precompile_stack_shape_matches_toccata() {
         let (statement, witness) = sample_allocation_statement_and_witness();
         let circuit = OneInOneOutAllocationCircuit::from_statement_and_witness(&statement, witness)
             .expect("allocation circuit");
@@ -8577,7 +8577,7 @@ mod tests {
     }
 
     #[test]
-    fn allocation_1x1_rejects_closed_seal_reuse() {
+    fn allocation_1x1_rejects_spent_anchor_reuse() {
         use ark_relations::r1cs::ConstraintSystem;
 
         let (statement, mut witness) = sample_allocation_statement_and_witness();
@@ -8592,7 +8592,7 @@ mod tests {
             .expect("allocation constraint synthesis");
         assert!(
             !cs.is_satisfied().expect("constraint satisfaction check"),
-            "allocation circuit must reject reuse of the closed spent outpoint"
+            "allocation circuit must reject reuse of the spent outpoint"
         );
     }
 
@@ -8645,7 +8645,7 @@ mod tests {
     }
 
     #[test]
-    fn allocation_2x2_rejects_closed_seal_reuse() {
+    fn allocation_2x2_rejects_spent_anchor_reuse() {
         use ark_relations::r1cs::ConstraintSystem;
 
         let (statement, mut witness) = sample_allocation_2x2_statement_and_witness();
@@ -8660,7 +8660,7 @@ mod tests {
             .expect("allocation constraint synthesis");
         assert!(
             !cs.is_satisfied().expect("constraint satisfaction check"),
-            "2x2 allocation circuit must reject reuse of any closed spent outpoint"
+            "2x2 allocation circuit must reject reuse of any spent outpoint"
         );
     }
 

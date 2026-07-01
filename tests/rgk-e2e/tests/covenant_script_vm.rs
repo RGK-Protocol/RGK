@@ -3,24 +3,29 @@
 use kaspa_consensus_core::{
     constants::TX_VERSION_TOCCATA,
     hashing::sighash::SigHashReusedValuesUnsync,
-    mass::ComputeBudget,
     subnets::SUBNETWORK_ID_NATIVE,
     tx::{
-        CovenantBinding, PopulatedTransaction, Transaction, TransactionInput, TransactionOutpoint,
-        TransactionOutput, UtxoEntry,
+        CovenantBinding, PopulatedTransaction, ScriptPublicKey, Transaction, TransactionInput,
+        TransactionOutpoint, TransactionOutput, UtxoEntry,
     },
 };
+#[cfg(feature = "real-zk")]
+use kaspa_consensus_core::{mass::ComputeBudget, tx::TxInputMass};
 use kaspa_hashes::Hash;
+#[cfg(feature = "real-zk")]
+use kaspa_txscript::script_builder::ScriptBuilder;
 use kaspa_txscript::{
-    caches::Cache, pay_to_script_hash_script, pay_to_script_hash_signature_script_with_flags,
-    script_builder::ScriptBuilder, EngineCtx, EngineFlags, TxScriptEngine,
+    caches::Cache, covenants::CovenantsContext, pay_to_script_hash_script,
+    pay_to_script_hash_signature_script_with_flags, EngineCtx, EngineFlags, TxScriptEngine,
 };
 
-use rgk_core::{
-    receipt_commitment, ProofMode, ReceiptPolicy, RgkReceipt, RgkStateCommitment,
-    KASPA_LOCAL_TOCCATA,
+#[cfg(feature = "real-zk")]
+use rgk_core::{receipt_commitment, RgkReceipt, RgkStateCommitment};
+use rgk_core::{ProofMode, ReceiptPolicy, KASPA_LOCAL_TOCCATA};
+use rgk_covenant::{
+    compute_covenant_id_from_lineage, CovenantContinuationPolicy, CovenantSharedContinuationPolicy,
+    CovenantSpec, CovenantState,
 };
-use rgk_covenant::{compute_covenant_id_from_lineage, CovenantSpec, CovenantState};
 
 #[cfg(feature = "real-zk")]
 use rgk_zk::real_zk::{self, Groth16PrecompileStack, ReceiptCircuit};
@@ -136,7 +141,23 @@ fn run_redeem_script(
     output: TransactionOutput,
     payload: Vec<u8>,
 ) -> Result<(), String> {
-    let redeem_script = spec.build_script().expect("RGK covenant script");
+    run_redeem_script_with_policy(
+        spec,
+        &CovenantContinuationPolicy::singleton(),
+        vec![output],
+        payload,
+    )
+}
+
+fn run_redeem_script_with_policy(
+    spec: &CovenantSpec,
+    policy: &CovenantContinuationPolicy,
+    outputs: Vec<TransactionOutput>,
+    payload: Vec<u8>,
+) -> Result<(), String> {
+    let redeem_script = spec
+        .build_script_for_policy(policy)
+        .expect("RGK covenant script");
     let spk = pay_to_script_hash_script(&redeem_script);
     let flags = EngineFlags {
         covenants_enabled: true,
@@ -145,12 +166,11 @@ fn run_redeem_script(
     let sig_script = pay_to_script_hash_signature_script_with_flags(redeem_script, vec![], flags)
         .expect("P2SH signature script");
     let previous_outpoint = TransactionOutpoint::new(Hash::from_u64_word(1), 0);
-    let mut input = TransactionInput::new(previous_outpoint, sig_script, 0, 0);
-    input.mass = ComputeBudget(300).into();
+    let input = TransactionInput::new_with_compute_budget(previous_outpoint, sig_script, 0, 300);
     let tx = Transaction::new(
         TX_VERSION_TOCCATA,
         vec![input],
-        vec![output],
+        outputs,
         0,
         SUBNETWORK_ID_NATIVE,
         0,
@@ -163,6 +183,77 @@ fn run_redeem_script(
     let ctx = EngineCtx::new(&sig_cache).with_reused(&reused_values);
     let mut vm =
         TxScriptEngine::from_transaction_input(&populated, &tx.inputs[0], 0, &utxo, ctx, flags);
+    vm.execute().map_err(|e| format!("{e:?}"))
+}
+
+fn covenant_output(value: u64, spk: ScriptPublicKey, spec: &CovenantSpec) -> TransactionOutput {
+    TransactionOutput::with_covenant(
+        value,
+        spk,
+        Some(CovenantBinding::new(0, covenant_hash(spec))),
+    )
+}
+
+fn run_shared_redeem_script_for_input(
+    spec: &CovenantSpec,
+    policy: &CovenantSharedContinuationPolicy,
+    input_count: usize,
+    input_index: usize,
+    outputs: Vec<TransactionOutput>,
+    payload: Vec<u8>,
+) -> Result<(), String> {
+    let redeem_script = spec
+        .build_script_for_shared_policy(policy)
+        .expect("RGK shared covenant script");
+    let spk = pay_to_script_hash_script(&redeem_script);
+    let flags = EngineFlags {
+        covenants_enabled: true,
+        ..Default::default()
+    };
+    let sig_script = pay_to_script_hash_signature_script_with_flags(redeem_script, vec![], flags)
+        .expect("P2SH signature script");
+    let mut inputs = Vec::new();
+    let mut utxos = Vec::new();
+    for i in 0..input_count {
+        let input = TransactionInput::new_with_compute_budget(
+            TransactionOutpoint::new(Hash::from_u64_word((i + 1) as u64), 0),
+            sig_script.clone(),
+            0,
+            500,
+        );
+        inputs.push(input);
+        utxos.push(UtxoEntry::new(
+            1_000_000,
+            spk.clone(),
+            0,
+            false,
+            Some(covenant_hash(spec)),
+        ));
+    }
+    let tx = Transaction::new(
+        TX_VERSION_TOCCATA,
+        inputs,
+        outputs,
+        0,
+        SUBNETWORK_ID_NATIVE,
+        0,
+        payload,
+    );
+    let populated = PopulatedTransaction::new(&tx, utxos.clone());
+    let covenants_ctx = CovenantsContext::from_tx(&populated).map_err(|e| format!("{e:?}"))?;
+    let sig_cache = Cache::new(10_000);
+    let reused_values = SigHashReusedValuesUnsync::new();
+    let ctx = EngineCtx::new(&sig_cache)
+        .with_reused(&reused_values)
+        .with_covenants_ctx(&covenants_ctx);
+    let mut vm = TxScriptEngine::from_transaction_input(
+        &populated,
+        &tx.inputs[input_index],
+        input_index,
+        &utxos[input_index],
+        ctx,
+        flags,
+    );
     vm.execute().map_err(|e| format!("{e:?}"))
 }
 
@@ -188,8 +279,7 @@ fn run_zk_redeem_script(
     )
     .expect("P2SH ZK signature script");
     let previous_outpoint = TransactionOutpoint::new(Hash::from_u64_word(1), 0);
-    let mut input = TransactionInput::new(previous_outpoint, sig_script, 0, 0);
-    input.mass = ComputeBudget(2_500).into();
+    let input = TransactionInput::new_with_compute_budget(previous_outpoint, sig_script, 0, 2_500);
     let tx = Transaction::new(
         TX_VERSION_TOCCATA,
         vec![input],
@@ -233,6 +323,133 @@ fn covenant_spec_script_executes_in_upstream_vm() {
 }
 
 #[test]
+fn covenant_spec_policy_script_accepts_fanout_with_explicit_change_output() {
+    let spec = sample_spec();
+    let policy = CovenantContinuationPolicy::new(0, 3, vec![0, 2]).unwrap();
+    let redeem_script = spec
+        .build_script_for_policy(&policy)
+        .expect("RGK covenant script");
+    let spk = pay_to_script_hash_script(&redeem_script);
+    let change_spk = pay_to_script_hash_script(&[rgk_covenant::opcodes::OP_DROP, 0x51]);
+    let outputs = vec![
+        covenant_output(450_000, spk.clone(), &spec),
+        TransactionOutput::new(50_000, change_spk),
+        covenant_output(400_000, spk, &spec),
+    ];
+
+    run_redeem_script_with_policy(&spec, &policy, outputs, transition_payload(&spec))
+        .expect("VM accepts explicit two-output continuation policy");
+}
+
+#[test]
+fn covenant_spec_policy_script_rejects_missing_declared_continuation_output() {
+    let spec = sample_spec();
+    let policy = CovenantContinuationPolicy::new(0, 3, vec![0, 2]).unwrap();
+    let redeem_script = spec
+        .build_script_for_policy(&policy)
+        .expect("RGK covenant script");
+    let spk = pay_to_script_hash_script(&redeem_script);
+    let change_spk = pay_to_script_hash_script(&[rgk_covenant::opcodes::OP_DROP, 0x51]);
+    let outputs = vec![
+        covenant_output(450_000, spk, &spec),
+        TransactionOutput::new(50_000, change_spk.clone()),
+        TransactionOutput::new(400_000, change_spk),
+    ];
+
+    let err = run_redeem_script_with_policy(&spec, &policy, outputs, transition_payload(&spec))
+        .expect_err("VM rejects a declared continuation output without covenant binding");
+    assert!(
+        err.contains("VerifyError"),
+        "unexpected txscript error: {err}"
+    );
+}
+
+#[test]
+fn covenant_shared_policy_script_accepts_two_input_merge_with_change_output() {
+    let spec = sample_spec();
+    let policy = CovenantSharedContinuationPolicy::new(2, 1, 2).unwrap();
+    let redeem_script = spec
+        .build_script_for_shared_policy(&policy)
+        .expect("RGK shared covenant script");
+    let spk = pay_to_script_hash_script(&redeem_script);
+    let change_spk = pay_to_script_hash_script(&[rgk_covenant::opcodes::OP_DROP, 0x51]);
+    let outputs = vec![
+        covenant_output(1_700_000, spk, &spec),
+        TransactionOutput::new(100_000, change_spk),
+    ];
+
+    for input_index in 0..2 {
+        run_shared_redeem_script_for_input(
+            &spec,
+            &policy,
+            2,
+            input_index,
+            outputs.clone(),
+            transition_payload(&spec),
+        )
+        .expect("VM accepts shared two-input merge policy");
+    }
+}
+
+#[test]
+fn covenant_shared_policy_script_accepts_two_input_two_output_batch_with_change() {
+    let spec = sample_spec();
+    let policy = CovenantSharedContinuationPolicy::new(2, 2, 3).unwrap();
+    let redeem_script = spec
+        .build_script_for_shared_policy(&policy)
+        .expect("RGK shared covenant script");
+    let spk = pay_to_script_hash_script(&redeem_script);
+    let change_spk = pay_to_script_hash_script(&[rgk_covenant::opcodes::OP_DROP, 0x51]);
+    let outputs = vec![
+        covenant_output(800_000, spk.clone(), &spec),
+        TransactionOutput::new(100_000, change_spk),
+        covenant_output(900_000, spk, &spec),
+    ];
+
+    for input_index in 0..2 {
+        run_shared_redeem_script_for_input(
+            &spec,
+            &policy,
+            2,
+            input_index,
+            outputs.clone(),
+            transition_payload(&spec),
+        )
+        .expect("VM accepts shared two-input batch policy");
+    }
+}
+
+#[test]
+fn covenant_shared_policy_script_rejects_missing_shared_covenant_output() {
+    let spec = sample_spec();
+    let policy = CovenantSharedContinuationPolicy::new(2, 2, 3).unwrap();
+    let redeem_script = spec
+        .build_script_for_shared_policy(&policy)
+        .expect("RGK shared covenant script");
+    let spk = pay_to_script_hash_script(&redeem_script);
+    let change_spk = pay_to_script_hash_script(&[rgk_covenant::opcodes::OP_DROP, 0x51]);
+    let outputs = vec![
+        covenant_output(800_000, spk, &spec),
+        TransactionOutput::new(100_000, change_spk.clone()),
+        TransactionOutput::new(900_000, change_spk),
+    ];
+
+    let err = run_shared_redeem_script_for_input(
+        &spec,
+        &policy,
+        2,
+        0,
+        outputs,
+        transition_payload(&spec),
+    )
+    .expect_err("VM rejects missing shared covenant output");
+    assert!(
+        err.contains("VerifyError"),
+        "unexpected txscript error: {err}"
+    );
+}
+
+#[test]
 fn covenant_spec_script_rejects_wrong_contract_payload() {
     let spec = sample_spec();
     let redeem_script = spec.build_script().expect("RGK covenant script");
@@ -272,7 +489,7 @@ fn covenant_spec_script_with_groth16_precompile_executes_in_upstream_vm() {
     let used = run_zk_redeem_script(&spec, output, transition_payload(&spec))
         .expect("VM accepts RGK covenant script prefixed by Groth16 precompile");
     eprintln!("[zk-covenant-vm] used_script_units={used}");
-    let allowed = kaspa_consensus_core::tx::TxInputMass::from(ComputeBudget(2_500))
+    let allowed = TxInputMass::from(ComputeBudget(2_500))
         .allowed_script_units()
         .0;
     assert!(used < allowed);

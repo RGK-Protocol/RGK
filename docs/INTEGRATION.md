@@ -12,6 +12,9 @@ This document sketches the wallet-side integration shape for native RGK.
    `validate_for_production_zk` so the initial state can later be spent by an
    evidenced allocation-proof shape.
 6. Create the initial covenant output with the issue state digest.
+7. Persist the covenant lineage / lane as the asset identity. Treat `asset_id`
+   as immutable lineage-bound native label material, not as the primary wallet
+   identity.
 
 ## Transfer
 
@@ -55,6 +58,11 @@ Wallets should still scan by view key:
 * decrypt notes only after a tag match
 * treat nullifiers as spend-local commitments, not public lane identifiers
 
+For private lanes, public observers should learn only blinded lane ids,
+rotating scan tags, nullifiers, and opaque commitments. They should not learn
+asset label, owner, amount, lane graph, or plaintext proof policy unless the
+wallet deliberately uses `PublicLineage`.
+
 ## Proof Policy
 
 Never accept a witness-selected unconstrained image id. Dynamic image ids must
@@ -95,21 +103,33 @@ handoff. Burns and empty allocation sides are rejected on that path.
 
 Persist the strategy commitment alongside the continuation commitment and any
 allocation-audit certificate id. That gives support tooling a stable handle for
-the exact proof strategy, segment grid, and proof-cell count the wallet chose.
+the exact proof strategy, segment grid, and proof-entry count the wallet chose.
+For wallet/prover handoff, wrap the plan in
+`RgkProductionAllocationStrategyRecord::new(plan.clone())` and persist
+`record.canonical_bytes()?`. Decoders recompute the continuation report,
+strategy, and strategy commitment, and reject trailing bytes, bad tags, or
+tampered commitments.
 
 ## Public Testnet Staging
 
 Before funding a public staging run, execute:
 
 ```bash
+bash scripts/e2e-testnet-staging.sh --wallets
 bash scripts/e2e-testnet-staging.sh --preflight
 ```
 
-The preflight manifest is machine-checked by
+The wallet-set report is machine-checked by
+`scripts/verify-testnet-staging-wallets.sh` and records deterministic
+testnet-only `funding`, `change`, and `observer` roles without printing private
+keys. The frozen wallet/preflight snapshot is recorded in
+[`TESTNET-STAGING-REPORT.md`](TESTNET-STAGING-REPORT.md). The preflight
+manifest is machine-checked by
 `scripts/verify-testnet-staging-preflight.sh`. It records the deterministic
-testnet funding address, the real-ZK and verifier-only minimum funding values,
-the non-coinbase funding requirement, the UTXO-index requirement, and a native
-preflight id. The funded run records the same manifest in
+testnet funding address, wallet-set id, the real-ZK and verifier-only minimum
+funding values, the non-coinbase funding requirement, the UTXO-index
+requirement, and a native preflight id. The funded run records the same wallet
+set and manifest in
 `target/rgk-testnet-staging-evidence/latest.txt` before it submits the public
 covenant transaction.
 

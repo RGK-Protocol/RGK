@@ -1,7 +1,9 @@
 # Architecture
 
-RGK is a Kaspa-native client-side asset protocol inspired by RGB. The native
-settlement substrate is Kaspa Toccata; the native state machine is RGK.
+RGK is a Kaspa-native covenant-lineage asset system. The native settlement
+substrate is Kaspa Toccata; the native state machine is RGK. Canonical asset
+identity is the Kaspa covenant lineage / lane. `asset_id` is lineage-bound
+native label material, not an external contract id or the primary identity.
 
 ## Layer Diagram
 
@@ -24,6 +26,7 @@ Client-side validation and receipt building
 Kaspa Toccata covenant lineage
   CovenantState
   CovenantSpec
+  lineage id / lane identity
   covenant id
   continuation output
           |
@@ -44,20 +47,21 @@ Indexer and resolver
 | `rgk-covenant` | Encodes covenant state and builds Toccata scripts |
 | `rgk-kaspa` | Fixture and live Kaspa chain backends |
 | `rgk-asset` | Native RGK asset grammar |
-| `rgk-zk` | Receipt statement and Groth16 precompile integration |
+| `rgk-zk` | Receipt statement, Groth16 precompile integration, and R0 Succinct stack material |
 | `rgk-indexer` | Replay-safe in-memory and persistent indexing |
 | `rgk-sync` | Restart-safe scan service |
 | `rgk-resolver` | Native resolver state machine |
-| `rgk-tx` | Unsigned transaction and output builders |
+| `rgk-tx` | Unsigned builders and Toccata v1 transaction/Borsh-wire/hash boundary |
 
 ## Transition Flow
 
 1. A wallet validates a native `RgkContinuationPlan` against the previous
    allocation set and previous `RgkStateDigest` before the future txid exists.
 2. After the continuation txid exists, the plan finalises into `RgkTransition`.
-   The transition closes spent `RgkCovenantSeal`s, opens new allocations, and
+   The transition spends previous covenant outputs, creates new allocation
+   outputs, and
    rejects no-op, inflation, deflation without a matching `RgkBurnProof`, and
-   closed-seal reuse.
+   spent covenant-output reuse.
 3. The transition digest binds old state, new state, actual witness txid, ordered
    inputs, ordered outputs, proof policy, privacy mode, and lane id.
 4. `ReceiptBuilder` creates an `RgkReceipt` over the old and new state
@@ -134,14 +138,14 @@ deliberately rather than treating policy change as implicit.
   `OneInOneOutAllocationCircuit`, `TwoInTwoOutAllocationCircuit`,
   and `FixedAllocationVectorCircuit<const SPENT, const NEW>` reconstruct
   allocation roots, state digests, continuation commitment, transition digest,
-  spent/new/burned supply accounting, and closed-seal non-reuse for fixed
+  spent/new/burned supply accounting, and spent-output non-reuse for fixed
   proven shapes.
   `AllocationTranscriptSegmentCircuit<const ALLOCS>` proves bounded rolling
   spent/new allocation transcript segments for audit evidence.
   `AllocationConservationSegmentCircuit<const ALLOCS>` and
   `AllocationConservationFinalCircuit` prove amount-hiding running-total
   conservation chains. `AllocationExclusionSegmentPairCircuit<const SPENT,
-  const NEW>` proves bounded spent/new closed-seal exclusion cells.
+  const NEW>` proves bounded spent/new covenant-output exclusion pairs.
   `AllocationAuditBundle` composes the verified segment statements into
   complete transcript chains, conservation chains, and exclusion grids.
   `AllocationAuditCertificate` binds that bundle to the serialized Groth16

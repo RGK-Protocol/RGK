@@ -35,7 +35,7 @@ pub struct RgkStateCommitment {
 
 * old and new states use the receipt chain id
 * old and new states use the receipt covenant id
-* old and new states preserve `asset_id`
+* old and new states preserve the lineage-bound `asset_id` label
 * receipt policy is preserved
 * old and new state digests differ
 * proof mode is admitted by receipt policy
@@ -50,4 +50,6 @@ pub struct RgkStateCommitment {
 The receipt does not by itself prove every semantic transition rule. It binds
 the validated native transition result and the phase-1 continuation commitment
 to the covenant lineage so the resolver and indexer can verify replay,
-continuity, and chain evidence.
+continuity, and chain evidence. The covenant lineage remains the canonical
+asset identity; the receipt preserves `asset_id` as immutable native label
+material inside that lineage.

@@ -12,7 +12,7 @@ fn examples_contract_matrix_is_grounded_in_current_evidence() {
     let mut lines = MATRIX.lines();
     assert_eq!(
         lines.next(),
-        Some("example_id\tcategory\tcapabilities\tlocal_evidence\tdevnet_markers\tcontract_source\tsilverscript_status\tcompile_artifact_status\tpublic_staging_status\targent_equivalence_status")
+        Some("example_id\tcategory\tcapabilities\tlocal_evidence\tdevnet_markers\tcontract_source\tsilverscript_status\tcompile_artifact_status\tpublic_staging_status\texternal_equivalence_status")
     );
 
     let mut ids = BTreeSet::new();
@@ -37,7 +37,7 @@ fn examples_contract_matrix_is_grounded_in_current_evidence() {
         assert_eq!(cols[6], "silverscript_source_compiles");
         assert_eq!(cols[7], "checked_silverscript_json_artifact");
         assert_eq!(cols[8], "pending_public_staging");
-        assert_eq!(cols[9], "argent_external_scope");
+        assert_eq!(cols[9], "not_required_for_rgk_native_core");
         assert!(
             SILVERSCRIPT_MANIFEST.contains(&format!(
                 "{example_id}\texamples/silverscript/{example_id}.sil\texamples/silverscript/artifacts/{example_id}.json\t"

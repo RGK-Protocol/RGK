@@ -1,6 +1,6 @@
 //! wRPC-backed live Kaspa backend.
 //!
-//! This adapter deliberately does not pretend that a node RPC call can answer
+//! This backend deliberately does not pretend that a node RPC call can answer
 //! every historical spend question by outpoint. Kaspa's public UTXO RPC gives
 //! current unspent outputs; spend detection for arbitrary outpoints belongs to
 //! an indexer or notification listener. `WrpcBackend` therefore combines live

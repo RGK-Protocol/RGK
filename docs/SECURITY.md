@@ -15,11 +15,13 @@ the native grammar.
 1. **Lineage continuity.** The covenant lineage is preserved across spends.
 2. **Output shape.** The continuation output has the expected covenant shape.
 3. **State advance.** No-op transitions are rejected.
-4. **Asset binding.** State and receipt commitments pin the same `asset_id`.
+4. **Asset-label binding.** State and receipt commitments pin the same
+   lineage-bound `asset_id`; the covenant lineage / lane remains the canonical
+   asset identity.
 5. **Supply accounting.** Native transition validation rejects inflation and
    accepts deflation only when a matching non-zero `RgkBurnProof` is committed
    to the transition or continuation.
-6. **Seal uniqueness.** Closed covenant seals cannot be reused.
+6. **Covenant-output uniqueness.** Spent covenant outputs cannot be reused.
 7. **Policy binding.** Proof policy is committed into state and transition
    digests.
 8. **Replay protection.** The indexer rejects reused receipts and observed
@@ -46,12 +48,19 @@ the native grammar.
 ## Privacy Claim
 
 `PrivateLane` is the default. In private mode, public observers should see
-opaque commitments rather than asset id, amount, owner, recipient, lane graph,
-or proof policy in plaintext.
+opaque commitments rather than asset label, amount, owner, recipient, lane
+graph, or proof policy in plaintext.
 
 Protocol support includes blinded lane ids, rotating scan tags, encrypted note
 commitments, nullifiers, policy commitments, private state roots, and view-key
 based discovery. `PublicLineage` is explicit opt-in.
+
+Local privacy-observer evidence is produced by
+`scripts/e2e-privacy-observer.sh` and verified by
+`scripts/verify-privacy-observer-evidence.sh`. The evidence checks that private
+lanes disclose only blinded lane ids, rotating scan tags, nullifiers, and
+opaque commitments, while keeping asset label, owner, amount, lane graph, and
+plaintext proof policy outside the public observer boundary.
 
 ## What RGK Does Not Prove Yet
 
@@ -79,9 +88,9 @@ based discovery. `PublicLineage` is explicit opt-in.
 | Threat | Mitigation |
 | --- | --- |
 | Malicious covenant payload | Canonical decoding and structural invariants |
-| Asset id swap | Receipt, state, and covenant checks pin `asset_id` |
+| Asset-label swap | Receipt, state, and covenant checks pin the lineage-bound `asset_id` |
 | State no-op replay | Receipt and transition validation reject equal states |
-| Closed seal reuse | Native transition validation rejects reused seals |
+| Spent covenant-output reuse | Native transition validation rejects reused outputs |
 | Supply inflation | Native transition validation checks conservation |
 | Proof-policy downgrade | Policy commitment is part of state |
 | Owner-control substitution | Native owner descriptor commitments are domain-separated and state-bound |

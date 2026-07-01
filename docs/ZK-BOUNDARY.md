@@ -9,7 +9,7 @@ The statement binds:
 
 * chain id
 * covenant id
-* asset id
+* lineage-bound `asset_id` label
 * old state digest
 * new state digest
 * transition digest
@@ -22,6 +22,17 @@ separate raw public-input field.
 The live `real-zk` path can serialise the Groth16 stack and execute through
 Toccata's `OpZkPrecompile`.
 
+`ZkTag::R0Succinct` is pinned to the upstream Toccata tag and RGK exposes
+`R0SuccinctPrecompileStack` for the exact stack material consumed by
+`OpZkPrecompile`: claim, control index, control digests, seal, journal, image
+id, control id, hash-function id, and tag. Local upstream VM evidence executes
+the parent `rusty-kaspa` Succinct fixture and rejects a tampered journal.
+
+The active RGK receipt wrapper still rejects `ZkProof::new(ZkTag::R0Succinct,
+...)` with `UnsupportedTag`; accepting an opaque Succinct proof as a normal RGK
+receipt would overstate support. RGK has stack/VM support for the Toccata
+precompile, but not a native RISC0 prover or RGK RISC0 circuit family.
+
 ## Semantic Transition Statement
 
 `rgk-zk` also exposes `SemanticTransitionStatement`, a canonical 512-byte
@@ -32,7 +43,7 @@ It binds:
 
 * chain id
 * schema id
-* asset id
+* lineage-bound `asset_id` label
 * previous and new state digests
 * transition digest
 * continuation commitment
@@ -59,8 +70,8 @@ Toccata's `OpZkPrecompile`. The circuit constrains:
 
 * witness bytes equal the public semantic statement
 * chain tag and known chain value encoding
-* non-zero schema, asset, state, transition, continuation, lane, policy,
-  metadata, and owner commitments
+* non-zero schema, lineage-bound asset label, state, transition, continuation,
+  lane, policy, metadata, and owner commitments
 * previous/new owner commitments either match or carry non-zero handoff
   authorisation
 * previous and new state digests are different
@@ -82,13 +93,14 @@ into 9 BN254 field elements:
 * scan tag
 * epoch
 
-The private witness contains the view key and asset id. The circuit
+The private witness contains the view key and lineage-bound `asset_id` label.
+The circuit
 reconstructs and constrains:
 
 * `derive_blinded_lane_id(view_key, asset_id, epoch) == lane_id`
 * `RgkScanTag::derive(view_key, lane_id, epoch) == scan_tag`
 
-This proves the discovery relation without making the asset id or view key
+This proves the discovery relation without making the asset label or view key
 public. The e2e VM test executes this proof stack through the upstream Toccata
 VM.
 
@@ -99,11 +111,11 @@ extension of the same native relation. Its public input is:
 * `LANES` ordered lane nodes, each containing blinded lane id, scan tag, and
   epoch
 
-The private witness is still only the view key and asset id. The circuit
-reconstructs the native graph root and proves every public node was derived
-under the same hidden pair. The evidenced shape is a 2-node current/look-ahead
-graph, accepted by the upstream Toccata VM and required by local devnet
-evidence.
+The private witness is still only the view key and lineage-bound `asset_id`
+label. The circuit reconstructs the native graph root and proves every public
+node was derived under the same hidden pair. The evidenced shape is a 2-node
+current/look-ahead graph, accepted by the upstream Toccata VM and required by
+local devnet evidence.
 
 For arbitrary-size private lane graphs, `real-zk` includes
 `LaneGraphSegmentCircuit<const LANES>`. Its public input is:
@@ -114,12 +126,12 @@ For arbitrary-size private lane graphs, `real-zk` includes
 * `LANES` ordered lane nodes
 
 The circuit reconstructs `rgk:lane:graph-segment-root:v1`, proves every public
-node in the segment under the same hidden view key and asset id, and binds the
-segment into the previous root. A verifier can accept a larger graph by checking
-a contiguous sequence of segment proofs from `private_lane_graph_empty_root` to
-the advertised final root. The evidenced shape is a 2-node segment, accepted by
-the upstream Toccata VM, with local devnet evidence for a 2-segment / 4-node
-chain.
+node in the segment under the same hidden view key and lineage-bound `asset_id`
+label, and binds the segment into the previous root. A verifier can accept a
+larger graph by checking a contiguous sequence of segment proofs from
+`private_lane_graph_empty_root` to the advertised final root. The evidenced
+shape is a 2-node segment, accepted by the upstream Toccata VM, with local
+devnet evidence for a 2-segment / 4-node chain.
 
 This remains intentionally scoped: it proves arbitrary-size discovery via a
 sequence of bounded segment proofs, not one recursive graph proof, and it does
@@ -148,7 +160,7 @@ The circuit reconstructs and constrains:
 * non-zero outpoints, covenant ids, witness txids, confirmations, and encrypted
   notes
 * finalised new outpoint txid equals the transition witness txid
-* new allocations do not reuse closed spent outpoints
+* new allocations do not reuse spent outpoints
 
 The 1x1 shape is executed by the current local Toccata lifecycle through the
 supported-shape dispatch API. The 1x1, 2x2, generic 3x2, generic 4x2, and generic 4x4
@@ -185,7 +197,7 @@ used by `rgk-asset`; verifiers should treat that constructor as the canonical
 statement path. This proof is an audit transcript for large allocation sides and
 does not publish individual or segment amounts. It does not replace the fixed
 allocation-vector transition circuits, and it does not by itself prove
-cross-segment closed-seal non-reuse or arbitrary one-step allocation
+cross-segment spent-output non-reuse or arbitrary one-step allocation
 conservation in a single circuit.
 
 `AllocationConservationSegmentCircuit<const ALLOCS>` extends the transcript
@@ -255,8 +267,8 @@ complete native audit:
 * conservation running-total commitments link between segments and terminate at
   the final equality statement
 * the final equality counts match the transcript counts
-* the spent/new exclusion grid contains exactly one cell for every segment pair
-  and every cell binds the corresponding transcript roots and amount
+* the spent/new exclusion grid contains exactly one pair entry for every segment
+  pair and every pair entry binds the corresponding transcript roots and amount
   commitments
 
 The local devnet evidence now requires an `allocation audit bundle verified`
@@ -267,7 +279,7 @@ Groth16 proof lines.
 resolver, and indexer handoff. It binds:
 
 * the verified allocation audit report
-* the deterministic proof-cell manifest
+* the deterministic proof-entry manifest
 * each segment statement public-input byte string
 * each Toccata Groth16 stack tag
 * each compressed verifying key and proof
@@ -280,7 +292,7 @@ certificate body. Decoding rejects bad magic, trailing bytes, oversized blobs,
 and id/body mismatches before the proof verifier runs. Callers that already
 hold the bundle can check the certificate against it; handoff consumers can also
 verify directly from the canonical bytes. The self-contained verifier rebuilds
-the typed manifest from proof-cell public inputs, checks deterministic cell
+the typed manifest from proof-entry public inputs, checks deterministic entry
 ordering, recomputes the bundle report, deserializes every Groth16 stack,
 verifies every proof, and then recomputes the certificate id. The certificate is
 still a proof bundle, not a single recursive proof.
@@ -313,9 +325,13 @@ continuation, then selects either:
 The segmented strategy uses two-allocation transcript/conservation segments,
 a final equality proof, and the complete spent/new exclusion grid. Its strategy
 commitment binds the continuation commitment, supplies, counts, segment
-capacity, segment counts, exclusion-cell count, and total Groth16 proof-cell
+capacity, segment counts, exclusion-pair count, and total Groth16 proof-entry
 count. It rejects burns and empty sides because the current audit bundle proves
 spent/new conservation, not authorised deflation.
+For handoff between wallet, prover, and support tooling, wrap the plan in
+`RgkProductionAllocationStrategyRecord` and persist its checked canonical bytes;
+decoding recomputes the continuation report, selected strategy, and strategy
+commitment before accepting the record.
 
 Do not split by spending only part of the allocation set: RGK transitions
 consume the full previous allocation state. If RGK later needs a single
@@ -332,9 +348,10 @@ Unconstrained witness-selected image ids are invalid.
 ## Not Yet Proven
 
 * single recursive proof for arbitrary-size allocation conservation
-* single recursive proof for arbitrary-size closed-seal reuse rejection
+* single recursive proof for arbitrary-size spent-output reuse rejection
 * single recursive proof for arbitrary-size private-lane graph discovery
 * arbitrary one-step unbounded two-phase continuation consistency in-circuit
+* RGK-native RISC0 proof construction and circuit witnesses
 
 The resolver and native validator remain the semantic binding layer for
 allocation-vector arities that do not yet have a dedicated circuit.

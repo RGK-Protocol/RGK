@@ -1,7 +1,7 @@
 #![allow(rustdoc::broken_intra_doc_links, rustdoc::private_intra_doc_links)]
 //! # rgk-kaspa
 //!
-//! Kaspa chain backend: trait, types, errors, and adapters.
+//! Kaspa chain backend: trait, types, and errors.
 //!
 //! The single seam between the RGK resolver/indexer and any Kaspa network
 //! access. Implementations include:
@@ -11,7 +11,7 @@
 //! * [`HttpBackend`] — small JSON-RPC health/read probe for a live `kaspad`
 //!   daemon (requires the `http` feature, which pulls in `ureq` +
 //!   `serde_json`). It does not implement [`KaspaChainBackend`].
-//! * [`WrpcBackend`] — opt-in wRPC adapter for live Toccata nodes. It owns a
+//! * [`WrpcBackend`] — opt-in wRPC backend for live Toccata nodes. It owns a
 //!   real `KaspaRpcClient` and an observed-spend cache fed by the indexer or
 //!   harness; arbitrary spend discovery remains an indexer/listener concern.
 //!

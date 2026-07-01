@@ -1,12 +1,11 @@
 #![allow(rustdoc::broken_intra_doc_links, rustdoc::private_intra_doc_links)]
 //! # rgk-asset semantics
 //!
-//! This crate exposes RGK's native asset grammar and lane validation. It is not
-//! an adapter for another client-side asset runtime.
+//! This crate exposes RGK's native asset grammar and lane validation.
 //!
-//! RGK is a Kaspa-native client-side asset protocol. It defines client-side
-//! validation, receipt evidence, and seal discipline over Kaspa Toccata
-//! covenant lineages.
+//! RGK is a Kaspa-native asset grammar over Toccata covenant lineages. It
+//! defines client-side validation, receipt evidence, and covenant-output
+//! discipline over Kaspa Toccata covenant lineages.
 
 #![forbid(unsafe_code)]
 #![cfg_attr(not(feature = "std"), no_std)]
@@ -27,7 +26,7 @@ pub use native::{
     RgkAllocationProofShape, RgkAllocationTranscriptSide, RgkAssetError, RgkAssetId,
     RgkAssetIdDerivation, RgkAssetIssue, RgkBurnProof, RgkCollectionId,
     RgkContinuationAllocationShape, RgkContinuationCommitment, RgkContinuationPlan,
-    RgkContinuationReport, RgkContinuationShapeRoot, RgkCovenantSeal, RgkFinalizedContinuation,
+    RgkContinuationReport, RgkContinuationShapeRoot, RgkCovenantAnchor, RgkFinalizedContinuation,
     RgkFinalizedProductionAllocationStrategyTransfer, RgkFinalizedProductionZkTransfer,
     RgkIssueReport, RgkLane, RgkLaneGraphNode, RgkLaneState, RgkLaneStateInput,
     RgkMetadataCommitment, RgkNftBurnContinuationReport, RgkNftBurnReport,
@@ -37,8 +36,9 @@ pub use native::{
     RgkNftTokenSpec, RgkNftTransferReport, RgkNullifier, RgkOwnerCommitment, RgkOwnerDescriptor,
     RgkPolicyCommitment, RgkPrivacyPolicy, RgkProductionAllocationStrategy,
     RgkProductionAllocationStrategyCommitment, RgkProductionAllocationStrategyPlan,
-    RgkProductionZkTransferPlan, RgkProofPolicy, RgkReceiptCommitment, RgkScanTag, RgkSchemaId,
-    RgkStateDigest, RgkTransition, RgkTransitionDigest, RgkTransitionReport,
+    RgkProductionAllocationStrategyRecord, RgkProductionZkTransferPlan, RgkProofPolicy,
+    RgkReceiptCommitment, RgkScanTag, RgkSchemaId, RgkStateDigest, RgkTransition,
+    RgkTransitionDigest, RgkTransitionReport, RGK_PRODUCTION_ALLOCATION_STRATEGY_RECORD_TAG,
     RGK_PRODUCTION_ZK_ALLOCATION_MAX_NEW, RGK_PRODUCTION_ZK_ALLOCATION_MAX_SPENT,
     RGK_PRODUCTION_ZK_ALLOCATION_SHAPES, RGK_PRODUCTION_ZK_ALLOCATION_SHAPE_LABELS,
     RGK_SEGMENTED_ALLOCATION_AUDIT_SEGMENT_CAPACITY,

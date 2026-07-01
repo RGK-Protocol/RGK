@@ -13,3 +13,9 @@ rgk-receipt.workspace = true
 rgk-covenant.workspace = true
 thiserror.workspace = true
 sha2.workspace = true
+kaspa-hashes = { path = "../../../rusty-kaspa/crypto/hashes", default-features = false }
+bitflags = "2"
+
+[dev-dependencies]
+borsh = "1.7"
+kaspa-consensus-core = { path = "../../../rusty-kaspa/consensus/core", default-features = false }

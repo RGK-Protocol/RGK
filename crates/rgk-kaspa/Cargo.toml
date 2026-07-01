@@ -5,7 +5,7 @@ edition.workspace = true
 rust-version.workspace = true
 license.workspace = true
 repository.workspace = true
-description = "RGK Kaspa chain backend trait, local-node adapter, and typed errors"
+description = "RGK Kaspa chain backend trait, local-node backend, and typed errors"
 
 [dependencies]
 rgk-core.workspace = true

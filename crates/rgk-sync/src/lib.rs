@@ -226,9 +226,9 @@ impl<'a, B: ScanBackend, C: ScanCursorStore> ScanService<'a, B, C> {
     }
 }
 
-/// Adapter that exposes any [`KaspaChainBackend`] as indexer rebuild evidence.
+/// Source that exposes any [`KaspaChainBackend`] as indexer rebuild evidence.
 ///
-/// The adapter reads only already-observed spend facts. It does not claim to
+/// The source reads only already-observed spend facts. It does not claim to
 /// discover arbitrary historical transitions; callers still provide the
 /// expected RGK rebuild plan.
 pub struct KaspaRebuildSource<'a, B: KaspaChainBackend + ?Sized> {

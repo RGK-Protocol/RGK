@@ -23,9 +23,10 @@
 //!    — the byte sequence that gets hashed into the genesis output's
 //!    `script_public_key`. The script enforces (see
 //!    [`docs/COVENANT-SPEC.md`](../../docs/COVENANT-SPEC.md) for the full spec):
-//!    * the spend is authorised by input 0
-//!    * output count is exactly 1 and the covenant output is at index 0
-//!    * the covenant output's `script_public_key` matches the spent UTXO
+//!    * the spend is authorised by the configured covenant input
+//!    * output count matches the configured continuation policy
+//!    * every configured covenant output keeps the spent UTXO's script public
+//!      key
 //!    * input/output covenant ids are preserved
 //!    * the spending transaction payload has the exact RGK state length
 //!    * the payload's chain, lineage, asset, policy and proof mode match
@@ -65,6 +66,7 @@ use alloc::string::{String, ToString};
 use alloc::vec;
 use alloc::vec::Vec;
 
+use kaspa_hashes::{Hasher, HasherBase};
 use rgk_core::{
     domain_hash, lineage_id, Bytes32, Canonical, DecodeError, DomainTag, KaspaChainId,
     KaspaCovenantId, KaspaOutpoint, Reader, Writer, ENCODING_VERSION,
@@ -77,8 +79,8 @@ use thiserror::Error;
 /// cross-crate reuse in the script builder and the covenant-id recipe.
 pub const COVENANT_STATE_TAG: &[u8; 12] = b"rgk:kov:0\0\0\0";
 
-/// Domain tag used by [`compute_covenant_id`]. Matches the recipe in
-/// `kaspa_consensus_core::hashing::covenant_id::covenant_id`.
+/// Historical RGK covenant-id tag. Current [`compute_covenant_id`] follows the
+/// upstream Toccata `kaspa_hashes::CovenantID` domain instead.
 pub const COVENANT_ID_TAG: &[u8; 12] = b"rgk:cid:0\0\0\0";
 pub const ADVANCED_COVENANT_EXECUTION_RECORD_TAG: &[u8; 12] = b"rgk:ace:0\0\0\0";
 
@@ -873,24 +875,44 @@ pub fn compute_covenant_id(
     genesis_outpoint: KaspaOutpoint,
     authorized_outputs: &[(u32, u64, u16, Vec<u8>)],
 ) -> KaspaCovenantId {
-    let mut hasher = Sha256::new();
-    hasher.update(COVENANT_ID_TAG);
-    hasher.update(&genesis_outpoint.transaction_id);
-    hasher.update(&genesis_outpoint.index.to_le_bytes());
-    hasher.update((authorized_outputs.len() as u32).to_le_bytes());
+    let mut hasher = kaspa_hashes::CovenantID::new();
+    hasher
+        .update(genesis_outpoint.transaction_id)
+        .write_u32(genesis_outpoint.index)
+        .write_len(authorized_outputs.len());
     for (idx, value, spk_version, spk_bytes) in authorized_outputs {
-        hasher.update(&idx.to_le_bytes());
-        hasher.update(&value.to_le_bytes());
-        hasher.update(&spk_version.to_le_bytes());
-        // var_bytes: u32 length prefix then bytes
-        hasher.update(&(spk_bytes.len() as u32).to_le_bytes());
-        hasher.update(spk_bytes);
+        hasher
+            .write_u32(*idx)
+            .write_u64(*value)
+            .write_u16(*spk_version)
+            .write_var_bytes(spk_bytes);
     }
-    let out = hasher.finalize();
-    let mut bytes = [0u8; 32];
-    bytes.copy_from_slice(&out);
-    bytes
+    hasher.finalize().as_bytes()
 }
+
+trait CovenantHasherExt: HasherBase {
+    fn write_len(&mut self, len: usize) -> &mut Self {
+        self.update((len as u64).to_le_bytes())
+    }
+
+    fn write_u16(&mut self, value: u16) -> &mut Self {
+        self.update(value.to_le_bytes())
+    }
+
+    fn write_u32(&mut self, value: u32) -> &mut Self {
+        self.update(value.to_le_bytes())
+    }
+
+    fn write_u64(&mut self, value: u64) -> &mut Self {
+        self.update(value.to_le_bytes())
+    }
+
+    fn write_var_bytes(&mut self, bytes: &[u8]) -> &mut Self {
+        self.write_len(bytes.len()).update(bytes)
+    }
+}
+
+impl<T: HasherBase> CovenantHasherExt for T {}
 
 /// Compute the lineage id for a covenant genesis. This is a stable identifier
 /// for "all covenant UTXOs that descend from the same genesis outpoint +
@@ -939,6 +961,22 @@ pub mod opcodes {
     pub const OP_OUTPUT_COVENANT_ID: u8 = 0xd5;
     /// OpOutputAuthorizingInput — pushes the k-th output's authorising input.
     pub const OP_OUTPUT_AUTHORIZING_INPUT: u8 = 0xd6;
+    /// OpAuthOutputCount — pushes the number of outputs directly authorised by
+    /// a transaction input.
+    pub const OP_AUTH_OUTPUT_COUNT: u8 = 0xcb;
+    /// OpAuthOutputIdx — pushes the absolute index of the k-th output directly
+    /// authorised by a transaction input.
+    pub const OP_AUTH_OUTPUT_IDX: u8 = 0xcc;
+    /// OpCovInputCount — pushes the number of inputs carrying a covenant id.
+    pub const OP_COV_INPUT_COUNT: u8 = 0xd0;
+    /// OpCovInputIdx — pushes the absolute index of the k-th input carrying a
+    /// covenant id.
+    pub const OP_COV_INPUT_IDX: u8 = 0xd1;
+    /// OpCovOutputCount — pushes the number of outputs carrying a covenant id.
+    pub const OP_COV_OUTPUT_COUNT: u8 = 0xd2;
+    /// OpCovOutputIdx — pushes the absolute index of the k-th output carrying a
+    /// covenant id.
+    pub const OP_COV_OUTPUT_IDX: u8 = 0xd3;
     /// OpZkPrecompile (0xa6) — Toccata ZK precompile. Top stack: tag byte.
     pub const OP_ZK_PRECOMPILE: u8 = 0xa6;
     /// OpDup (0x76), OpEqual (0x87), OpEqualVerify (0x88), OpDrop (0x75).
@@ -949,6 +987,142 @@ pub mod opcodes {
     pub const OP_HASH160: u8 = 0xa9;
     pub const OP_CHECKSIG: u8 = 0xac;
     pub const OP_ROT: u8 = 0x7b;
+}
+
+/// Exact continuation-output shape enforced by a generated Toccata covenant
+/// script.
+///
+/// The default policy is the historical singleton form: input 0 authorises
+/// output 0 and the spending transaction has exactly one output. A wider policy
+/// can authorise multiple covenant continuation outputs while leaving explicit
+/// non-covenant outputs, such as fee/change outputs, in the same transaction.
+/// Those extra outputs are admitted only by `exact_output_count`; their economic
+/// meaning remains part of RGK receipt/resolver validation.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct CovenantContinuationPolicy {
+    pub authorizing_input: u16,
+    pub exact_output_count: u32,
+    pub covenant_output_indices: Vec<u32>,
+}
+
+impl CovenantContinuationPolicy {
+    /// Historical RGK shape: one authorising covenant input and one
+    /// continuation output at index 0.
+    pub fn singleton() -> Self {
+        Self {
+            authorizing_input: 0,
+            exact_output_count: 1,
+            covenant_output_indices: vec![0],
+        }
+    }
+
+    pub fn new(
+        authorizing_input: u16,
+        exact_output_count: u32,
+        covenant_output_indices: Vec<u32>,
+    ) -> Result<Self, CovenantError> {
+        let policy = Self {
+            authorizing_input,
+            exact_output_count,
+            covenant_output_indices,
+        };
+        policy.validate()?;
+        Ok(policy)
+    }
+
+    pub fn validate(&self) -> Result<(), CovenantError> {
+        if self.exact_output_count == 0 {
+            return Err(CovenantError::ScriptBuild(
+                "continuation policy output count must be non-zero".into(),
+            ));
+        }
+        if self.covenant_output_indices.is_empty() {
+            return Err(CovenantError::ScriptBuild(
+                "continuation policy requires at least one covenant output".into(),
+            ));
+        }
+
+        let mut previous = None;
+        for &idx in &self.covenant_output_indices {
+            if idx >= self.exact_output_count {
+                return Err(CovenantError::ScriptBuild(format!(
+                    "continuation covenant output index {idx} is outside exact output count {}",
+                    self.exact_output_count
+                )));
+            }
+            if let Some(prev) = previous {
+                if idx <= prev {
+                    return Err(CovenantError::ScriptBuild(
+                        "continuation covenant output indices must be strictly increasing".into(),
+                    ));
+                }
+            }
+            previous = Some(idx);
+        }
+
+        Ok(())
+    }
+}
+
+impl Default for CovenantContinuationPolicy {
+    fn default() -> Self {
+        Self::singleton()
+    }
+}
+
+/// Shared covenant shape enforced by a redeem script that can execute on every
+/// input carrying the same covenant id.
+///
+/// This policy is the local on-chain shape for merge and batch transitions: the
+/// same script validates the global covenant input/output counts and checks
+/// every shared covenant output, independent of which covenant input is
+/// currently executing the script.
+#[derive(Copy, Clone, Debug, PartialEq, Eq)]
+pub struct CovenantSharedContinuationPolicy {
+    pub covenant_input_count: u32,
+    pub covenant_output_count: u32,
+    pub exact_output_count: u32,
+}
+
+impl CovenantSharedContinuationPolicy {
+    pub fn new(
+        covenant_input_count: u32,
+        covenant_output_count: u32,
+        exact_output_count: u32,
+    ) -> Result<Self, CovenantError> {
+        let policy = Self {
+            covenant_input_count,
+            covenant_output_count,
+            exact_output_count,
+        };
+        policy.validate()?;
+        Ok(policy)
+    }
+
+    pub fn validate(&self) -> Result<(), CovenantError> {
+        if self.covenant_input_count == 0 {
+            return Err(CovenantError::ScriptBuild(
+                "shared continuation policy requires at least one covenant input".into(),
+            ));
+        }
+        if self.covenant_output_count == 0 {
+            return Err(CovenantError::ScriptBuild(
+                "shared continuation policy requires at least one covenant output".into(),
+            ));
+        }
+        if self.exact_output_count == 0 {
+            return Err(CovenantError::ScriptBuild(
+                "shared continuation policy output count must be non-zero".into(),
+            ));
+        }
+        if self.covenant_output_count > self.exact_output_count {
+            return Err(CovenantError::ScriptBuild(format!(
+                "shared continuation covenant output count {} exceeds exact output count {}",
+                self.covenant_output_count, self.exact_output_count
+            )));
+        }
+        Ok(())
+    }
 }
 
 /// A high-level specification of what the RGK Toccata covenant enforces.
@@ -972,18 +1146,34 @@ impl CovenantSpec {
     /// 1. The covenant spend is authorised by input 0.
     /// 2. The covenant-locked output is at index 0 of the spending tx, and
     ///    the spending tx has exactly one output.
-    /// 2. The covenant-locked output's `script_public_key` equals the SPK
+    /// 3. The covenant-locked output's `script_public_key` equals the SPK
     ///    that wraps this redeem script (i.e. lineage is preserved).
-    /// 3. The output covenant id equals the input covenant id and output 0
+    /// 4. The output covenant id equals the input covenant id and output 0
     ///    records authorising input 0.
-    /// 4. The spending transaction payload has the exact [`CovenantState`]
+    /// 5. The spending transaction payload has the exact [`CovenantState`]
     ///    length and preserves chain id, lineage id, RGK asset id, receipt
     ///    policy and proof mode.
+    ///
+    /// For multi-output continuation or explicit fee/change shapes, use
+    /// [`build_script_for_policy`](Self::build_script_for_policy).
     ///
     /// The script bytes are intentionally compact and human-auditable. The
     /// opcodes used here are stable in the rusty-kaspa toccata branch; see
     /// `docs/COVENANT-SPEC.md` for the full annotated disassembly.
     pub fn build_script(&self) -> Result<Vec<u8>, CovenantError> {
+        self.build_script_for_policy(&CovenantContinuationPolicy::singleton())
+    }
+
+    /// Build a Toccata covenant redeem script for an explicit continuation
+    /// policy. This generalises the default singleton script without weakening
+    /// its checks: every listed covenant output must preserve the input script
+    /// public key, preserve the covenant id, and record the configured
+    /// authorising input.
+    pub fn build_script_for_policy(
+        &self,
+        policy: &CovenantContinuationPolicy,
+    ) -> Result<Vec<u8>, CovenantError> {
+        policy.validate()?;
         use opcodes::*;
         let mut s = Vec::new();
 
@@ -1005,35 +1195,37 @@ impl CovenantSpec {
         }
 
         // ---- Section A: authorised covenant input ----
-        // This redeem script is valid only when it is executing for input 0.
+        // This redeem script is valid only for the configured input index.
         s.push(OP_TX_INPUT_INDEX);
-        push_script_i64(&mut s, 0);
+        push_script_i64(&mut s, i64::from(policy.authorizing_input));
         s.push(OP_EQUAL_VERIFY);
 
         // ---- Section B: covenant-output-shape check ----
-        // Exactly one output: the continuation covenant cell at index 0.
+        // Exact total output count prevents unbounded unchecked outputs.
         s.push(OP_TX_OUTPUT_COUNT);
-        push_script_i64(&mut s, 1);
+        push_script_i64(&mut s, i64::from(policy.exact_output_count));
         s.push(OP_EQUAL_VERIFY);
 
-        // The continuation output must keep the same P2SH script public key.
-        push_script_i64(&mut s, 0);
-        s.push(OP_TX_INPUT_SPK);
-        push_script_i64(&mut s, 0);
-        s.push(OP_TX_OUTPUT_SPK);
-        s.push(OP_EQUAL_VERIFY);
+        for &output_index in &policy.covenant_output_indices {
+            // Each continuation output must keep the same P2SH script public key.
+            push_script_i64(&mut s, i64::from(policy.authorizing_input));
+            s.push(OP_TX_INPUT_SPK);
+            push_script_i64(&mut s, i64::from(output_index));
+            s.push(OP_TX_OUTPUT_SPK);
+            s.push(OP_EQUAL_VERIFY);
 
-        // The covenant id must be preserved, and output 0 must be authorised
-        // by input 0.
-        push_script_i64(&mut s, 0);
-        s.push(OP_INPUT_COVENANT_ID);
-        push_script_i64(&mut s, 0);
-        s.push(OP_OUTPUT_COVENANT_ID);
-        s.push(OP_EQUAL_VERIFY);
-        push_script_i64(&mut s, 0);
-        s.push(OP_OUTPUT_AUTHORIZING_INPUT);
-        push_script_i64(&mut s, 0);
-        s.push(OP_EQUAL_VERIFY);
+            // The covenant id must be preserved on every covenant output, and
+            // every such output must record the configured authorising input.
+            push_script_i64(&mut s, i64::from(policy.authorizing_input));
+            s.push(OP_INPUT_COVENANT_ID);
+            push_script_i64(&mut s, i64::from(output_index));
+            s.push(OP_OUTPUT_COVENANT_ID);
+            s.push(OP_EQUAL_VERIFY);
+            push_script_i64(&mut s, i64::from(output_index));
+            s.push(OP_OUTPUT_AUTHORIZING_INPUT);
+            push_script_i64(&mut s, i64::from(policy.authorizing_input));
+            s.push(OP_EQUAL_VERIFY);
+        }
 
         // ---- Section C: payload-shape check ----
         // Payload length must equal the canonical CovenantState size.
@@ -1076,6 +1268,96 @@ impl CovenantSpec {
         // is enforced by the engine, not by signatures). We end with OP_TRUE
         // so any remaining stack is accepted by the engine.
         s.push(0x51); // OP_TRUE
+        Ok(s)
+    }
+
+    /// Build a redeem script for merge/batch-style continuation where the same
+    /// covenant script must execute on every input carrying the same covenant
+    /// id. The script checks shared covenant input/output counts through
+    /// Toccata's covenant-context opcodes, then checks every shared covenant
+    /// output against the current input's script public key and covenant id.
+    pub fn build_script_for_shared_policy(
+        &self,
+        policy: &CovenantSharedContinuationPolicy,
+    ) -> Result<Vec<u8>, CovenantError> {
+        policy.validate()?;
+        use opcodes::*;
+        let mut s = Vec::new();
+
+        let payload_template = CovenantState {
+            version: ENCODING_VERSION,
+            chain_id: self.chain_id,
+            lineage_id: self.lineage_id,
+            asset_id: self.asset_id,
+            current_state_digest: [0u8; 32],
+            receipt_policy: self.receipt_policy,
+            genesis_proof_mode: self.genesis_proof_mode,
+            replay_marker: [0u8; 32],
+        }
+        .encode_payload();
+        if payload_template.len() != expected_payload_len() as usize {
+            return Err(CovenantError::ScriptBuild(
+                "payload length template mismatch".into(),
+            ));
+        }
+
+        s.push(OP_TX_OUTPUT_COUNT);
+        push_script_i64(&mut s, i64::from(policy.exact_output_count));
+        s.push(OP_EQUAL_VERIFY);
+
+        push_current_input_covenant_id(&mut s);
+        s.push(OP_COV_INPUT_COUNT);
+        push_script_i64(&mut s, i64::from(policy.covenant_input_count));
+        s.push(OP_EQUAL_VERIFY);
+
+        push_current_input_covenant_id(&mut s);
+        s.push(OP_COV_OUTPUT_COUNT);
+        push_script_i64(&mut s, i64::from(policy.covenant_output_count));
+        s.push(OP_EQUAL_VERIFY);
+
+        for output_ordinal in 0..policy.covenant_output_count {
+            push_current_input_spk(&mut s);
+            push_shared_covenant_output_index(&mut s, output_ordinal);
+            s.push(OP_TX_OUTPUT_SPK);
+            s.push(OP_EQUAL_VERIFY);
+
+            push_current_input_covenant_id(&mut s);
+            push_shared_covenant_output_index(&mut s, output_ordinal);
+            s.push(OP_OUTPUT_COVENANT_ID);
+            s.push(OP_EQUAL_VERIFY);
+        }
+
+        let payload_len: u32 = expected_payload_len();
+        s.push(OP_TX_PAYLOAD_LEN);
+        push_script_i64(&mut s, payload_len as i64);
+        s.push(OP_EQUAL_VERIFY);
+
+        push_payload_slice_equals(
+            &mut s,
+            0,
+            PAYLOAD_STATIC_PREFIX_END,
+            &payload_template[0..PAYLOAD_STATIC_PREFIX_END],
+        );
+        push_payload_slice_equals(
+            &mut s,
+            PAYLOAD_LINEAGE_START,
+            PAYLOAD_LINEAGE_END,
+            &payload_template[PAYLOAD_LINEAGE_START..PAYLOAD_LINEAGE_END],
+        );
+        push_payload_slice_equals(
+            &mut s,
+            PAYLOAD_CONTRACT_START,
+            PAYLOAD_CONTRACT_END,
+            &payload_template[PAYLOAD_CONTRACT_START..PAYLOAD_CONTRACT_END],
+        );
+        push_payload_slice_equals(
+            &mut s,
+            PAYLOAD_POLICY_MODE_START,
+            PAYLOAD_POLICY_MODE_END,
+            &payload_template[PAYLOAD_POLICY_MODE_START..PAYLOAD_POLICY_MODE_END],
+        );
+
+        s.push(0x51);
         Ok(s)
     }
 
@@ -1184,6 +1466,22 @@ fn push_payload_slice_equals(out: &mut Vec<u8>, start: usize, end: usize, expect
     out.push(opcodes::OP_EQUAL_VERIFY);
 }
 
+fn push_current_input_covenant_id(out: &mut Vec<u8>) {
+    out.push(opcodes::OP_TX_INPUT_INDEX);
+    out.push(opcodes::OP_INPUT_COVENANT_ID);
+}
+
+fn push_current_input_spk(out: &mut Vec<u8>) {
+    out.push(opcodes::OP_TX_INPUT_INDEX);
+    out.push(opcodes::OP_TX_INPUT_SPK);
+}
+
+fn push_shared_covenant_output_index(out: &mut Vec<u8>, output_ordinal: u32) {
+    push_current_input_covenant_id(out);
+    push_script_i64(out, i64::from(output_ordinal));
+    out.push(opcodes::OP_COV_OUTPUT_IDX);
+}
+
 /// Push a length-prefixed data blob onto the script. Matches Kaspa's
 /// `OP_PUSHBYTES_N` / `OP_PUSHDATA1/2/4` rules.
 pub fn push_data(out: &mut Vec<u8>, data: &[u8]) {
@@ -1206,8 +1504,8 @@ pub fn push_data(out: &mut Vec<u8>, data: &[u8]) {
     }
 }
 
-/// Compatibility helper for callers that still hold a [`CovenantState`] while
-/// computing the consensus covenant id.
+/// Call-site migration helper for callers that still hold a [`CovenantState`]
+/// while computing the consensus covenant id.
 ///
 /// The consensus id is derived from the genesis outpoint and authorised output
 /// descriptors only; the state argument is retained so older call sites can move
@@ -1668,6 +1966,95 @@ mod tests {
     }
 
     #[test]
+    fn default_continuation_policy_matches_singleton_policy_script() {
+        let s = sample_spec();
+        let default_script = s.build_script().expect("default script");
+        let policy_script = s
+            .build_script_for_policy(&CovenantContinuationPolicy::singleton())
+            .expect("singleton policy script");
+        assert_eq!(default_script, policy_script);
+    }
+
+    #[test]
+    fn continuation_policy_supports_fanout_with_explicit_extra_output() {
+        let s = sample_spec();
+        let policy = CovenantContinuationPolicy::new(0, 3, vec![0, 2]).unwrap();
+        let script = s.build_script_for_policy(&policy).expect("policy script");
+
+        assert!(!script.is_empty());
+        assert!(script.len() > s.build_script().unwrap().len());
+        assert_eq!(policy.authorizing_input, 0);
+        assert_eq!(policy.exact_output_count, 3);
+        assert_eq!(policy.covenant_output_indices, vec![0, 2]);
+    }
+
+    #[test]
+    fn continuation_policy_fails_closed_on_ambiguous_shapes() {
+        assert!(matches!(
+            CovenantContinuationPolicy::new(0, 0, vec![0]),
+            Err(CovenantError::ScriptBuild(message))
+                if message.contains("output count must be non-zero")
+        ));
+        assert!(matches!(
+            CovenantContinuationPolicy::new(0, 2, vec![]),
+            Err(CovenantError::ScriptBuild(message))
+                if message.contains("at least one covenant output")
+        ));
+        assert!(matches!(
+            CovenantContinuationPolicy::new(0, 2, vec![0, 0]),
+            Err(CovenantError::ScriptBuild(message))
+                if message.contains("strictly increasing")
+        ));
+        assert!(matches!(
+            CovenantContinuationPolicy::new(0, 2, vec![0, 2]),
+            Err(CovenantError::ScriptBuild(message))
+                if message.contains("outside exact output count")
+        ));
+    }
+
+    #[test]
+    fn shared_continuation_policy_supports_merge_and_batch_shapes() {
+        let s = sample_spec();
+        let merge = CovenantSharedContinuationPolicy::new(2, 1, 2).unwrap();
+        let batch = CovenantSharedContinuationPolicy::new(2, 2, 3).unwrap();
+
+        let merge_script = s
+            .build_script_for_shared_policy(&merge)
+            .expect("merge script");
+        let batch_script = s
+            .build_script_for_shared_policy(&batch)
+            .expect("batch script");
+
+        assert!(!merge_script.is_empty());
+        assert!(!batch_script.is_empty());
+        assert_ne!(merge_script, batch_script);
+    }
+
+    #[test]
+    fn shared_continuation_policy_fails_closed_on_invalid_counts() {
+        assert!(matches!(
+            CovenantSharedContinuationPolicy::new(0, 1, 1),
+            Err(CovenantError::ScriptBuild(message))
+                if message.contains("at least one covenant input")
+        ));
+        assert!(matches!(
+            CovenantSharedContinuationPolicy::new(1, 0, 1),
+            Err(CovenantError::ScriptBuild(message))
+                if message.contains("at least one covenant output")
+        ));
+        assert!(matches!(
+            CovenantSharedContinuationPolicy::new(1, 1, 0),
+            Err(CovenantError::ScriptBuild(message))
+                if message.contains("output count must be non-zero")
+        ));
+        assert!(matches!(
+            CovenantSharedContinuationPolicy::new(1, 2, 1),
+            Err(CovenantError::ScriptBuild(message))
+                if message.contains("exceeds exact output count")
+        ));
+    }
+
+    #[test]
     fn expected_payload_len_is_stable() {
         // 12 tag + 2 version + 2 chain + 32 lineage + 32 asset +
         // 32 digest + 2 policy + 2 mode + 32 replay marker.
@@ -1742,7 +2129,13 @@ mod tests {
         assert_eq!(opcodes::OP_TX_INPUT_SPK, 0xbf);
         assert_eq!(opcodes::OP_TX_OUTPUT_SPK, 0xc3);
         assert_eq!(opcodes::OP_TX_PAYLOAD_LEN, 0xc4);
+        assert_eq!(opcodes::OP_AUTH_OUTPUT_COUNT, 0xcb);
+        assert_eq!(opcodes::OP_AUTH_OUTPUT_IDX, 0xcc);
         assert_eq!(opcodes::OP_INPUT_COVENANT_ID, 0xcf);
+        assert_eq!(opcodes::OP_COV_INPUT_COUNT, 0xd0);
+        assert_eq!(opcodes::OP_COV_INPUT_IDX, 0xd1);
+        assert_eq!(opcodes::OP_COV_OUTPUT_COUNT, 0xd2);
+        assert_eq!(opcodes::OP_COV_OUTPUT_IDX, 0xd3);
         assert_eq!(opcodes::OP_OUTPUT_COVENANT_ID, 0xd5);
         assert_eq!(opcodes::OP_OUTPUT_AUTHORIZING_INPUT, 0xd6);
     }

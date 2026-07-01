@@ -11,8 +11,11 @@
 #![cfg(feature = "live-kaspa-wrpc")]
 
 use std::net::{TcpStream, ToSocketAddrs};
+#[cfg(feature = "persistent-indexer")]
 use std::path::PathBuf;
-use std::time::{Duration, SystemTime, UNIX_EPOCH};
+use std::time::Duration;
+#[cfg(feature = "persistent-indexer")]
+use std::time::{SystemTime, UNIX_EPOCH};
 
 use kaspa_rpc_core::api::rpc::RpcApi;
 use kaspa_wrpc_client::prelude::{NetworkId, NetworkType};

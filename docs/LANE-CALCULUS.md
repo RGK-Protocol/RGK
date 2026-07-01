@@ -1,7 +1,13 @@
 # Lane Calculus
 
 This document defines the native RGK asset, lane, privacy, and continuation
-model. RGK is inspired by RGB, but RGB is not runtime authority.
+model.
+
+## Identity
+
+Canonical asset identity is the Kaspa covenant lineage / lane. `asset_id` is
+native label material committed into state, receipts, and covenant payloads. It
+is not an external contract id and does not replace the lineage as identity.
 
 ## Native Asset Grammar
 
@@ -11,7 +17,7 @@ Canonical hot-path types:
 RgkAssetIssue
 RgkAllocation
 RgkTransition
-RgkCovenantSeal
+RgkCovenantAnchor
 RgkStateDigest
 RgkTransitionDigest
 RgkReceipt
@@ -26,22 +32,22 @@ Issue validation checks:
 * chain and schema id are native RGK values
 * total supply is positive
 * allocations are positive
-* allocation seals are unique
-* allocation seals belong to the issue chain
+* allocation covenant outputs are unique
+* allocation covenant outputs belong to the issue chain
 * proof policy is constrained and committed
 
 Transition validation checks:
 
 * previous allocation set matches the previous state digest
 * next allocation set conserves supply
-* closed seals cannot be reused
+* spent covenant outputs cannot be reused
 * no-op transitions are rejected
 * transition digest binds old state, new state, witness txid, ordered inputs,
   ordered outputs, proof policy, privacy mode, and lane id
 
 State digest binds:
 
-* asset id
+* lineage-bound asset label
 * total supply
 * allocation root
 * policy commitment
@@ -60,7 +66,7 @@ pub enum LanePrivacyPolicy {
 
 Default: `PrivateLane`.
 
-Public observers should not learn asset id, amount, owner, recipient, public
+Public observers should not learn asset label, amount, owner, recipient, public
 lane graph, or plaintext proof policy for private lanes. They should see
 opaque commitments unless `PublicLineage` is explicitly selected.
 
@@ -80,13 +86,14 @@ Protocol fields:
 the right view key can discover its lane. A wrong view key computes a different
 tag and cannot link the lane.
 
-`RgkNullifier::derive(spend_secret, seal)` is stable for the spend but does
-not reveal the lane id.
+`RgkNullifier::derive(spend_secret, covenant_anchor)` is stable for the spend
+but does not reveal the lane id.
 
 `RgkLaneGraphNode` and `derive_private_lane_graph_root` commit to an ordered
 set of lane nodes with the native `rgk:lane:graph-root:v1` domain. The current
 Groth16 graph proof is bounded: local devnet evidence proves a 2-node
-current/look-ahead graph under one hidden view key and asset id.
+current/look-ahead graph under one hidden view key and lineage-bound asset
+label.
 
 `private_lane_graph_empty_root` and `extend_private_lane_graph_root` define the
 rolling root used by segmented graph proofs. Each segment proof is bounded, but
@@ -109,7 +116,7 @@ pub enum RgkProofPolicy {
 Dynamic image ids are allowed only when constrained by a committed
 `ImageIdPolicy`. Unconstrained witness-selected image ids are rejected.
 
-## Two-Phase Continuation Seal
+## Two-Phase Continuation Output
 
 The continuation model must avoid circular txid dependency.
 
@@ -121,7 +128,7 @@ Phase 1:
 
 Phase 2:
 
-* `RgkContinuationPlan::finalize` finalises the continuation seal after the
+* `RgkContinuationPlan::finalize` finalises the continuation output after the
   txid exists
 * finalisation binds the actual txid by creating a normal `RgkTransition`
 * receipts carry the phase-1 commitment
@@ -131,8 +138,8 @@ Phase 2:
 
 Implemented tests:
 
-* old seal closed
-* new seal created
+* old covenant output spent
+* new continuation output created
 * future txid not needed in phase 1
 * phase 2 binds actual txid
 * replay rejected

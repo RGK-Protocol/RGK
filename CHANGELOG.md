@@ -4,15 +4,15 @@ RGK tracks progress by engineering milestone.
 
 ## Native RGK Asset Refactor
 
-* Reframed RGK as a Kaspa-native client-side asset protocol inspired by RGB.
-* Removed the previous external-adapter track from the hot path.
+* Reframed RGK as a Kaspa-native covenant-lineage asset system.
+* Removed the previous external-runtime track from the hot path.
 * Renamed the asset grammar package to `rgk-asset`.
-* Removed external RGB runtime dependencies, upstream wallet vector scripts,
-  and external-vector-gated files from the default workspace.
+* Removed external runtime dependencies, upstream wallet vector scripts, and
+  external-vector-gated files from the default workspace.
 * Replaced public core field names with native `asset_id` and
   `transition_digest` terminology.
 * Added native `RgkAssetIssue`, `RgkAllocation`, `RgkTransition`,
-  `RgkCovenantSeal`, `RgkStateDigest`, and `RgkTransitionDigest`.
+  `RgkCovenantAnchor`, `RgkStateDigest`, and `RgkTransitionDigest`.
 * Added `LanePrivacyPolicy` with `PrivateLane` as the default.
 * Added blinded lane ids, rotating scan tags, encrypted note commitments,
   nullifiers, policy commitments, and view-key discovery helpers.
@@ -26,13 +26,40 @@ RGK tracks progress by engineering milestone.
 * Added `RgkProductionAllocationStrategyPlan` as the wallet-facing selector for
   fixed allocation-vector proofs or segmented allocation-audit certificates.
   The native strategy commitment binds continuation, count, segment-grid, and
-  proof-cell material, and segmented burns or empty allocation sides fail
-  closed before wallets can request proof material.
+  proof-entry material, and segmented burns or empty allocation sides fail
+  closed before wallets can request proof material. Added
+  `RgkProductionAllocationStrategyRecord` so wallets and provers can exchange
+  tamper-checked canonical handoff bytes for the selected strategy.
+* Added an internal-readiness evidence report and verifier for launch gates
+  that do not depend on public funding: formatting, native grammar tests,
+  checked Silverscript artifacts, examples matrix coverage, feature-mode
+  workspace tests, focused clippy checks, and rustdoc with warnings denied. The
+  launch-readiness audit now consumes that report before reporting
+  `internal_readiness=ok`. The all-features workspace gate excludes
+  node-dependent `rgk-e2e` integration tests and records a separate
+  `rgk-e2e` all-features library test gate.
+* Added checked Silverscript source and JSON artifact evidence for the main RGK
+  covenant continuation policy surface, covering singleton continuation,
+  explicit fanout with change, and shared merge/batch shapes while keeping the
+  Rust builder plus upstream Toccata VM tests as the exact opcode oracle.
 * Hardened the public testnet staging preflight manifest. It now binds the
   expected `KaspaTestnet` chain id, one-confirmation live covenant test
   contract, required `live-kaspa-wrpc`/`real-zk`/`persistent-indexer` feature
   set, and `required_local_mining=false` into the preflight id and evidence
   verifiers.
+* Added a public testnet funding-readiness preflight. Given a real public
+  Borsh wRPC endpoint, `scripts/e2e-testnet-staging.sh --funding-readiness`
+  records endpoint identity, `utxoindex`, deterministic funding address, and
+  spendable non-coinbase UTXO availability without submitting transactions;
+  `scripts/verify-testnet-funding-readiness.sh` verifies the report while the
+  full funded public staging report remains the launch blocker.
+  `scripts/verify-launch-readiness.sh` also checks that funding-readiness
+  matches the preflight network, wallet-set id, and funding address, preventing
+  accidental mixed `testnet-10`/`testnet-12` evidence.
+* Added `scripts/e2e-testnet-staging.sh --funding-help` so operators get a
+  deterministic funding helper report with the exact staging address, real-ZK
+  minimum in sompi/KAS, faucet browser URL, faucet API URL, and follow-up
+  readiness/full-staging commands.
 * Added native metadata and owner commitments to asset issue, transition,
   continuation, state digest, transition digest, semantic ZK statement, and
   devnet evidence. Ownership handoff now requires a non-zero authorisation
@@ -72,6 +99,14 @@ RGK tracks progress by engineering milestone.
   metadata in indexer spend history, and made the resolver reject missing
   continuation proof or continuation outpoints whose txid does not match the
   observed spend txid.
+* Added `CovenantContinuationPolicy` for exact Toccata continuation-output
+  shapes. The default singleton script remains byte-identical, while the
+  policy builder can enforce multiple covenant outputs with explicit
+  fee/change slots and is covered by upstream VM tests.
+* Added `CovenantSharedContinuationPolicy` for merge/batch Toccata shapes. The
+  same redeem script can execute on every input carrying the shared covenant id,
+  checking shared covenant input/output counts and each shared output through
+  upstream covenant-context opcodes.
 * Added durable local lane records to the indexer and native resolver entry
   points for lane id, view-key, scan-tag, public-lineage, and transition-digest
   lookup.
@@ -92,10 +127,15 @@ RGK tracks progress by engineering milestone.
   matching and live devnet statement evidence.
 * Added `SemanticTransitionCircuit`, a real Groth16 circuit for the 512-byte
   semantic transition statement, plus upstream Toccata VM execution evidence.
+* Added `R0SuccinctPrecompileStack` for Toccata's RISC Zero Succinct
+  precompile stack material. Local upstream VM evidence accepts the parent
+  Succinct fixture and rejects a changed journal, while the active RGK receipt
+  wrapper still fails closed on opaque `R0Succinct` proofs until native RISC0
+  prover/circuit support exists.
 * Added `OneInOneOutAllocationCircuit`, a real Groth16 circuit for the current
   live one-input/one-output allocation-vector transition, including native root
   reconstruction, supply equality, continuation commitment, transition digest,
-  and closed-seal non-reuse checks.
+  and spent-anchor non-reuse checks.
 * Added `TwoInTwoOutAllocationCircuit`, a fixed two-input/two-output
   allocation-vector circuit with the same native commitment reconstruction and
   upstream Toccata VM execution evidence.
@@ -125,8 +165,8 @@ RGK tracks progress by engineering milestone.
   before proof material is requested.
 * Added self-contained allocation-audit certificate verification from canonical
   handoff bytes. Wallet/resolver/indexer consumers can now decode the bounded
-  certificate, rebuild the typed manifest from public-input cells, verify every
-  embedded Groth16 stack, enforce deterministic proof-cell ordering, and recover
+  certificate, rebuild the typed manifest from public-input entries, verify every
+  embedded Groth16 stack, enforce deterministic proof-entry ordering, and recover
   the native report without a separately supplied bundle object.
 * Added a public testnet staging harness and report verifier. The live covenant
   lifecycle can now run with `RGK_LIVE_KASPA_NETWORK=testnet-12`, consume a

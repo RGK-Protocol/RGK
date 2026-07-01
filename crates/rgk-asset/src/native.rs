@@ -1,14 +1,17 @@
 //! Kaspa-native RGK asset and lane validation primitives.
 //!
-//! RGK defines client-side validation and seal discipline natively over Kaspa
-//! Toccata covenant lineages. This module is not an external-runtime adapter.
+//! RGK defines client-side validation and covenant-output discipline natively
+//! over Kaspa Toccata covenant lineages.
 
 extern crate alloc;
 
 use alloc::collections::BTreeSet;
 use alloc::vec::Vec;
 
-use rgk_core::{Bytes32, KaspaChainId, KaspaCovenantId, KaspaOutpoint};
+use rgk_core::{
+    Bytes32, DecodeError, KaspaChainId, KaspaCovenantId, KaspaOutpoint, Reader, Writer,
+    ENCODING_VERSION, MAX_BLOB_BYTES,
+};
 use thiserror::Error;
 
 use crate::{domain_hash_domain, Hex32};
@@ -51,6 +54,8 @@ pub struct RgkScanTag(pub Bytes32);
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
 pub struct RgkPolicyCommitment(pub Bytes32);
+
+pub const RGK_PRODUCTION_ALLOCATION_STRATEGY_RECORD_TAG: &[u8; 12] = b"rgk:pas:0\0\0\0";
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
 pub struct RgkMetadataCommitment(pub Bytes32);
@@ -603,14 +608,14 @@ pub struct RgkLaneStateInput<'a> {
     pub state_digest: RgkStateDigest,
     pub receipt_commitment: RgkReceiptCommitment,
     pub spend_secret: Bytes32,
-    pub seal: &'a RgkCovenantSeal,
+    pub anchor: &'a RgkCovenantAnchor,
     pub view_key: Option<Bytes32>,
     pub policy_commitment: RgkPolicyCommitment,
 }
 
 impl RgkLaneState {
     pub fn new(input: RgkLaneStateInput<'_>) -> Self {
-        let nullifier = RgkNullifier::derive(input.spend_secret, input.seal);
+        let nullifier = RgkNullifier::derive(input.spend_secret, input.anchor);
         let scan_tag = input
             .view_key
             .map(|key| RgkScanTag::derive(key, input.lane_id, input.epoch));
@@ -747,12 +752,12 @@ impl RgkScanTag {
 }
 
 impl RgkNullifier {
-    pub fn derive(spend_secret: Bytes32, seal: &RgkCovenantSeal) -> Self {
+    pub fn derive(spend_secret: Bytes32, anchor: &RgkCovenantAnchor) -> Self {
         let mut payload = Vec::with_capacity(32 + 32 + 4 + 32);
         payload.extend_from_slice(&spend_secret);
-        payload.extend_from_slice(&seal.covenant_outpoint.transaction_id);
-        payload.extend_from_slice(&seal.covenant_outpoint.index.to_le_bytes());
-        payload.extend_from_slice(&seal.covenant_id);
+        payload.extend_from_slice(&anchor.covenant_outpoint.transaction_id);
+        payload.extend_from_slice(&anchor.covenant_outpoint.index.to_le_bytes());
+        payload.extend_from_slice(&anchor.covenant_id);
         Self(domain_hash_domain("rgk:lane:nullifier:v1", &payload))
     }
 }
@@ -779,7 +784,7 @@ pub fn discover_lane(
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
-pub struct RgkCovenantSeal {
+pub struct RgkCovenantAnchor {
     pub chain: KaspaChainId,
     pub covenant_outpoint: KaspaOutpoint,
     pub covenant_id: KaspaCovenantId,
@@ -790,7 +795,7 @@ pub struct RgkCovenantSeal {
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct RgkAllocation {
-    pub seal: RgkCovenantSeal,
+    pub anchor: RgkCovenantAnchor,
     pub amount: u64,
     pub encrypted_note_commitment: Bytes32,
 }
@@ -975,8 +980,8 @@ pub enum RgkProductionAllocationStrategy {
         segment_capacity: usize,
         spent_segments: usize,
         new_segments: usize,
-        exclusion_cells: usize,
-        groth16_proof_cells: usize,
+        exclusion_pairs: usize,
+        groth16_proof_entries: usize,
     },
 }
 
@@ -986,6 +991,11 @@ pub struct RgkProductionAllocationStrategyPlan {
     continuation_report: RgkContinuationReport,
     strategy: RgkProductionAllocationStrategy,
     strategy_commitment: RgkProductionAllocationStrategyCommitment,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct RgkProductionAllocationStrategyRecord {
+    plan: RgkProductionAllocationStrategyPlan,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -1081,9 +1091,9 @@ pub enum RgkAssetError {
     #[error("RGK allocation {index} has zero encrypted note commitment")]
     ZeroEncryptedNote { index: usize },
     #[error("RGK allocation {index} is not confirmed")]
-    UnconfirmedSeal { index: usize },
+    UnconfirmedAnchor { index: usize },
     #[error("RGK allocation {index} reuses covenant outpoint")]
-    DuplicateSealOutpoint { index: usize },
+    DuplicateAnchorOutpoint { index: usize },
     #[error("RGK allocation supply overflow")]
     SupplyOverflow,
     #[error("RGK allocation sum {actual} does not equal total supply {expected}")]
@@ -1106,8 +1116,8 @@ pub enum RgkAssetError {
     ZeroTransitionWitnessTxid,
     #[error("RGK transition does not change state")]
     NoOpTransition,
-    #[error("RGK transition new allocation {index} reuses a closed seal")]
-    ReusedClosedSeal { index: usize },
+    #[error("RGK transition new allocation {index} reuses a spent covenant output")]
+    ReusedSpentAnchor { index: usize },
     #[error("RGK previous state digest mismatch: expected 0x{expected}, got 0x{actual}")]
     PreviousStateDigestMismatch { expected: Hex32, actual: Hex32 },
     #[error("RGK transition digest mismatch: expected 0x{expected}, got 0x{actual}")]
@@ -1153,6 +1163,12 @@ pub enum RgkAssetError {
     SegmentedAllocationAuditInvalidSegmentCapacity { segment_capacity: usize },
     #[error("RGK segmented allocation audit proof grid is too large")]
     SegmentedAllocationAuditGridTooLarge,
+    #[error("RGK production allocation strategy record decode failed: {reason}")]
+    ProductionAllocationStrategyRecordDecode { reason: &'static str },
+    #[error("RGK production allocation strategy record encode failed: {reason}")]
+    ProductionAllocationStrategyRecordEncode { reason: &'static str },
+    #[error("RGK production allocation strategy record {field} mismatch")]
+    ProductionAllocationStrategyRecordMismatch { field: &'static str },
 }
 
 impl RgkAssetIssue {
@@ -1359,14 +1375,14 @@ impl RgkTransition {
             return Err(RgkAssetError::NoOpTransition);
         }
 
-        let closed: BTreeSet<KaspaOutpoint> = self
+        let spent_outpoints: BTreeSet<KaspaOutpoint> = self
             .spent_allocations
             .iter()
-            .map(|allocation| allocation.seal.covenant_outpoint)
+            .map(|allocation| allocation.anchor.covenant_outpoint)
             .collect();
         for (index, allocation) in self.new_allocations.iter().enumerate() {
-            if closed.contains(&allocation.seal.covenant_outpoint) {
-                return Err(RgkAssetError::ReusedClosedSeal { index });
+            if spent_outpoints.contains(&allocation.anchor.covenant_outpoint) {
+                return Err(RgkAssetError::ReusedSpentAnchor { index });
             }
         }
 
@@ -1512,7 +1528,7 @@ impl RgkContinuationPlan {
             .new_allocation_shapes
             .iter()
             .map(|shape| RgkAllocation {
-                seal: RgkCovenantSeal {
+                anchor: RgkCovenantAnchor {
                     chain: self.chain,
                     covenant_outpoint: KaspaOutpoint {
                         transaction_id: witness_txid,
@@ -1803,23 +1819,23 @@ impl RgkProductionAllocationStrategy {
         }
         let spent_segments = report.spent_allocation_count.div_ceil(segment_capacity);
         let new_segments = report.new_allocation_count.div_ceil(segment_capacity);
-        let exclusion_cells = spent_segments
+        let exclusion_pairs = spent_segments
             .checked_mul(new_segments)
             .ok_or(RgkAssetError::SegmentedAllocationAuditGridTooLarge)?;
-        let transcript_and_conservation_cells = spent_segments
+        let transcript_and_conservation_entries = spent_segments
             .checked_add(new_segments)
             .and_then(|segments| segments.checked_mul(2))
             .ok_or(RgkAssetError::SegmentedAllocationAuditGridTooLarge)?;
-        let groth16_proof_cells = transcript_and_conservation_cells
+        let groth16_proof_entries = transcript_and_conservation_entries
             .checked_add(1)
-            .and_then(|cells| cells.checked_add(exclusion_cells))
+            .and_then(|entries| entries.checked_add(exclusion_pairs))
             .ok_or(RgkAssetError::SegmentedAllocationAuditGridTooLarge)?;
         Ok(Self::SegmentedAllocationAudit {
             segment_capacity,
             spent_segments,
             new_segments,
-            exclusion_cells,
-            groth16_proof_cells,
+            exclusion_pairs,
+            groth16_proof_entries,
         })
     }
 
@@ -1841,13 +1857,13 @@ impl RgkProductionAllocationStrategy {
         }
     }
 
-    pub const fn groth16_proof_cells(self) -> usize {
+    pub const fn groth16_proof_entries(self) -> usize {
         match self {
             Self::FixedAllocationVector { .. } => 1,
             Self::SegmentedAllocationAudit {
-                groth16_proof_cells,
+                groth16_proof_entries,
                 ..
-            } => groth16_proof_cells,
+            } => groth16_proof_entries,
         }
     }
 }
@@ -1913,6 +1929,91 @@ impl RgkProductionAllocationStrategyPlan {
             strategy: self.strategy,
             strategy_commitment: self.strategy_commitment,
         })
+    }
+}
+
+impl RgkProductionAllocationStrategyRecord {
+    pub fn new(plan: RgkProductionAllocationStrategyPlan) -> Self {
+        Self { plan }
+    }
+
+    pub fn from_continuation_plan(
+        continuation_plan: RgkContinuationPlan,
+    ) -> Result<Self, RgkAssetError> {
+        Ok(Self::new(RgkProductionAllocationStrategyPlan::new(
+            continuation_plan,
+        )?))
+    }
+
+    pub fn plan(&self) -> &RgkProductionAllocationStrategyPlan {
+        &self.plan
+    }
+
+    pub fn into_plan(self) -> RgkProductionAllocationStrategyPlan {
+        self.plan
+    }
+
+    pub fn canonical_bytes(&self) -> Result<Vec<u8>, RgkAssetError> {
+        validate_canonical_record_plan(self.plan.continuation_plan())?;
+        let mut w = Writer::new();
+        w.write_bytes(RGK_PRODUCTION_ALLOCATION_STRATEGY_RECORD_TAG);
+        w.write_u16(ENCODING_VERSION);
+        encode_continuation_plan(&mut w, self.plan.continuation_plan());
+        encode_production_allocation_strategy(&mut w, self.plan.strategy());
+        w.write_bytes32(&self.plan.strategy_commitment());
+        let bytes = w.into_vec();
+        if bytes.len() > MAX_BLOB_BYTES as usize {
+            return Err(RgkAssetError::ProductionAllocationStrategyRecordEncode {
+                reason: "record too large",
+            });
+        }
+        Ok(bytes)
+    }
+
+    pub fn decode_canonical(bytes: &[u8]) -> Result<Self, RgkAssetError> {
+        if bytes.len() > MAX_BLOB_BYTES as usize {
+            return Err(RgkAssetError::ProductionAllocationStrategyRecordDecode {
+                reason: "record too large",
+            });
+        }
+        let mut r = Reader::new(bytes);
+        let tag = r
+            .read_array::<12>()
+            .map_err(production_allocation_strategy_record_decode_error)?;
+        if &tag != RGK_PRODUCTION_ALLOCATION_STRATEGY_RECORD_TAG {
+            return Err(RgkAssetError::ProductionAllocationStrategyRecordDecode {
+                reason: "bad record tag",
+            });
+        }
+        let version = r
+            .read_u16()
+            .map_err(production_allocation_strategy_record_decode_error)?;
+        if version != ENCODING_VERSION {
+            return Err(RgkAssetError::ProductionAllocationStrategyRecordDecode {
+                reason: "unknown version",
+            });
+        }
+
+        let continuation_plan = decode_continuation_plan(&mut r)?;
+        let encoded_strategy = decode_production_allocation_strategy(&mut r)?;
+        let encoded_strategy_commitment = r
+            .read_bytes32()
+            .map_err(production_allocation_strategy_record_decode_error)?;
+        r.ensure_consumed()
+            .map_err(production_allocation_strategy_record_decode_error)?;
+
+        let plan = RgkProductionAllocationStrategyPlan::new(continuation_plan)?;
+        if plan.strategy() != encoded_strategy {
+            return Err(RgkAssetError::ProductionAllocationStrategyRecordMismatch {
+                field: "strategy",
+            });
+        }
+        if plan.strategy_commitment() != encoded_strategy_commitment {
+            return Err(RgkAssetError::ProductionAllocationStrategyRecordMismatch {
+                field: "strategy_commitment",
+            });
+        }
+        Ok(Self::new(plan))
     }
 }
 
@@ -1999,18 +2100,503 @@ fn production_allocation_strategy_commitment(
             segment_capacity,
             spent_segments,
             new_segments,
-            exclusion_cells,
-            groth16_proof_cells,
+            exclusion_pairs,
+            groth16_proof_entries,
         } => {
             payload.push(1);
             payload.extend_from_slice(&(segment_capacity as u64).to_le_bytes());
             payload.extend_from_slice(&(spent_segments as u64).to_le_bytes());
             payload.extend_from_slice(&(new_segments as u64).to_le_bytes());
-            payload.extend_from_slice(&(exclusion_cells as u64).to_le_bytes());
-            payload.extend_from_slice(&(groth16_proof_cells as u64).to_le_bytes());
+            payload.extend_from_slice(&(exclusion_pairs as u64).to_le_bytes());
+            payload.extend_from_slice(&(groth16_proof_entries as u64).to_le_bytes());
         }
     }
     domain_hash_domain("rgk:asset:production-allocation-strategy:v1", &payload)
+}
+
+const MAX_CANONICAL_RECORD_ITEMS: usize = MAX_BLOB_BYTES as usize / 32;
+
+fn production_allocation_strategy_record_decode_error(_err: DecodeError) -> RgkAssetError {
+    RgkAssetError::ProductionAllocationStrategyRecordDecode {
+        reason: "malformed canonical bytes",
+    }
+}
+
+fn production_allocation_strategy_record_bad_tag(reason: &'static str) -> RgkAssetError {
+    RgkAssetError::ProductionAllocationStrategyRecordDecode { reason }
+}
+
+fn production_allocation_strategy_record_encode_error(reason: &'static str) -> RgkAssetError {
+    RgkAssetError::ProductionAllocationStrategyRecordEncode { reason }
+}
+
+fn validate_canonical_record_item_count(
+    len: usize,
+    reason: &'static str,
+) -> Result<(), RgkAssetError> {
+    if len > MAX_CANONICAL_RECORD_ITEMS {
+        return Err(production_allocation_strategy_record_encode_error(reason));
+    }
+    Ok(())
+}
+
+fn validate_canonical_record_proof_policy(policy: &RgkProofPolicy) -> Result<(), RgkAssetError> {
+    if let RgkProofPolicy::ZkReceipt {
+        image_id_policy: ImageIdPolicy::AllowedSet(set),
+        ..
+    } = policy
+    {
+        validate_canonical_record_item_count(set.len(), "too many image ids")?;
+    }
+    Ok(())
+}
+
+fn validate_canonical_record_plan(plan: &RgkContinuationPlan) -> Result<(), RgkAssetError> {
+    validate_canonical_record_item_count(
+        plan.spent_allocations.len(),
+        "too many spent allocations",
+    )?;
+    validate_canonical_record_item_count(
+        plan.new_allocation_shapes.len(),
+        "too many new allocation shapes",
+    )?;
+    validate_canonical_record_proof_policy(&plan.proof_policy)
+}
+
+fn write_chain(w: &mut Writer, chain: KaspaChainId) {
+    w.write_u8(chain as u8);
+}
+
+fn read_chain(r: &mut Reader) -> Result<KaspaChainId, RgkAssetError> {
+    let tag = r
+        .read_u8()
+        .map_err(production_allocation_strategy_record_decode_error)?;
+    KaspaChainId::from_tag(tag)
+        .ok_or_else(|| production_allocation_strategy_record_bad_tag("unknown Kaspa chain id"))
+}
+
+fn write_len(w: &mut Writer, len: usize) {
+    debug_assert!(len <= MAX_CANONICAL_RECORD_ITEMS);
+    debug_assert!(len <= u32::MAX as usize);
+    w.write_u32(len as u32);
+}
+
+fn read_len(r: &mut Reader) -> Result<usize, RgkAssetError> {
+    let len = r
+        .read_u32()
+        .map_err(production_allocation_strategy_record_decode_error)? as usize;
+    if len > MAX_CANONICAL_RECORD_ITEMS {
+        return Err(production_allocation_strategy_record_bad_tag(
+            "record vector count too large",
+        ));
+    }
+    Ok(len)
+}
+
+fn encode_covenant_anchor(w: &mut Writer, anchor: &RgkCovenantAnchor) {
+    write_chain(w, anchor.chain);
+    w.write_bytes32(&anchor.covenant_outpoint.transaction_id);
+    w.write_u32(anchor.covenant_outpoint.index);
+    w.write_bytes32(&anchor.covenant_id);
+    w.write_bytes32(&anchor.witness_txid);
+    w.write_u64(anchor.daa_score);
+    w.write_u64(anchor.confirmation_depth);
+}
+
+fn decode_covenant_anchor(r: &mut Reader) -> Result<RgkCovenantAnchor, RgkAssetError> {
+    Ok(RgkCovenantAnchor {
+        chain: read_chain(r)?,
+        covenant_outpoint: KaspaOutpoint {
+            transaction_id: r
+                .read_bytes32()
+                .map_err(production_allocation_strategy_record_decode_error)?,
+            index: r
+                .read_u32()
+                .map_err(production_allocation_strategy_record_decode_error)?,
+        },
+        covenant_id: r
+            .read_bytes32()
+            .map_err(production_allocation_strategy_record_decode_error)?,
+        witness_txid: r
+            .read_bytes32()
+            .map_err(production_allocation_strategy_record_decode_error)?,
+        daa_score: r
+            .read_u64()
+            .map_err(production_allocation_strategy_record_decode_error)?,
+        confirmation_depth: r
+            .read_u64()
+            .map_err(production_allocation_strategy_record_decode_error)?,
+    })
+}
+
+fn encode_allocation_record(w: &mut Writer, allocation: &RgkAllocation) {
+    encode_covenant_anchor(w, &allocation.anchor);
+    w.write_u64(allocation.amount);
+    w.write_bytes32(&allocation.encrypted_note_commitment);
+}
+
+fn decode_allocation_record(r: &mut Reader) -> Result<RgkAllocation, RgkAssetError> {
+    Ok(RgkAllocation {
+        anchor: decode_covenant_anchor(r)?,
+        amount: r
+            .read_u64()
+            .map_err(production_allocation_strategy_record_decode_error)?,
+        encrypted_note_commitment: r
+            .read_bytes32()
+            .map_err(production_allocation_strategy_record_decode_error)?,
+    })
+}
+
+fn encode_continuation_shape_record(w: &mut Writer, shape: &RgkContinuationAllocationShape) {
+    w.write_u32(shape.output_index);
+    w.write_bytes32(&shape.covenant_id);
+    w.write_u64(shape.amount);
+    w.write_bytes32(&shape.encrypted_note_commitment);
+}
+
+fn decode_continuation_shape_record(
+    r: &mut Reader,
+) -> Result<RgkContinuationAllocationShape, RgkAssetError> {
+    Ok(RgkContinuationAllocationShape {
+        output_index: r
+            .read_u32()
+            .map_err(production_allocation_strategy_record_decode_error)?,
+        covenant_id: r
+            .read_bytes32()
+            .map_err(production_allocation_strategy_record_decode_error)?,
+        amount: r
+            .read_u64()
+            .map_err(production_allocation_strategy_record_decode_error)?,
+        encrypted_note_commitment: r
+            .read_bytes32()
+            .map_err(production_allocation_strategy_record_decode_error)?,
+    })
+}
+
+fn encode_burn_record(w: &mut Writer, burn: Option<&RgkBurnProof>) {
+    match burn {
+        Some(burn) => {
+            w.write_u8(1);
+            w.write_u64(burn.amount);
+            w.write_bytes32(&burn.authorization_commitment);
+        }
+        None => w.write_u8(0),
+    }
+}
+
+fn decode_burn_record(r: &mut Reader) -> Result<Option<RgkBurnProof>, RgkAssetError> {
+    match r
+        .read_u8()
+        .map_err(production_allocation_strategy_record_decode_error)?
+    {
+        0 => Ok(None),
+        1 => Ok(Some(RgkBurnProof {
+            amount: r
+                .read_u64()
+                .map_err(production_allocation_strategy_record_decode_error)?,
+            authorization_commitment: r
+                .read_bytes32()
+                .map_err(production_allocation_strategy_record_decode_error)?,
+        })),
+        _ => Err(production_allocation_strategy_record_bad_tag(
+            "unknown burn option tag",
+        )),
+    }
+}
+
+fn encode_privacy_policy_record(w: &mut Writer, privacy_policy: LanePrivacyPolicy) {
+    w.write_u8(privacy_policy.as_u8());
+}
+
+fn decode_privacy_policy_record(r: &mut Reader) -> Result<LanePrivacyPolicy, RgkAssetError> {
+    match r
+        .read_u8()
+        .map_err(production_allocation_strategy_record_decode_error)?
+    {
+        0 => Ok(LanePrivacyPolicy::PublicLineage),
+        1 => Ok(LanePrivacyPolicy::PrivateLane),
+        2 => Ok(LanePrivacyPolicy::StealthLane),
+        _ => Err(production_allocation_strategy_record_bad_tag(
+            "unknown privacy policy tag",
+        )),
+    }
+}
+
+fn encode_image_id_policy_record(w: &mut Writer, policy: &ImageIdPolicy) {
+    match policy {
+        ImageIdPolicy::Fixed(image_id) => {
+            w.write_u8(0);
+            w.write_bytes32(image_id);
+        }
+        ImageIdPolicy::AllowedSet(set) => {
+            w.write_u8(1);
+            write_len(w, set.len());
+            for image_id in set {
+                w.write_bytes32(image_id);
+            }
+        }
+        ImageIdPolicy::PolicyBranch(branch) => {
+            w.write_u8(2);
+            w.write_bytes32(branch);
+        }
+    }
+}
+
+fn decode_image_id_policy_record(r: &mut Reader) -> Result<ImageIdPolicy, RgkAssetError> {
+    match r
+        .read_u8()
+        .map_err(production_allocation_strategy_record_decode_error)?
+    {
+        0 => Ok(ImageIdPolicy::Fixed(
+            r.read_bytes32()
+                .map_err(production_allocation_strategy_record_decode_error)?,
+        )),
+        1 => {
+            let len = read_len(r)?;
+            let mut set = Vec::with_capacity(len);
+            for _ in 0..len {
+                set.push(
+                    r.read_bytes32()
+                        .map_err(production_allocation_strategy_record_decode_error)?,
+                );
+            }
+            Ok(ImageIdPolicy::AllowedSet(set))
+        }
+        2 => Ok(ImageIdPolicy::PolicyBranch(
+            r.read_bytes32()
+                .map_err(production_allocation_strategy_record_decode_error)?,
+        )),
+        _ => Err(production_allocation_strategy_record_bad_tag(
+            "unknown image id policy tag",
+        )),
+    }
+}
+
+fn encode_proof_policy_record(w: &mut Writer, policy: &RgkProofPolicy) {
+    match policy {
+        RgkProofPolicy::VerifierReceipt { verifier_key_hash } => {
+            w.write_u8(0);
+            w.write_bytes32(verifier_key_hash);
+        }
+        RgkProofPolicy::ZkReceipt {
+            verifier_key_id,
+            image_id_policy,
+        } => {
+            w.write_u8(1);
+            w.write_bytes32(verifier_key_id);
+            encode_image_id_policy_record(w, image_id_policy);
+        }
+        RgkProofPolicy::Hybrid {
+            verifier_key_hash,
+            verifier_key_id,
+        } => {
+            w.write_u8(2);
+            w.write_bytes32(verifier_key_hash);
+            w.write_bytes32(verifier_key_id);
+        }
+    }
+}
+
+fn decode_proof_policy_record(r: &mut Reader) -> Result<RgkProofPolicy, RgkAssetError> {
+    match r
+        .read_u8()
+        .map_err(production_allocation_strategy_record_decode_error)?
+    {
+        0 => Ok(RgkProofPolicy::VerifierReceipt {
+            verifier_key_hash: r
+                .read_bytes32()
+                .map_err(production_allocation_strategy_record_decode_error)?,
+        }),
+        1 => Ok(RgkProofPolicy::ZkReceipt {
+            verifier_key_id: r
+                .read_bytes32()
+                .map_err(production_allocation_strategy_record_decode_error)?,
+            image_id_policy: decode_image_id_policy_record(r)?,
+        }),
+        2 => Ok(RgkProofPolicy::Hybrid {
+            verifier_key_hash: r
+                .read_bytes32()
+                .map_err(production_allocation_strategy_record_decode_error)?,
+            verifier_key_id: r
+                .read_bytes32()
+                .map_err(production_allocation_strategy_record_decode_error)?,
+        }),
+        _ => Err(production_allocation_strategy_record_bad_tag(
+            "unknown proof policy tag",
+        )),
+    }
+}
+
+fn encode_continuation_plan(w: &mut Writer, plan: &RgkContinuationPlan) {
+    write_chain(w, plan.chain);
+    w.write_bytes32(&plan.schema_id);
+    w.write_bytes32(&plan.asset_id);
+    w.write_u64(plan.total_supply);
+    w.write_bytes32(&plan.metadata_commitment.0);
+    w.write_bytes32(&plan.previous_owner_commitment.0);
+    w.write_bytes32(&plan.new_owner_commitment.0);
+    w.write_bytes32(&plan.ownership_authorization_commitment);
+    w.write_bytes32(&plan.previous_state_digest.0);
+    write_len(w, plan.spent_allocations.len());
+    for allocation in &plan.spent_allocations {
+        encode_allocation_record(w, allocation);
+    }
+    write_len(w, plan.new_allocation_shapes.len());
+    for shape in &plan.new_allocation_shapes {
+        encode_continuation_shape_record(w, shape);
+    }
+    encode_burn_record(w, plan.burn.as_ref());
+    w.write_bytes32(&plan.lane_id);
+    encode_privacy_policy_record(w, plan.privacy_policy);
+    encode_proof_policy_record(w, &plan.proof_policy);
+}
+
+fn decode_continuation_plan(r: &mut Reader) -> Result<RgkContinuationPlan, RgkAssetError> {
+    let chain = read_chain(r)?;
+    let schema_id = r
+        .read_bytes32()
+        .map_err(production_allocation_strategy_record_decode_error)?;
+    let asset_id = r
+        .read_bytes32()
+        .map_err(production_allocation_strategy_record_decode_error)?;
+    let total_supply = r
+        .read_u64()
+        .map_err(production_allocation_strategy_record_decode_error)?;
+    let metadata_commitment = RgkMetadataCommitment(
+        r.read_bytes32()
+            .map_err(production_allocation_strategy_record_decode_error)?,
+    );
+    let previous_owner_commitment = RgkOwnerCommitment(
+        r.read_bytes32()
+            .map_err(production_allocation_strategy_record_decode_error)?,
+    );
+    let new_owner_commitment = RgkOwnerCommitment(
+        r.read_bytes32()
+            .map_err(production_allocation_strategy_record_decode_error)?,
+    );
+    let ownership_authorization_commitment = r
+        .read_bytes32()
+        .map_err(production_allocation_strategy_record_decode_error)?;
+    let previous_state_digest = RgkStateDigest(
+        r.read_bytes32()
+            .map_err(production_allocation_strategy_record_decode_error)?,
+    );
+    let spent_len = read_len(r)?;
+    let mut spent_allocations = Vec::with_capacity(spent_len);
+    for _ in 0..spent_len {
+        spent_allocations.push(decode_allocation_record(r)?);
+    }
+    let new_len = read_len(r)?;
+    let mut new_allocation_shapes = Vec::with_capacity(new_len);
+    for _ in 0..new_len {
+        new_allocation_shapes.push(decode_continuation_shape_record(r)?);
+    }
+    Ok(RgkContinuationPlan {
+        chain,
+        schema_id,
+        asset_id,
+        total_supply,
+        metadata_commitment,
+        previous_owner_commitment,
+        new_owner_commitment,
+        ownership_authorization_commitment,
+        previous_state_digest,
+        spent_allocations,
+        new_allocation_shapes,
+        burn: decode_burn_record(r)?,
+        lane_id: r
+            .read_bytes32()
+            .map_err(production_allocation_strategy_record_decode_error)?,
+        privacy_policy: decode_privacy_policy_record(r)?,
+        proof_policy: decode_proof_policy_record(r)?,
+    })
+}
+
+fn encode_allocation_proof_shape_record(w: &mut Writer, shape: RgkAllocationProofShape) {
+    w.write_u8(match shape {
+        RgkAllocationProofShape::OneInZeroOut => 0,
+        RgkAllocationProofShape::OneInOneOut => 1,
+        RgkAllocationProofShape::TwoInTwoOut => 2,
+        RgkAllocationProofShape::ThreeInTwoOut => 3,
+        RgkAllocationProofShape::FourInTwoOut => 4,
+        RgkAllocationProofShape::FourInFourOut => 5,
+    });
+}
+
+fn decode_allocation_proof_shape_record(
+    r: &mut Reader,
+) -> Result<RgkAllocationProofShape, RgkAssetError> {
+    match r
+        .read_u8()
+        .map_err(production_allocation_strategy_record_decode_error)?
+    {
+        0 => Ok(RgkAllocationProofShape::OneInZeroOut),
+        1 => Ok(RgkAllocationProofShape::OneInOneOut),
+        2 => Ok(RgkAllocationProofShape::TwoInTwoOut),
+        3 => Ok(RgkAllocationProofShape::ThreeInTwoOut),
+        4 => Ok(RgkAllocationProofShape::FourInTwoOut),
+        5 => Ok(RgkAllocationProofShape::FourInFourOut),
+        _ => Err(production_allocation_strategy_record_bad_tag(
+            "unknown allocation proof shape tag",
+        )),
+    }
+}
+
+fn encode_production_allocation_strategy(
+    w: &mut Writer,
+    strategy: RgkProductionAllocationStrategy,
+) {
+    match strategy {
+        RgkProductionAllocationStrategy::FixedAllocationVector { shape } => {
+            w.write_u8(0);
+            encode_allocation_proof_shape_record(w, shape);
+        }
+        RgkProductionAllocationStrategy::SegmentedAllocationAudit {
+            segment_capacity,
+            spent_segments,
+            new_segments,
+            exclusion_pairs,
+            groth16_proof_entries,
+        } => {
+            w.write_u8(1);
+            w.write_u64(segment_capacity as u64);
+            w.write_u64(spent_segments as u64);
+            w.write_u64(new_segments as u64);
+            w.write_u64(exclusion_pairs as u64);
+            w.write_u64(groth16_proof_entries as u64);
+        }
+    }
+}
+
+fn decode_usize_record(r: &mut Reader) -> Result<usize, RgkAssetError> {
+    let value = r
+        .read_u64()
+        .map_err(production_allocation_strategy_record_decode_error)?;
+    usize::try_from(value)
+        .map_err(|_| production_allocation_strategy_record_bad_tag("usize field too large"))
+}
+
+fn decode_production_allocation_strategy(
+    r: &mut Reader,
+) -> Result<RgkProductionAllocationStrategy, RgkAssetError> {
+    match r
+        .read_u8()
+        .map_err(production_allocation_strategy_record_decode_error)?
+    {
+        0 => Ok(RgkProductionAllocationStrategy::FixedAllocationVector {
+            shape: decode_allocation_proof_shape_record(r)?,
+        }),
+        1 => Ok(RgkProductionAllocationStrategy::SegmentedAllocationAudit {
+            segment_capacity: decode_usize_record(r)?,
+            spent_segments: decode_usize_record(r)?,
+            new_segments: decode_usize_record(r)?,
+            exclusion_pairs: decode_usize_record(r)?,
+            groth16_proof_entries: decode_usize_record(r)?,
+        }),
+        _ => Err(production_allocation_strategy_record_bad_tag(
+            "unknown production allocation strategy tag",
+        )),
+    }
 }
 
 fn validate_metadata_commitment(
@@ -2347,30 +2933,30 @@ fn validate_allocation_set_structure_allow_empty(
         if allocation.amount == 0 {
             return Err(RgkAssetError::ZeroAllocationAmount { index });
         }
-        if allocation.seal.chain != chain {
+        if allocation.anchor.chain != chain {
             return Err(RgkAssetError::ChainMismatch {
                 index,
                 expected: chain,
-                actual: allocation.seal.chain,
+                actual: allocation.anchor.chain,
             });
         }
-        if allocation.seal.covenant_outpoint == KaspaOutpoint::NULL {
+        if allocation.anchor.covenant_outpoint == KaspaOutpoint::NULL {
             return Err(RgkAssetError::NullCovenantOutpoint { index });
         }
-        if is_zero32(&allocation.seal.covenant_id) {
+        if is_zero32(&allocation.anchor.covenant_id) {
             return Err(RgkAssetError::ZeroCovenantId { index });
         }
-        if is_zero32(&allocation.seal.witness_txid) {
+        if is_zero32(&allocation.anchor.witness_txid) {
             return Err(RgkAssetError::ZeroWitnessTxid { index });
         }
         if is_zero32(&allocation.encrypted_note_commitment) {
             return Err(RgkAssetError::ZeroEncryptedNote { index });
         }
-        if allocation.seal.confirmation_depth == 0 {
-            return Err(RgkAssetError::UnconfirmedSeal { index });
+        if allocation.anchor.confirmation_depth == 0 {
+            return Err(RgkAssetError::UnconfirmedAnchor { index });
         }
-        if !seen.insert(allocation.seal.covenant_outpoint) {
-            return Err(RgkAssetError::DuplicateSealOutpoint { index });
+        if !seen.insert(allocation.anchor.covenant_outpoint) {
+            return Err(RgkAssetError::DuplicateAnchorOutpoint { index });
         }
         total = total
             .checked_add(allocation.amount)
@@ -2536,13 +3122,13 @@ fn allocation_root(allocations: &[RgkAllocation]) -> Bytes32 {
 }
 
 fn encode_allocation(payload: &mut Vec<u8>, allocation: &RgkAllocation) {
-    payload.push(allocation.seal.chain as u8);
-    payload.extend_from_slice(&allocation.seal.covenant_outpoint.transaction_id);
-    payload.extend_from_slice(&allocation.seal.covenant_outpoint.index.to_le_bytes());
-    payload.extend_from_slice(&allocation.seal.covenant_id);
-    payload.extend_from_slice(&allocation.seal.witness_txid);
-    payload.extend_from_slice(&allocation.seal.daa_score.to_le_bytes());
-    payload.extend_from_slice(&allocation.seal.confirmation_depth.to_le_bytes());
+    payload.push(allocation.anchor.chain as u8);
+    payload.extend_from_slice(&allocation.anchor.covenant_outpoint.transaction_id);
+    payload.extend_from_slice(&allocation.anchor.covenant_outpoint.index.to_le_bytes());
+    payload.extend_from_slice(&allocation.anchor.covenant_id);
+    payload.extend_from_slice(&allocation.anchor.witness_txid);
+    payload.extend_from_slice(&allocation.anchor.daa_score.to_le_bytes());
+    payload.extend_from_slice(&allocation.anchor.confirmation_depth.to_le_bytes());
     payload.extend_from_slice(&allocation.amount.to_le_bytes());
     payload.extend_from_slice(&allocation.encrypted_note_commitment);
 }
@@ -2560,10 +3146,10 @@ fn encode_burn_proof(payload: &mut Vec<u8>, burn: Option<&RgkBurnProof>) {
 
 fn allocation_key(allocation: &RgkAllocation) -> (KaspaOutpoint, Bytes32, Bytes32, u64, u64) {
     (
-        allocation.seal.covenant_outpoint,
-        allocation.seal.covenant_id,
-        allocation.seal.witness_txid,
-        allocation.seal.daa_score,
+        allocation.anchor.covenant_outpoint,
+        allocation.anchor.covenant_id,
+        allocation.anchor.witness_txid,
+        allocation.anchor.daa_score,
         allocation.amount,
     )
 }
@@ -2764,8 +3350,8 @@ mod tests {
         }
     }
 
-    fn seal(seed: u8, amount_index: u32) -> RgkCovenantSeal {
-        RgkCovenantSeal {
+    fn anchor(seed: u8, amount_index: u32) -> RgkCovenantAnchor {
+        RgkCovenantAnchor {
             chain: KASPA_LOCAL_TOCCATA,
             covenant_outpoint: KaspaOutpoint {
                 transaction_id: [seed; 32],
@@ -2780,7 +3366,7 @@ mod tests {
 
     fn allocation(seed: u8, index: u32, amount: u64) -> RgkAllocation {
         RgkAllocation {
-            seal: seal(seed, index),
+            anchor: anchor(seed, index),
             amount,
             encrypted_note_commitment: [seed.wrapping_add(0x30); 32],
         }
@@ -3162,7 +3748,7 @@ mod tests {
         assert!(!fixed_plan
             .strategy()
             .requires_allocation_audit_certificate());
-        assert_eq!(fixed_plan.strategy().groth16_proof_cells(), 1);
+        assert_eq!(fixed_plan.strategy().groth16_proof_entries(), 1);
 
         let segmented_plan =
             RgkProductionAllocationStrategyPlan::new(large_continuation_plan()).unwrap();
@@ -3172,8 +3758,8 @@ mod tests {
                 segment_capacity: RGK_SEGMENTED_ALLOCATION_AUDIT_SEGMENT_CAPACITY,
                 spent_segments: 3,
                 new_segments: 3,
-                exclusion_cells: 9,
-                groth16_proof_cells: 22,
+                exclusion_pairs: 9,
+                groth16_proof_entries: 22,
             }
         );
         assert!(segmented_plan
@@ -3256,10 +3842,67 @@ mod tests {
                 segment_capacity: RGK_SEGMENTED_ALLOCATION_AUDIT_SEGMENT_CAPACITY,
                 spent_segments: 3,
                 new_segments: 1,
-                exclusion_cells: 3,
-                groth16_proof_cells: 12,
+                exclusion_pairs: 3,
+                groth16_proof_entries: 12,
             }
         );
+    }
+
+    #[test]
+    fn production_allocation_strategy_record_round_trips_and_rejects_tamper() {
+        let fixed_record =
+            RgkProductionAllocationStrategyRecord::from_continuation_plan(continuation_plan())
+                .unwrap();
+        let fixed_bytes = fixed_record.canonical_bytes().unwrap();
+        assert!(fixed_bytes.len() > 512);
+        let fixed_decoded =
+            RgkProductionAllocationStrategyRecord::decode_canonical(&fixed_bytes).unwrap();
+        assert_eq!(fixed_decoded, fixed_record);
+        assert_eq!(
+            fixed_decoded.plan().strategy(),
+            RgkProductionAllocationStrategy::FixedAllocationVector {
+                shape: RgkAllocationProofShape::TwoInTwoOut
+            }
+        );
+
+        let segmented_record = RgkProductionAllocationStrategyRecord::from_continuation_plan(
+            large_continuation_plan(),
+        )
+        .unwrap();
+        let segmented_bytes = segmented_record.canonical_bytes().unwrap();
+        let segmented_decoded =
+            RgkProductionAllocationStrategyRecord::decode_canonical(&segmented_bytes).unwrap();
+        assert_eq!(segmented_decoded, segmented_record);
+        assert!(segmented_decoded
+            .plan()
+            .strategy()
+            .requires_allocation_audit_certificate());
+
+        let mut trailing = segmented_bytes.clone();
+        trailing.push(0);
+        assert!(matches!(
+            RgkProductionAllocationStrategyRecord::decode_canonical(&trailing),
+            Err(RgkAssetError::ProductionAllocationStrategyRecordDecode { .. })
+        ));
+
+        let mut bad_tag = segmented_bytes.clone();
+        bad_tag[0] ^= 1;
+        assert!(matches!(
+            RgkProductionAllocationStrategyRecord::decode_canonical(&bad_tag),
+            Err(RgkAssetError::ProductionAllocationStrategyRecordDecode {
+                reason: "bad record tag"
+            })
+        ));
+
+        let mut tampered_commitment = segmented_bytes;
+        let last = tampered_commitment.len() - 1;
+        tampered_commitment[last] ^= 1;
+        assert!(matches!(
+            RgkProductionAllocationStrategyRecord::decode_canonical(&tampered_commitment),
+            Err(RgkAssetError::ProductionAllocationStrategyRecordMismatch {
+                field: "strategy_commitment"
+            })
+        ));
     }
 
     #[test]
@@ -3835,17 +4478,18 @@ mod tests {
     }
 
     #[test]
-    fn native_issue_rejects_duplicate_seal_outpoint() {
+    fn native_issue_rejects_duplicate_anchor_outpoint() {
         let mut issue = issue();
-        issue.allocations[1].seal.covenant_outpoint = issue.allocations[0].seal.covenant_outpoint;
+        issue.allocations[1].anchor.covenant_outpoint =
+            issue.allocations[0].anchor.covenant_outpoint;
         let err = issue.validate().unwrap_err();
-        assert!(matches!(err, RgkAssetError::DuplicateSealOutpoint { .. }));
+        assert!(matches!(err, RgkAssetError::DuplicateAnchorOutpoint { .. }));
     }
 
     #[test]
-    fn native_issue_rejects_mismatched_seal_chain() {
+    fn native_issue_rejects_mismatched_anchor_chain() {
         let mut issue = issue();
-        issue.allocations[0].seal.chain = KaspaChainId::KaspaDevnet;
+        issue.allocations[0].anchor.chain = KaspaChainId::KaspaDevnet;
         let err = issue.validate().unwrap_err();
         assert!(matches!(err, RgkAssetError::ChainMismatch { .. }));
     }
@@ -4019,7 +4663,7 @@ mod tests {
     }
 
     #[test]
-    fn continuation_finalization_closes_old_seal_and_creates_new_seal() {
+    fn continuation_finalization_spends_old_anchor_and_creates_new_anchor() {
         let plan = continuation_plan();
         let finalized = plan.finalize([0x88; 32], 20_000, 3).unwrap();
         assert_eq!(
@@ -4029,14 +4673,14 @@ mod tests {
         assert_eq!(finalized.transition.new_allocations.len(), 2);
         assert_eq!(
             finalized.transition.new_allocations[0]
-                .seal
+                .anchor
                 .covenant_outpoint
                 .transaction_id,
             [0x88; 32]
         );
         assert_eq!(
             finalized.transition.new_allocations[0]
-                .seal
+                .anchor
                 .covenant_outpoint
                 .index,
             0
@@ -4072,17 +4716,19 @@ mod tests {
     }
 
     #[test]
-    fn continuation_replay_reusing_closed_seal_is_rejected() {
+    fn continuation_replay_reusing_spent_anchor_is_rejected() {
         let mut plan = continuation_plan();
-        let closed = plan.spent_allocations[0].seal.covenant_outpoint;
+        let spent_outpoint = plan.spent_allocations[0].anchor.covenant_outpoint;
         plan.new_allocation_shapes = vec![RgkContinuationAllocationShape {
-            output_index: closed.index,
+            output_index: spent_outpoint.index,
             covenant_id: [0x54; 32],
             amount: 100,
             encrypted_note_commitment: [0x74; 32],
         }];
-        let err = plan.finalize(closed.transaction_id, 20_000, 3).unwrap_err();
-        assert!(matches!(err, RgkAssetError::ReusedClosedSeal { .. }));
+        let err = plan
+            .finalize(spent_outpoint.transaction_id, 20_000, 3)
+            .unwrap_err();
+        assert!(matches!(err, RgkAssetError::ReusedSpentAnchor { .. }));
     }
 
     #[test]
@@ -4116,12 +4762,12 @@ mod tests {
     }
 
     #[test]
-    fn native_transition_rejects_closed_seal_reuse() {
+    fn native_transition_rejects_spent_anchor_reuse() {
         let mut transition = transition();
-        transition.new_allocations[0].seal.covenant_outpoint =
-            transition.spent_allocations[0].seal.covenant_outpoint;
+        transition.new_allocations[0].anchor.covenant_outpoint =
+            transition.spent_allocations[0].anchor.covenant_outpoint;
         let err = transition.validate().unwrap_err();
-        assert!(matches!(err, RgkAssetError::ReusedClosedSeal { .. }));
+        assert!(matches!(err, RgkAssetError::ReusedSpentAnchor { .. }));
     }
 
     #[test]
@@ -4504,11 +5150,68 @@ mod tests {
     }
 
     #[test]
+    fn private_lane_public_observer_boundary_is_commitment_only() {
+        let issue = issue();
+        let report = issue.validate().unwrap();
+        let view_key = [0x41; 32];
+        let epoch = 7;
+        let lane = derive_blinded_lane_id(view_key, issue.asset_id, epoch);
+        let lane_state = RgkLaneState::new(RgkLaneStateInput {
+            lane_id: lane,
+            epoch,
+            state_digest: report.state_digest,
+            receipt_commitment: RgkReceiptCommitment([0x61; 32]),
+            spend_secret: [0x62; 32],
+            anchor: &issue.allocations[0].anchor,
+            view_key: Some(view_key),
+            policy_commitment: report.policy_commitment,
+        });
+        let observer_commitment = lane_state.public_observer_commitment();
+        let amount_commitment = allocation_transcript_amount_commitment(
+            RgkAllocationTranscriptSide::Spent,
+            0,
+            issue.allocations.len() as u64,
+            issue.allocations[0].amount,
+            [0x63; 32],
+        );
+        let graph_nodes = [
+            RgkLaneGraphNode::from_private(view_key, issue.asset_id, epoch),
+            RgkLaneGraphNode::from_private(view_key, issue.asset_id, epoch + 1),
+        ];
+        let graph_root = derive_private_lane_graph_root(&graph_nodes);
+
+        assert_eq!(
+            lane_state.scan_tag,
+            Some(RgkScanTag::derive(view_key, lane, epoch))
+        );
+        assert_ne!(observer_commitment, issue.asset_id);
+        assert_ne!(observer_commitment, issue.owner_commitment.0);
+        assert_ne!(observer_commitment, amount_commitment);
+        assert_ne!(observer_commitment, graph_root);
+        assert_ne!(lane_state.nullifier.0, lane);
+
+        let changed_state = RgkLaneState::new(RgkLaneStateInput {
+            lane_id: lane,
+            epoch,
+            state_digest: RgkStateDigest([0x64; 32]),
+            receipt_commitment: RgkReceiptCommitment([0x61; 32]),
+            spend_secret: [0x62; 32],
+            anchor: &issue.allocations[0].anchor,
+            view_key: Some(view_key),
+            policy_commitment: report.policy_commitment,
+        });
+        assert_ne!(
+            observer_commitment,
+            changed_state.public_observer_commitment()
+        );
+    }
+
+    #[test]
     fn nullifier_is_stable_but_unlinked_to_lane_id() {
-        let seal = seal(0x33, 0);
+        let anchor = anchor(0x33, 0);
         let secret = [0x51; 32];
-        let n1 = RgkNullifier::derive(secret, &seal);
-        let n2 = RgkNullifier::derive(secret, &seal);
+        let n1 = RgkNullifier::derive(secret, &anchor);
+        let n2 = RgkNullifier::derive(secret, &anchor);
         assert_eq!(n1, n2);
         assert_ne!(n1.0, lane_id());
     }

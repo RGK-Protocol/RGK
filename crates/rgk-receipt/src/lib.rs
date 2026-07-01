@@ -76,7 +76,7 @@ pub enum ReceiptError {
     AssetMismatch { expected: Hex32, actual: Hex32 },
     #[error("old state digest mismatch: receipt expects {expected}, current state is {actual}")]
     OldStateMismatch { expected: Hex32, actual: Hex32 },
-    #[error("receipt policy not compatible with proof mode {mode:?} (policy {policy:?})")]
+    #[error("receipt policy does not admit proof mode {mode:?} (policy {policy:?})")]
     PolicyRejectsMode {
         policy: ReceiptPolicy,
         mode: ProofMode,
@@ -238,7 +238,7 @@ impl ReceiptVerifier {
                 actual: Hex32(expected_old_state.state_digest),
             });
         }
-        // Policy / mode compatibility
+        // Policy / mode admission
         if !expected_old_state.receipt_policy.admits(receipt.proof_mode) {
             return Err(ReceiptError::PolicyRejectsMode {
                 policy: expected_old_state.receipt_policy,

@@ -214,7 +214,7 @@ pub struct RebuildSpendEvidence {
 
 /// Minimal evidence source needed by [`RebuildIndexer::rebuild_from`].
 ///
-/// A production adapter can back this with `KaspaChainBackend`, a virtual-chain
+/// A production source can back this with `KaspaChainBackend`, a virtual-chain
 /// listener cache, or an audited fixture. The indexer only consumes facts that
 /// are already observed and typed.
 pub trait RebuildSource {

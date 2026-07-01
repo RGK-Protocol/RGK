@@ -5,22 +5,25 @@
 //!
 //! 1. A typed `ZkStatement` — the public inputs to the ZK proof, matching
 //!    the RGK receipt's invariants exactly.
-//! 2. An opaque `ZkProof` wrapper for receipt-level plumbing. Its compatibility
-//!    `[tag byte || proof bytes]` encoding is not the complete Toccata
-//!    Groth16 stack.
-//! 3. A `ZkReceipt` builder/verifier that bridges `RgkReceipt` (in
-//!    [`rgk_receipt`]) and the on-chain verifier. The verifier is local:
-//!    it re-checks the statement, decodes the proof, and produces the compatibility
+//! 2. An opaque Groth16 `ZkProof` wrapper for receipt-level plumbing. Its
+//!    transport `[tag byte || proof bytes]` encoding is not the complete
+//!    Toccata Groth16 stack. Reserved non-Groth16 tags fail closed here.
+//! 3. A `ZkReceipt` builder/verifier that connects `RgkReceipt` (in
+//!    [`rgk_receipt`]) to the Toccata verifier stack. The verifier is local:
+//!    it re-checks the statement, decodes the proof, and produces the transport
 //!    tagged proof blob used by default-mode callers.
 //! 4. Under `real-zk`, complete Groth16 stack material for the Toccata
 //!    `OpZkPrecompile`: public inputs, count, proof, verifying key, tag.
-//! 5. Strict separation between **VerifierReceipt** mode (always-available,
+//! 5. A typed RISC Zero Succinct stack-material wrapper for Toccata's
+//!    `R0Succinct` precompile. This is stack construction support, not an RGK
+//!    RISC0 prover.
+//! 6. Strict separation between **VerifierReceipt** mode (always-available,
 //!    verifier-attested) and **ZkReceipt** mode (ZK-proven). The two
 //!    modes have different trust assumptions; see `docs/SECURITY.md`.
 //!
 //! ## What this crate does NOT do
 //!
-//! * It does **not** implement Groth16 / Risc0 verification. That is the
+//! * It does **not** implement Groth16 / RISC0 verification. That is the
 //!   Kaspa txscript engine's job. We produce the encoding the engine expects.
 //! * The default feature set does **not** generate real proofs. The
 //!   `real-zk` feature provides a local arkworks Groth16 prover/verifier path
@@ -58,10 +61,10 @@ use thiserror::Error;
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
 #[repr(u8)]
 pub enum ZkTag {
-    /// `0x20` — Groth16 (BN254) — used in production by many zk-rollups.
+    /// `0x20` — Groth16 (BN254) — used by many production verifier stacks.
     Groth16 = 0x20,
-    /// `0x21` — Risc0 Succinct (STARK over BN254). Reserved for future use;
-    /// disabled by default cost table on Toccata.
+    /// `0x21` — RISC Zero Succinct (STARK). Supported as Toccata stack
+    /// material; not accepted by RGK's opaque receipt wrapper.
     R0Succinct = 0x21,
 }
 
@@ -98,10 +101,144 @@ pub enum ZkError {
     SemanticTransitionInvalid(&'static str),
     #[error("unknown zk tag byte: 0x{0:02x}")]
     UnknownTag(u8),
+    #[error("unsupported zk tag for the active RGK receipt path: {0:?}")]
+    UnsupportedTag(ZkTag),
+    #[error("invalid R0 Succinct {field} length: got {got}, expected {expected}")]
+    InvalidR0SuccinctFieldLen {
+        field: &'static str,
+        got: usize,
+        expected: usize,
+    },
+    #[error("invalid R0 Succinct {field} length: got {got}, expected a multiple of {multiple}")]
+    InvalidR0SuccinctFieldMultiple {
+        field: &'static str,
+        got: usize,
+        multiple: usize,
+    },
+    #[error("R0 Succinct {field} has too many items: got {got}, max {max}")]
+    R0SuccinctTooManyItems {
+        field: &'static str,
+        got: usize,
+        max: usize,
+    },
+    #[error("unsupported R0 Succinct hash function id: {0}")]
+    UnsupportedR0SuccinctHashFn(u8),
     #[error("zk proof does not match the rgk receipt statement")]
     StatementMismatch,
     #[error("zk receipt mode requires ProofMode::ZkReceipt but receipt declares {0:?}")]
     WrongMode(ProofMode),
+}
+
+pub const R0_SUCCINCT_HASH_FN_POSEIDON2: u8 = 1;
+pub const R0_SUCCINCT_CONTROL_DIGEST_BYTES: usize = 32;
+pub const R0_SUCCINCT_CONTROL_INDEX_BYTES: usize = 4;
+pub const R0_SUCCINCT_MAX_CONTROL_DIGESTS: usize = 8;
+pub const R0_SUCCINCT_MAX_SEAL_BYTES: usize = 1_000_000;
+
+/// Stack material for Toccata's RISC Zero Succinct `OpZkPrecompile` path.
+///
+/// The upstream precompile pops, from top to bottom: tag, hash function id,
+/// control id, image id, journal, seal, control-digest siblings, control
+/// index, and claim. `script_push_items()` returns those items in the order
+/// they must be pushed into a Kaspa script before `OpZkPrecompile`.
+///
+/// This type does not generate or verify RISC0 proofs. It is a typed transport
+/// boundary for receipt material produced elsewhere, with the same syntactic
+/// constraints that the upstream precompile expects before integrity checking.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct R0SuccinctPrecompileStack {
+    pub claim: Bytes32,
+    pub control_index: [u8; R0_SUCCINCT_CONTROL_INDEX_BYTES],
+    pub control_digests: Vec<u8>,
+    pub seal: Vec<u8>,
+    pub journal: Bytes32,
+    pub image_id: Bytes32,
+    pub control_id: Bytes32,
+    pub hashfn: u8,
+    pub tag: [u8; 1],
+}
+
+impl R0SuccinctPrecompileStack {
+    pub fn new(
+        claim: Bytes32,
+        control_index: [u8; R0_SUCCINCT_CONTROL_INDEX_BYTES],
+        control_digests: Vec<u8>,
+        seal: Vec<u8>,
+        journal: Bytes32,
+        image_id: Bytes32,
+        control_id: Bytes32,
+        hashfn: u8,
+    ) -> Result<Self, ZkError> {
+        validate_r0_succinct_variable_fields(&control_digests, &seal, hashfn)?;
+        Ok(Self {
+            claim,
+            control_index,
+            control_digests,
+            seal,
+            journal,
+            image_id,
+            control_id,
+            hashfn,
+            tag: [ZkTag::R0Succinct.as_byte()],
+        })
+    }
+
+    pub fn script_push_items(&self) -> Vec<&[u8]> {
+        vec![
+            &self.claim,
+            &self.control_index,
+            &self.control_digests,
+            &self.seal,
+            &self.journal,
+            &self.image_id,
+            &self.control_id,
+            core::slice::from_ref(&self.hashfn),
+            &self.tag,
+        ]
+    }
+
+    pub fn control_digest_count(&self) -> usize {
+        self.control_digests.len() / R0_SUCCINCT_CONTROL_DIGEST_BYTES
+    }
+}
+
+fn validate_r0_succinct_variable_fields(
+    control_digests: &[u8],
+    seal: &[u8],
+    hashfn: u8,
+) -> Result<(), ZkError> {
+    if hashfn != R0_SUCCINCT_HASH_FN_POSEIDON2 {
+        return Err(ZkError::UnsupportedR0SuccinctHashFn(hashfn));
+    }
+    if control_digests.len() % R0_SUCCINCT_CONTROL_DIGEST_BYTES != 0 {
+        return Err(ZkError::InvalidR0SuccinctFieldMultiple {
+            field: "control_digests",
+            got: control_digests.len(),
+            multiple: R0_SUCCINCT_CONTROL_DIGEST_BYTES,
+        });
+    }
+    let control_digest_count = control_digests.len() / R0_SUCCINCT_CONTROL_DIGEST_BYTES;
+    if control_digest_count > R0_SUCCINCT_MAX_CONTROL_DIGESTS {
+        return Err(ZkError::R0SuccinctTooManyItems {
+            field: "control_digests",
+            got: control_digest_count,
+            max: R0_SUCCINCT_MAX_CONTROL_DIGESTS,
+        });
+    }
+    if seal.is_empty() || seal.len() % 4 != 0 {
+        return Err(ZkError::InvalidR0SuccinctFieldMultiple {
+            field: "seal",
+            got: seal.len(),
+            multiple: 4,
+        });
+    }
+    if seal.len() > R0_SUCCINCT_MAX_SEAL_BYTES {
+        return Err(ZkError::ProofTooLong {
+            got: seal.len(),
+            max: R0_SUCCINCT_MAX_SEAL_BYTES,
+        });
+    }
+    Ok(())
 }
 
 /// The RGK ZK public statement. Mirrors the RGK receipt exactly so that the
@@ -196,8 +333,8 @@ impl ZkStatement {
 ///
 /// Public inputs (in order):
 /// 0. `chain_id` (8 bytes — encoding of the chain tag + value as two u32s)
-/// 1. `schema_id` (32 bytes)
-/// 2. `asset_id` (32 bytes)
+/// 1. native grammar id, stored in the `schema_id` field (32 bytes)
+/// 2. lineage-bound `asset_id` label (32 bytes)
 /// 3. `previous_state_digest` (32 bytes)
 /// 4. `new_state_digest` (32 bytes)
 /// 5. `transition_digest` (32 bytes)
@@ -501,10 +638,11 @@ fn reject_zero_semantic(bytes: &Bytes32, field: &'static str) -> Result<(), ZkEr
     }
 }
 
-/// The ZK proof wrapper. The actual Groth16 / Risc0 proof bytes are opaque
-/// to this crate — we just carry them and pass them through. This wrapper is
-/// not the complete Groth16 `OpZkPrecompile` stack. The `max_proof_size` DoS
-/// budget lives here.
+/// The ZK proof wrapper for the active RGK Groth16 receipt path. The Groth16
+/// bytes are opaque to this crate, but reserved non-Groth16 tags fail closed so
+/// unsupported proof systems cannot be misrepresented as active support. This
+/// wrapper is not the complete Groth16 `OpZkPrecompile` stack. The
+/// `max_proof_size` DoS budget lives here.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct ZkProof {
     pub tag: ZkTag,
@@ -515,6 +653,9 @@ impl ZkProof {
     pub const MAX_PROOF_BYTES: usize = 1024 * 64; // 64 KiB hard cap
 
     pub fn new(tag: ZkTag, proof_bytes: Vec<u8>) -> Result<Self, ZkError> {
+        if tag != ZkTag::Groth16 {
+            return Err(ZkError::UnsupportedTag(tag));
+        }
         if proof_bytes.is_empty() {
             return Err(ZkError::MissingProof);
         }
@@ -527,7 +668,7 @@ impl ZkProof {
         Ok(Self { tag, proof_bytes })
     }
 
-    /// Encode the compatibility tagged proof blob: `[tag_byte || proof_bytes...]`.
+    /// Encode the transport tagged proof blob: `[tag_byte || proof_bytes...]`.
     ///
     /// For the complete Toccata Groth16 stack, use
     /// `real_zk::groth16_precompile_stack` with the `real-zk` feature.
@@ -567,7 +708,7 @@ impl ZkReceipt {
     /// Local verification. **This is NOT a substitute for the on-chain
     /// `OpZkPrecompile` call** — see SECURITY.md. It catches the obvious
     /// mismatches (mode, statement vs receipt, proof tag, public-input
-    /// length) and returns the compatibility tagged proof blob. It does not build the
+    /// length) and returns the transport tagged proof blob. It does not build the
     /// full Groth16 precompile stack.
     pub fn verify_local(
         &self,
@@ -734,6 +875,96 @@ mod tests {
     }
 
     #[test]
+    fn r0_succinct_precompile_stack_push_order_matches_toccata() {
+        let stack = R0SuccinctPrecompileStack::new(
+            [0x11; 32],
+            7u32.to_le_bytes(),
+            vec![0x22; R0_SUCCINCT_CONTROL_DIGEST_BYTES * 2],
+            vec![0x33; 16],
+            [0x44; 32],
+            [0x55; 32],
+            [0x66; 32],
+            R0_SUCCINCT_HASH_FN_POSEIDON2,
+        )
+        .unwrap();
+        let pushes = stack.script_push_items();
+
+        assert_eq!(pushes.len(), 9);
+        assert_eq!(pushes[0], &[0x11; 32]);
+        assert_eq!(pushes[1], &7u32.to_le_bytes());
+        assert_eq!(pushes[2], vec![0x22; R0_SUCCINCT_CONTROL_DIGEST_BYTES * 2]);
+        assert_eq!(pushes[3], vec![0x33; 16]);
+        assert_eq!(pushes[4], &[0x44; 32]);
+        assert_eq!(pushes[5], &[0x55; 32]);
+        assert_eq!(pushes[6], &[0x66; 32]);
+        assert_eq!(pushes[7], &[R0_SUCCINCT_HASH_FN_POSEIDON2]);
+        assert_eq!(pushes[8], &[ZkTag::R0Succinct.as_byte()]);
+        assert_eq!(stack.control_digest_count(), 2);
+    }
+
+    #[test]
+    fn r0_succinct_precompile_stack_rejects_invalid_shape() {
+        assert!(matches!(
+            R0SuccinctPrecompileStack::new(
+                [0x11; 32],
+                0u32.to_le_bytes(),
+                vec![0; 31],
+                vec![0; 16],
+                [0x44; 32],
+                [0x55; 32],
+                [0x66; 32],
+                R0_SUCCINCT_HASH_FN_POSEIDON2,
+            ),
+            Err(ZkError::InvalidR0SuccinctFieldMultiple {
+                field: "control_digests",
+                ..
+            })
+        ));
+        assert!(matches!(
+            R0SuccinctPrecompileStack::new(
+                [0x11; 32],
+                0u32.to_le_bytes(),
+                vec![0; R0_SUCCINCT_CONTROL_DIGEST_BYTES * (R0_SUCCINCT_MAX_CONTROL_DIGESTS + 1)],
+                vec![0; 16],
+                [0x44; 32],
+                [0x55; 32],
+                [0x66; 32],
+                R0_SUCCINCT_HASH_FN_POSEIDON2,
+            ),
+            Err(ZkError::R0SuccinctTooManyItems {
+                field: "control_digests",
+                ..
+            })
+        ));
+        assert!(matches!(
+            R0SuccinctPrecompileStack::new(
+                [0x11; 32],
+                0u32.to_le_bytes(),
+                vec![0; R0_SUCCINCT_CONTROL_DIGEST_BYTES],
+                vec![0; 15],
+                [0x44; 32],
+                [0x55; 32],
+                [0x66; 32],
+                R0_SUCCINCT_HASH_FN_POSEIDON2,
+            ),
+            Err(ZkError::InvalidR0SuccinctFieldMultiple { field: "seal", .. })
+        ));
+        assert!(matches!(
+            R0SuccinctPrecompileStack::new(
+                [0x11; 32],
+                0u32.to_le_bytes(),
+                vec![0; R0_SUCCINCT_CONTROL_DIGEST_BYTES],
+                vec![0; 16],
+                [0x44; 32],
+                [0x55; 32],
+                [0x66; 32],
+                2,
+            ),
+            Err(ZkError::UnsupportedR0SuccinctHashFn(2))
+        ));
+    }
+
+    #[test]
     fn public_inputs_length_is_pinned() {
         let r = sample_receipt();
         let id = receipt_commitment(&r);
@@ -767,6 +998,14 @@ mod tests {
         assert!(matches!(
             ZkProof::new(ZkTag::Groth16, big),
             Err(ZkError::ProofTooLong { .. })
+        ));
+    }
+
+    #[test]
+    fn proof_rejects_reserved_succinct_tag() {
+        assert!(matches!(
+            ZkProof::new(ZkTag::R0Succinct, vec![1, 2, 3]),
+            Err(ZkError::UnsupportedTag(ZkTag::R0Succinct))
         ));
     }
 

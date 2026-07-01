@@ -16,7 +16,7 @@ if [ ! -f "${MATRIX}" ]; then
     exit 2
 fi
 
-expected_header=$'example_id\tcategory\tcapabilities\tlocal_evidence\tdevnet_markers\tcontract_source\tsilverscript_status\tcompile_artifact_status\tpublic_staging_status\targent_equivalence_status'
+expected_header=$'example_id\tcategory\tcapabilities\tlocal_evidence\tdevnet_markers\tcontract_source\tsilverscript_status\tcompile_artifact_status\tpublic_staging_status\texternal_equivalence_status'
 actual_header="$(sed -n '1p' "${MATRIX}")"
 if [ "${actual_header}" != "${expected_header}" ]; then
     echo "[verify-example-matrix] bad header" >&2
@@ -27,7 +27,7 @@ tmp_ids="$(mktemp)"
 trap 'rm -f "${tmp_ids}"' EXIT
 
 rows=0
-while IFS=$'\t' read -r example_id category capabilities local_evidence devnet_markers contract_source silverscript_status compile_artifact_status public_staging_status argent_equivalence_status extra; do
+while IFS=$'\t' read -r example_id category capabilities local_evidence devnet_markers contract_source silverscript_status compile_artifact_status public_staging_status external_equivalence_status extra; do
     if [ "${example_id}" = "example_id" ]; then
         continue
     fi
@@ -35,7 +35,7 @@ while IFS=$'\t' read -r example_id category capabilities local_evidence devnet_m
         echo "[verify-example-matrix] too many columns for ${example_id}" >&2
         exit 1
     fi
-    for value in "${example_id}" "${category}" "${capabilities}" "${local_evidence}" "${devnet_markers}" "${contract_source}" "${silverscript_status}" "${compile_artifact_status}" "${public_staging_status}" "${argent_equivalence_status}"; do
+    for value in "${example_id}" "${category}" "${capabilities}" "${local_evidence}" "${devnet_markers}" "${contract_source}" "${silverscript_status}" "${compile_artifact_status}" "${public_staging_status}" "${external_equivalence_status}"; do
         if [ -z "${value}" ]; then
             echo "[verify-example-matrix] empty field in ${example_id}" >&2
             exit 1
@@ -72,10 +72,10 @@ while IFS=$'\t' read -r example_id category capabilities local_evidence devnet_m
             exit 1
             ;;
     esac
-    case "${argent_equivalence_status}" in
-        argent_external_scope) ;;
+    case "${external_equivalence_status}" in
+        not_required_for_rgk_native_core) ;;
         *)
-            echo "[verify-example-matrix] unsupported argent_equivalence_status for ${example_id}: ${argent_equivalence_status}" >&2
+            echo "[verify-example-matrix] unsupported external_equivalence_status for ${example_id}: ${external_equivalence_status}" >&2
             exit 1
             ;;
     esac
