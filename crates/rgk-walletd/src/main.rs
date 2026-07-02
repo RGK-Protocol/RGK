@@ -574,7 +574,14 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             .unwrap_or_else(|| default_sync_db_path(&cli.state)),
         state_path: cli.state,
     });
-    let store = Arc::new(Mutex::new(load_state(&config.state_path)?));
+    let mut loaded_state = load_state(&config.state_path)?;
+    if isolate_state_for_network(&mut loaded_state, config.network) {
+        eprintln!(
+            "rgk-walletd: ignoring wallet state from a different network at {}",
+            config.state_path.display()
+        );
+    }
+    let store = Arc::new(Mutex::new(loaded_state));
     let app_state = AppState {
         config,
         store,
@@ -2020,6 +2027,23 @@ fn normalise_loaded_state(state: &mut PersistedState) {
     }
 }
 
+fn isolate_state_for_network(state: &mut PersistedState, network: CliNetwork) -> bool {
+    let Some(profile) = state.profile.as_ref() else {
+        return false;
+    };
+    if profile_matches_network(profile, network) {
+        return false;
+    }
+    *state = PersistedState::default();
+    true
+}
+
+fn profile_matches_network(profile: &WalletProfile, network: CliNetwork) -> bool {
+    profile.network_id == network.network_id()
+        && profile.protocol_network_id == network.protocol_network_id()
+        && profile.canonical_chain_domain == network.chain_id().as_domain_str()
+}
+
 fn state_for_disk(state: &PersistedState) -> PersistedState {
     let mut disk_state = state.clone();
     let identity_vault_status = stored_identity_vault_status(disk_state.identity_vault.is_some());
@@ -2765,6 +2789,26 @@ mod tests {
         apply_successful_scan(&mut store, &scan);
 
         assert_eq!(store.kas_balance, "1.23456789 KAS");
+    }
+
+    #[test]
+    fn loaded_state_from_another_network_is_ignored() {
+        let mut state = PersistedState {
+            profile: Some(profile_with_identity("0xfingerprint".to_string())),
+            passphrase_salt: Some("salt".to_string()),
+            passphrase_verifier: Some("verifier".to_string()),
+            kas_balance: "1.00000000 KAS".to_string(),
+            lanes: vec![sample_lane([0x91u8; 32], [0x92u8; 32])],
+            ..PersistedState::default()
+        };
+
+        let isolated = isolate_state_for_network(&mut state, CliNetwork::Testnet12);
+
+        assert!(isolated);
+        assert!(state.profile.is_none());
+        assert!(state.passphrase_salt.is_none());
+        assert!(state.passphrase_verifier.is_none());
+        assert!(state.lanes.is_empty());
     }
 
     #[test]
