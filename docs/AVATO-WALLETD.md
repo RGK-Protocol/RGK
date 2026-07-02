@@ -37,7 +37,18 @@ separated, so `kaspa-local-toccata`, `kaspa-testnet`, and `kaspa-mainnet` must
 not be treated as interchangeable display labels.
 
 The first implementation persists wallet profile/dashboard metadata and a
-passphrase verifier. It does not persist recovery phrases or raw passphrases.
+salted passphrase verifier. It does not persist recovery phrases or raw
+passphrases.
 Scanner/resolver/prover integration should extend this daemon behind the same
 HTTP contract instead of changing the frontend shape.
 
+To verify the daemon against the Avato frontend contract:
+
+```bash
+bash scripts/verify-avato-walletd-contract.sh
+```
+
+The script starts `rgk-walletd` on an isolated local port, reads
+`../avato-wallet-frontend/contracts/rgk-wallet-http-contract.json`, exercises
+health/profile/create/dashboard/lock/unlock/sync, rejects a mismatched network
+request, and checks the state file for raw phrase/passphrase leakage.

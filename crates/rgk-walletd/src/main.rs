@@ -128,6 +128,7 @@ struct DaemonConfig {
 #[serde(rename_all = "camelCase")]
 struct PersistedState {
     profile: Option<WalletProfile>,
+    passphrase_salt: Option<String>,
     passphrase_verifier: Option<String>,
     kas_balance: String,
     lanes: Vec<AssetLane>,
@@ -336,6 +337,8 @@ enum WalletdError {
     PoisonedState,
     #[error("state persistence failed: {0}")]
     Persist(String),
+    #[error("failed to read local entropy: {0}")]
+    Entropy(String),
 }
 
 type ApiResult<T> = Result<Json<T>, (StatusCode, Json<ApiError>)>;
@@ -426,12 +429,16 @@ async fn unlock_wallet(
         .passphrase_verifier
         .clone()
         .ok_or_else(|| api_error(WalletdError::NotFound))?;
+    let passphrase_salt = store.passphrase_salt.clone();
     let profile = store
         .profile
         .as_mut()
         .ok_or_else(|| api_error(WalletdError::NotFound))?;
-    let candidate = passphrase_verifier(&profile.wallet_id, &input.passphrase);
-    if candidate != verifier {
+    let accepted = match passphrase_salt.as_deref() {
+        Some(salt) => passphrase_verifier_with_salt(salt, &profile.wallet_id, &input.passphrase),
+        None => legacy_passphrase_verifier(&profile.wallet_id, &input.passphrase),
+    };
+    if accepted != verifier {
         return Err(api_error(WalletdError::Unauthorized));
     }
     profile.lifecycle = WalletLifecycle::Ready;
@@ -497,7 +504,13 @@ async fn upsert_wallet(state: AppState, input: CreateWalletInput) -> ApiResult<W
         )),
         lifecycle: WalletLifecycle::Ready,
     };
-    store.passphrase_verifier = Some(passphrase_verifier(&profile.wallet_id, &input.passphrase));
+    let passphrase_salt = new_passphrase_salt().map_err(api_error)?;
+    store.passphrase_verifier = Some(passphrase_verifier_with_salt(
+        &passphrase_salt,
+        &profile.wallet_id,
+        &input.passphrase,
+    ));
+    store.passphrase_salt = Some(passphrase_salt);
     store.kas_balance = "0.00000000 KAS".to_string();
     store.lanes = sample_lanes(&state.config, &profile.wallet_id);
     store.proofs = sample_proofs(&profile.wallet_id);
@@ -567,7 +580,9 @@ fn api_error(error: WalletdError) -> (StatusCode, Json<ApiError>) {
         WalletdError::NotFound => StatusCode::NOT_FOUND,
         WalletdError::Locked | WalletdError::Unauthorized => StatusCode::UNAUTHORIZED,
         WalletdError::BadRequest(_) => StatusCode::BAD_REQUEST,
-        WalletdError::PoisonedState | WalletdError::Persist(_) => StatusCode::INTERNAL_SERVER_ERROR,
+        WalletdError::PoisonedState | WalletdError::Persist(_) | WalletdError::Entropy(_) => {
+            StatusCode::INTERNAL_SERVER_ERROR
+        }
     };
     (
         status,
@@ -577,13 +592,30 @@ fn api_error(error: WalletdError) -> (StatusCode, Json<ApiError>) {
     )
 }
 
-fn passphrase_verifier(wallet_id: &str, passphrase: &str) -> String {
+fn passphrase_verifier_with_salt(salt: &str, wallet_id: &str, passphrase: &str) -> String {
+    let mut hasher = Sha256::new();
+    hasher.update(b"rgk-walletd:passphrase:v1");
+    hasher.update(salt.as_bytes());
+    hasher.update(b":");
+    hasher.update(wallet_id.as_bytes());
+    hasher.update(b":");
+    hasher.update(passphrase.as_bytes());
+    format!("0x{}", hex::encode(hasher.finalize()))
+}
+
+fn legacy_passphrase_verifier(wallet_id: &str, passphrase: &str) -> String {
     let mut hasher = Sha256::new();
     hasher.update(b"rgk-walletd:passphrase:v1");
     hasher.update(wallet_id.as_bytes());
     hasher.update(b":");
     hasher.update(passphrase.as_bytes());
     format!("0x{}", hex::encode(hasher.finalize()))
+}
+
+fn new_passphrase_salt() -> Result<String, WalletdError> {
+    let mut bytes = [0u8; 16];
+    getrandom::getrandom(&mut bytes).map_err(|error| WalletdError::Entropy(error.to_string()))?;
+    Ok(format!("0x{}", hex::encode(bytes)))
 }
 
 fn hex_digest(domain: &str, value: &str, bytes: usize) -> String {

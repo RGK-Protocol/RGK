@@ -10,6 +10,7 @@ description = "Local RGK wallet HTTP daemon for Avato and other non-custodial fr
 [dependencies]
 axum = { version = "0.8", features = ["json"] }
 clap = { version = "4", features = ["derive", "env"] }
+getrandom.workspace = true
 hex.workspace = true
 rgk-core = { workspace = true, features = ["serde"] }
 serde.workspace = true
@@ -22,4 +23,3 @@ tower-http = { version = "0.6", features = ["cors"] }
 [[bin]]
 name = "rgk-walletd"
 path = "src/main.rs"
-
