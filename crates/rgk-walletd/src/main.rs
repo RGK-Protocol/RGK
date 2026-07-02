@@ -15,6 +15,7 @@ use axum::{Json, Router};
 use chacha20poly1305::aead::{Aead, KeyInit, Payload};
 use chacha20poly1305::{XChaCha20Poly1305, XNonce};
 use clap::{Parser, ValueEnum};
+use kaspa_addresses::{Address, Prefix as KaspaAddressPrefix, Version as KaspaAddressVersion};
 use rgk_core::{
     from_hex, receipt_commitment, replay_nonce, to_hex, Bytes32, Canonical, KaspaChainId,
     KaspaOutpoint, ProofMode, ReceiptPolicy, RgkReceipt, RgkStateCommitment, MAX_BLOB_BYTES,
@@ -24,6 +25,7 @@ use rgk_kaspa::{KaspaChainBackend, WrpcBackend, WrpcNetwork};
 use rgk_receipt::{ReceiptBuilder, ReceiptInput, ReceiptVerifier};
 use rgk_resolver::{LaneResolverState, ResolverState, RgkResolver};
 use rgk_sync::{ScanService, ScanServiceConfig, ScanTick};
+use secp256k1::{Keypair, Secp256k1, SecretKey};
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
 use thiserror::Error;
@@ -134,6 +136,15 @@ impl CliNetwork {
             Self::Devnet => WrpcNetwork::Devnet,
             Self::Simnet => WrpcNetwork::Simnet,
             Self::LocalToccata => WrpcNetwork::LocalToccata,
+        }
+    }
+
+    const fn address_prefix(self) -> KaspaAddressPrefix {
+        match self {
+            Self::Mainnet => KaspaAddressPrefix::Mainnet,
+            Self::Testnet10 | Self::Testnet12 => KaspaAddressPrefix::Testnet,
+            Self::Devnet => KaspaAddressPrefix::Devnet,
+            Self::Simnet | Self::LocalToccata => KaspaAddressPrefix::Simnet,
         }
     }
 }
@@ -671,6 +682,8 @@ async fn unlock_wallet(
     })?
     .map_err(api_error)?;
 
+    let address = derive_wallet_address(state.config.network, &unlocked_identity.identity_secret)
+        .map_err(api_error)?;
     let identity_fingerprint = unlocked_identity.identity_fingerprint.clone();
     let mut store = state.store()?;
     let Some(profile) = store.profile.as_mut() else {
@@ -679,6 +692,7 @@ async fn unlock_wallet(
     profile.lifecycle = WalletLifecycle::Ready;
     profile.identity_vault_status = IdentityVaultStatus::Unlocked;
     profile.identity_fingerprint = Some(identity_fingerprint);
+    profile.address = Some(address);
     let mut identity_session = state.identity_session()?;
     identity_session.unlock(profile.wallet_id.clone(), unlocked_identity);
     let profile = profile.clone();
@@ -979,6 +993,8 @@ async fn upsert_wallet(state: AppState, input: CreateWalletInput) -> ApiResult<W
     })?
     .map_err(api_error)?;
 
+    let address = derive_wallet_address(state.config.network, &identity_material.identity_secret)
+        .map_err(api_error)?;
     let mut store = state.store()?;
     let profile = WalletProfile {
         wallet_id: wallet_id.clone(),
@@ -996,7 +1012,7 @@ async fn upsert_wallet(state: AppState, input: CreateWalletInput) -> ApiResult<W
             ),
             32,
         )),
-        address: None,
+        address: Some(address),
         identity_vault_status: IdentityVaultStatus::Unlocked,
         identity_fingerprint: Some(identity_material.identity_fingerprint.clone()),
         lifecycle: WalletLifecycle::Ready,
@@ -2325,6 +2341,37 @@ fn identity_secret(
     )
 }
 
+fn derive_wallet_address(
+    network: CliNetwork,
+    identity_secret: &[u8],
+) -> Result<String, WalletdError> {
+    let secp = Secp256k1::new();
+    for nonce in 0u32..=u32::MAX {
+        let mut hasher = Sha256::new();
+        hasher.update(b"rgk-walletd:kaspa-wallet-address-key:v1");
+        hasher.update(network.chain_id().as_domain_str().as_bytes());
+        hasher.update(identity_secret);
+        hasher.update(nonce.to_le_bytes());
+        let mut secret_bytes: [u8; 32] = hasher.finalize().into();
+        let secret_key = SecretKey::from_slice(&secret_bytes);
+        secret_bytes.zeroize();
+        let Ok(secret_key) = secret_key else {
+            continue;
+        };
+        let keypair = Keypair::from_secret_key(&secp, &secret_key);
+        let x_only_public_key = keypair.x_only_public_key().0.serialize();
+        let address = Address::new(
+            network.address_prefix(),
+            KaspaAddressVersion::PubKey,
+            &x_only_public_key,
+        );
+        return Ok(address.to_string());
+    }
+    Err(WalletdError::Crypto(
+        "could not derive a valid Kaspa wallet address".to_string(),
+    ))
+}
+
 fn identity_digest(
     domain: &[u8],
     context: &IdentityVaultContext,
@@ -2632,6 +2679,29 @@ mod tests {
             decrypt_identity_vault(&profile, &material.vault, "wrong-passphrase"),
             Err(WalletdError::Unauthorized)
         ));
+    }
+
+    #[test]
+    fn wallet_address_derivation_uses_kaspa_network_prefixes() {
+        let material = build_wallet_identity_material(
+            identity_context(),
+            recovery_words(),
+            Zeroizing::new("address-passphrase".to_string()),
+        )
+        .expect("identity material");
+
+        let local = derive_wallet_address(CliNetwork::LocalToccata, &material.identity_secret)
+            .expect("local-toccata address");
+        let testnet = derive_wallet_address(CliNetwork::Testnet12, &material.identity_secret)
+            .expect("testnet address");
+        let mainnet = derive_wallet_address(CliNetwork::Mainnet, &material.identity_secret)
+            .expect("mainnet address");
+
+        assert!(local.starts_with("kaspasim:"));
+        assert!(testnet.starts_with("kaspatest:"));
+        assert!(mainnet.starts_with("kaspa:"));
+        assert_ne!(local, testnet);
+        assert_ne!(testnet, mainnet);
     }
 
     #[test]

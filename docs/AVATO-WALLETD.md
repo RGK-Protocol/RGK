@@ -61,13 +61,25 @@ characters, Kaspa endpoints must be `ws://` or `wss://`, lane tickers are
 uppercase asset symbols, balances are non-negative decimals, and manual proof
 txids must be 64 hexadecimal characters when present.
 
-The first implementation persists wallet profile/dashboard metadata, staged RGK
-lanes, staged proof receipts, and a salted passphrase verifier. It does not
-persist recovery phrases or raw passphrases. On Unix platforms, the state file
-is written with private user-only permissions so local metadata is not
-group/world readable. New and imported wallet profiles start without synthetic
-lane or proof records; lanes and receipt evidence appear only after explicit
-wallet actions or future scanner/resolver/prover integration.
+Wallet creation and import derive a deterministic RGK wallet identity from the
+recovery phrase, then persist that identity material only as an encrypted local
+vault. The vault uses Argon2id password derivation and XChaCha20-Poly1305
+authenticated encryption. The JSON state file may contain public profile
+metadata such as wallet id, wallet-set id, identity fingerprint, and Kaspa
+funding address, but it must not contain raw recovery words, raw passphrases, or
+private key bytes. On Unix platforms, the state file is written with private
+user-only permissions so local metadata is not group/world readable. New and
+imported wallet profiles start without synthetic lane or proof records; lanes
+and receipt evidence appear only after explicit wallet actions or future
+scanner/resolver/prover integration.
+
+The daemon treats `ready` as an in-memory state. State written to disk is
+normalised back to `locked` with `identityVaultStatus=encrypted`, so restarting
+the daemon requires `/wallet/unlock` before dashboard or lane operations are
+available. Successful create/import/unlock decrypts the identity vault,
+reconstructs the runtime identity session, derives the network-specific Kaspa
+funding address (`kaspa:`, `kaspatest:`, `kaspadev:`, or `kaspasim:`), and
+returns it in `WalletProfile.address`.
 `POST /lanes` has two explicit modes. With empty covenant evidence fields, it
 stages local metadata only, using protocol-width 32-byte textual handles and
 starting in `unknown`, not `open`, because a frontend action is not chain

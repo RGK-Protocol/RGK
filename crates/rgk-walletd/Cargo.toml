@@ -14,12 +14,14 @@ chacha20poly1305.workspace = true
 clap = { version = "4", features = ["derive", "env"] }
 getrandom.workspace = true
 hex.workspace = true
+kaspa-addresses.workspace = true
 rgk-core = { workspace = true, features = ["serde"] }
 rgk-indexer = { workspace = true, features = ["persistent"] }
 rgk-kaspa = { workspace = true, features = ["wrpc"] }
 rgk-receipt = { workspace = true }
 rgk-resolver = { workspace = true }
 rgk-sync = { workspace = true, features = ["wrpc"] }
+secp256k1.workspace = true
 serde.workspace = true
 serde_json.workspace = true
 sha2.workspace = true
