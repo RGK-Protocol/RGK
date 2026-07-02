@@ -40,7 +40,9 @@ not be treated as interchangeable display labels.
 
 The first implementation persists wallet profile/dashboard metadata, staged RGK
 lanes, staged proof receipts, and a salted passphrase verifier. It does not
-persist recovery phrases or raw passphrases.
+persist recovery phrases or raw passphrases. On Unix platforms, the state file
+is written with private user-only permissions so local metadata is not
+group/world readable.
 Scanner/resolver/prover integration should extend this daemon behind the same
 HTTP contract instead of changing the frontend shape.
 
@@ -54,4 +56,4 @@ The script starts `rgk-walletd` on an isolated local port, reads
 `../avato-wallet-frontend/contracts/rgk-wallet-http-contract.json`, exercises
 health/profile/create/dashboard/lane/proof/lock/unlock/sync, rejects a
 mismatched network request, and checks the state file for raw phrase/passphrase
-leakage.
+leakage and unsafe group/world-readable permissions.

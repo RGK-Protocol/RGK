@@ -233,5 +233,11 @@ assert "abandon" not in state_text
 assert "passphraseSalt" in state_text
 assert "passphraseVerifier" in state_text
 
+if os.name == "posix":
+    mode = os.stat(state_path).st_mode & 0o777
+    assert mode & 0o077 == 0, (
+        f"state file must not be group/world readable, got {oct(mode)}"
+    )
+
 print("[verify-avato-walletd-contract] ok")
 PY

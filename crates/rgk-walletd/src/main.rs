@@ -1,8 +1,9 @@
 #![forbid(unsafe_code)]
 
-use std::fs;
+use std::fs::{self, OpenOptions};
+use std::io::Write;
 use std::net::SocketAddr;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use std::sync::{Arc, Mutex, MutexGuard};
 use std::time::{SystemTime, UNIX_EPOCH};
 
@@ -716,14 +717,71 @@ fn load_state(path: &PathBuf) -> Result<PersistedState, Box<dyn std::error::Erro
     Ok(serde_json::from_slice(&bytes)?)
 }
 
-fn save_state(path: &PathBuf, state: &PersistedState) -> Result<(), (StatusCode, Json<ApiError>)> {
+fn save_state(path: &Path, state: &PersistedState) -> Result<(), (StatusCode, Json<ApiError>)> {
     if let Some(parent) = path.parent() {
         fs::create_dir_all(parent)
             .map_err(|error| api_error(WalletdError::Persist(error.to_string())))?;
     }
     let bytes = serde_json::to_vec_pretty(state)
         .map_err(|error| api_error(WalletdError::Persist(error.to_string())))?;
-    fs::write(path, bytes).map_err(|error| api_error(WalletdError::Persist(error.to_string())))
+    write_private_state_file(path, &bytes)
+        .map_err(|error| api_error(WalletdError::Persist(error.to_string())))
+}
+
+fn write_private_state_file(path: &Path, bytes: &[u8]) -> std::io::Result<()> {
+    let temp_path = temp_state_path(path);
+    let result = write_private_state_file_inner(path, &temp_path, bytes);
+    if result.is_err() {
+        let _ = fs::remove_file(&temp_path);
+    }
+    result
+}
+
+fn write_private_state_file_inner(
+    path: &Path,
+    temp_path: &Path,
+    bytes: &[u8],
+) -> std::io::Result<()> {
+    let mut options = OpenOptions::new();
+    options.write(true).create(true).truncate(true);
+    #[cfg(unix)]
+    {
+        use std::os::unix::fs::OpenOptionsExt;
+        options.mode(0o600);
+    }
+
+    let mut file = options.open(temp_path)?;
+    #[cfg(unix)]
+    restrict_state_file_permissions(temp_path)?;
+    file.write_all(bytes)?;
+    file.sync_all()?;
+    drop(file);
+
+    fs::rename(temp_path, path)?;
+    #[cfg(unix)]
+    restrict_state_file_permissions(path)?;
+    Ok(())
+}
+
+fn temp_state_path(path: &Path) -> PathBuf {
+    let file_name = path
+        .file_name()
+        .map(|value| value.to_string_lossy())
+        .unwrap_or_else(|| "state.json".into());
+    let timestamp = SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .map(|duration| duration.as_nanos())
+        .unwrap_or_default();
+    let temp_name = format!(".{file_name}.tmp-{}-{timestamp}", std::process::id());
+    path.parent()
+        .map(|parent| parent.join(&temp_name))
+        .unwrap_or_else(|| PathBuf::from(temp_name))
+}
+
+#[cfg(unix)]
+fn restrict_state_file_permissions(path: &Path) -> std::io::Result<()> {
+    use std::os::unix::fs::PermissionsExt;
+    fs::set_permissions(path, fs::Permissions::from_mode(0o600))
 }
 
 fn api_error(error: WalletdError) -> (StatusCode, Json<ApiError>) {
