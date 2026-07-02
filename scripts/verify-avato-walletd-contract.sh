@@ -323,6 +323,8 @@ lane = request("POST", "/lanes", {
 assert lane["label"] == "Contract smoke public lane"
 assert lane["privacy"] == "public-lineage"
 assert lane["proofPolicy"] == "verifier-only"
+assert lane["evidenceStatus"] == "metadata-only"
+assert lane["evidenceStatus"] in contract["enums"]["laneEvidenceStatus"]
 assert lane["resolverState"] in contract["enums"]["resolverState"]
 assert lane["resolverState"] == "unknown"
 assert_handle_hex32(lane["lineageId"], "lineageId")
@@ -356,6 +358,8 @@ assert indexed_lane["lineageId"] == f"rgk:lineage:{indexed_lane_evidence['lineag
 assert indexed_lane["laneId"] == f"rgk:lane:private:{indexed_lane_evidence['laneId']}"
 assert indexed_lane["covenantId"] == indexed_lane_evidence["covenantId"]
 assert indexed_lane["stateDigest"] == indexed_lane_evidence["stateDigest"]
+assert indexed_lane["evidenceStatus"] == "indexed"
+assert indexed_lane["evidenceStatus"] in contract["enums"]["laneEvidenceStatus"]
 assert indexed_lane["resolverState"] == "unknown"
 
 transition_payload = {

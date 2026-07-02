@@ -300,6 +300,8 @@ struct AssetLane {
     balance: String,
     privacy: PrivacyMode,
     proof_policy: ReceiptPolicyName,
+    #[serde(default)]
+    evidence_status: LaneEvidenceStatus,
     resolver_state: ResolverStateName,
     covenant_id: String,
     state_digest: String,
@@ -320,6 +322,14 @@ enum ReceiptPolicyName {
     Any,
     VerifierOnly,
     ZkOrVerifier,
+}
+
+#[derive(Copy, Clone, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "kebab-case")]
+enum LaneEvidenceStatus {
+    #[default]
+    MetadataOnly,
+    Indexed,
 }
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
@@ -824,6 +834,11 @@ async fn create_lane(
         balance,
         privacy: input.privacy,
         proof_policy: input.proof_policy,
+        evidence_status: if indexed.is_some() {
+            LaneEvidenceStatus::Indexed
+        } else {
+            LaneEvidenceStatus::MetadataOnly
+        },
         resolver_state: ResolverStateName::Unknown,
         covenant_id: indexed
             .as_ref()
@@ -1672,6 +1687,14 @@ fn apply_lane_resolution_updates(store: &mut PersistedState, updates: &[LaneReso
                 lane.latest_receipt_id = Some(receipt_id.clone());
                 changed = true;
             }
+        }
+        if (update.covenant_id.is_some()
+            || update.state_digest.is_some()
+            || !matches!(update.resolver_state, ResolverStateName::Unknown))
+            && lane.evidence_status != LaneEvidenceStatus::Indexed
+        {
+            lane.evidence_status = LaneEvidenceStatus::Indexed;
+            changed = true;
         }
         if changed {
             lane.updated_at = now_label();
@@ -2636,6 +2659,7 @@ mod tests {
             balance: "1.0000".to_string(),
             privacy: PrivacyMode::PublicLineage,
             proof_policy: ReceiptPolicyName::VerifierOnly,
+            evidence_status: LaneEvidenceStatus::Indexed,
             resolver_state: ResolverStateName::Unknown,
             covenant_id: hex32_label(&covenant_id),
             state_digest: hex32_label(&[0u8; 32]),
