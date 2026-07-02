@@ -114,6 +114,16 @@ def request(method, path, payload=None, expected_status=200):
         )
         return body.decode("utf-8", "replace")
 
+def assert_hex32(value, label):
+    assert isinstance(value, str), f"{label} must be a string"
+    assert value.startswith("0x") and len(value) == 66, (
+        f"{label} must be a 32-byte 0x-prefixed hex value, got {value}"
+    )
+    int(value[2:], 16)
+
+def assert_handle_hex32(value, label):
+    assert_hex32(value.rsplit(":", 1)[-1], label)
+
 health = request("GET", "/health")
 assert health["service"] == "rgk-wallet"
 assert health["protocol"] == "rgk"
@@ -222,6 +232,11 @@ assert lane["label"] == "Contract smoke public lane"
 assert lane["privacy"] == "public-lineage"
 assert lane["proofPolicy"] == "verifier-only"
 assert lane["resolverState"] in contract["enums"]["resolverState"]
+assert lane["resolverState"] == "unknown"
+assert_handle_hex32(lane["lineageId"], "lineageId")
+assert_handle_hex32(lane["laneId"], "laneId")
+assert_hex32(lane["covenantId"], "covenantId")
+assert_hex32(lane["stateDigest"], "stateDigest")
 
 request("POST", "/proofs", {
     "laneId": "rgk:lane:missing",
@@ -262,6 +277,7 @@ proof = request("POST", "/proofs", {
 assert proof["strategy"] == "contract-smoke-verifier"
 assert proof["verifierStatus"] == "pending"
 assert proof["confirmations"] == 1
+assert_handle_hex32(proof["receiptId"], "receiptId")
 
 dashboard_after_actions = request("GET", "/dashboard")
 assert len(dashboard_after_actions["lanes"]) == 1

@@ -12,9 +12,10 @@ use axum::http::StatusCode;
 use axum::routing::{get, post};
 use axum::{Json, Router};
 use clap::{Parser, ValueEnum};
-use rgk_core::KaspaChainId;
-use rgk_indexer::{ObservedSpendStore, SledIndexer};
-use rgk_kaspa::{WrpcBackend, WrpcNetwork};
+use rgk_core::{from_hex, to_hex, Bytes32, KaspaChainId};
+use rgk_indexer::{IndexedLane, Indexer, ObservedSpendStore, SledIndexer};
+use rgk_kaspa::{KaspaChainBackend, WrpcBackend, WrpcNetwork};
+use rgk_resolver::{LaneResolverState, ResolverState, RgkResolver};
 use rgk_sync::{ScanService, ScanServiceConfig, ScanTick};
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
@@ -171,7 +172,7 @@ struct WalletProfile {
     lifecycle: WalletLifecycle,
 }
 
-#[derive(Copy, Clone, Debug, Serialize, Deserialize)]
+#[derive(Copy, Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "kebab-case")]
 enum WalletLifecycle {
     NotCreated,
@@ -198,14 +199,14 @@ struct AssetLane {
     updated_at: String,
 }
 
-#[derive(Copy, Clone, Debug, Serialize, Deserialize)]
+#[derive(Copy, Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "kebab-case")]
 enum PrivacyMode {
     PrivateLane,
     PublicLineage,
 }
 
-#[derive(Copy, Clone, Debug, Serialize, Deserialize)]
+#[derive(Copy, Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "kebab-case")]
 enum ReceiptPolicyName {
     Any,
@@ -213,7 +214,7 @@ enum ReceiptPolicyName {
     ZkOrVerifier,
 }
 
-#[derive(Copy, Clone, Debug, Serialize, Deserialize)]
+#[derive(Copy, Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "kebab-case")]
 enum ResolverStateName {
     Open,
@@ -241,7 +242,7 @@ struct ProofSummary {
     updated_at: String,
 }
 
-#[derive(Copy, Clone, Debug, Serialize, Deserialize)]
+#[derive(Copy, Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "kebab-case")]
 enum ProofModeName {
     VerifierReceipt,
@@ -249,7 +250,7 @@ enum ProofModeName {
     P2mrRet,
 }
 
-#[derive(Copy, Clone, Debug, Serialize, Deserialize)]
+#[derive(Copy, Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "kebab-case")]
 enum ProofVerifierStatus {
     Verified,
@@ -282,7 +283,7 @@ impl Default for ScanStatus {
     }
 }
 
-#[derive(Copy, Clone, Debug, Serialize, Deserialize)]
+#[derive(Copy, Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "kebab-case")]
 enum ScanMode {
     Idle,
@@ -496,16 +497,16 @@ async fn unlock_wallet(
 }
 
 async fn sync_wallet(State(state): State<AppState>) -> ApiResult<DashboardSnapshot> {
-    let kaspa_endpoint = {
+    let (kaspa_endpoint, lanes) = {
         let store = state.store()?;
         let profile = ready_profile(&store)?;
         if matches!(profile.lifecycle, WalletLifecycle::Locked) {
             return Err(api_error(WalletdError::Locked));
         }
-        profile.kaspa_endpoint.clone()
+        (profile.kaspa_endpoint.clone(), store.lanes.clone())
     };
 
-    let scan_result = run_scan_tick(Arc::clone(&state.config), kaspa_endpoint).await;
+    let scan_result = run_scan_tick(Arc::clone(&state.config), kaspa_endpoint, lanes).await;
 
     let mut store = state.store()?;
     if matches!(
@@ -539,24 +540,20 @@ async fn create_lane(
     let seed = format!("{}:{}:{}:{}", wallet_id, label, ticker, store.lanes.len());
     let updated_at = now_label();
     let lane = AssetLane {
-        lineage_id: format!("rgk:lineage:{}", hex_digest("lineage", &seed, 8)),
+        lineage_id: format!("rgk:lineage:{}", hex_digest("lineage", &seed, 32)),
         lane_id: format!(
             "rgk:lane:{}:{}",
             privacy_slug(input.privacy),
-            hex_digest("lane", &seed, 8)
+            hex_digest("lane", &seed, 32)
         ),
         label,
         ticker,
         balance,
         privacy: input.privacy,
         proof_policy: input.proof_policy,
-        resolver_state: if state.config.network.chain_id().toccata_active_by_default() {
-            ResolverStateName::Open
-        } else {
-            ResolverStateName::NodeDown
-        },
-        covenant_id: hex_digest("covenant", &seed, 16),
-        state_digest: hex_digest("state", &seed, 16),
+        resolver_state: ResolverStateName::Unknown,
+        covenant_id: hex_digest("covenant", &seed, 32),
+        state_digest: hex_digest("state", &seed, 32),
         latest_receipt_id: None,
         updated_at,
     };
@@ -576,7 +573,7 @@ async fn record_proof(
     let txid = validate_optional_txid(&input.txid)?;
     let updated_at = now_label();
     let proof = ProofSummary {
-        receipt_id: format!("rgk:receipt:{}", hex_digest("receipt", &seed, 8)),
+        receipt_id: format!("rgk:receipt:{}", hex_digest("receipt", &seed, 32)),
         proof_mode: input.proof_mode,
         receipt_policy: input.receipt_policy,
         strategy,
@@ -656,11 +653,22 @@ async fn upsert_wallet(state: AppState, input: CreateWalletInput) -> ApiResult<W
 struct WalletdScanResult {
     tick: ScanTick,
     indexed_spends: usize,
+    lane_updates: Vec<LaneResolutionUpdate>,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+struct LaneResolutionUpdate {
+    lane_id: String,
+    resolver_state: ResolverStateName,
+    covenant_id: Option<String>,
+    state_digest: Option<String>,
+    latest_receipt_id: Option<String>,
 }
 
 async fn run_scan_tick(
     config: Arc<DaemonConfig>,
     kaspa_endpoint: String,
+    lanes: Vec<AssetLane>,
 ) -> Result<WalletdScanResult, String> {
     let backend = WrpcBackend::connect_borsh(&kaspa_endpoint, config.network.wrpc_network())
         .await
@@ -684,9 +692,11 @@ async fn run_scan_tick(
         let indexed_spends = indexer
             .observed_spend_count()
             .map_err(|error| format!("failed to count observed spends: {error}"))?;
+        let lane_updates = resolve_indexed_lanes(&backend, &indexer, chain_id, &lanes);
         Ok(WalletdScanResult {
             tick,
             indexed_spends,
+            lane_updates,
         })
     })
     .await
@@ -703,6 +713,7 @@ fn apply_successful_scan(store: &mut PersistedState, scan: &WalletdScanResult) {
     let indexed_spends = u64::try_from(scan.indexed_spends).unwrap_or(u64::MAX);
     store.scan.indexed_spends = indexed_spends;
     store.scan.observed_spends = indexed_spends;
+    apply_lane_resolution_updates(store, &scan.lane_updates);
     store.scan_notice = Some(if tick.initialised_cursor {
         format!(
             "RGK scanner cursor initialised at DAA {}.",
@@ -722,6 +733,44 @@ fn apply_failed_scan(store: &mut PersistedState, message: String) {
     }
     store.scan.scan_mode = ScanMode::Unavailable;
     store.scan_notice = Some(format!("RGK scanner unavailable: {message}"));
+}
+
+fn apply_lane_resolution_updates(store: &mut PersistedState, updates: &[LaneResolutionUpdate]) {
+    for update in updates {
+        let Some(lane) = store
+            .lanes
+            .iter_mut()
+            .find(|lane| lane.lane_id == update.lane_id)
+        else {
+            continue;
+        };
+        let mut changed = false;
+        if lane.resolver_state != update.resolver_state {
+            lane.resolver_state = update.resolver_state;
+            changed = true;
+        }
+        if let Some(covenant_id) = update.covenant_id.as_ref() {
+            if lane.covenant_id != *covenant_id {
+                lane.covenant_id = covenant_id.clone();
+                changed = true;
+            }
+        }
+        if let Some(state_digest) = update.state_digest.as_ref() {
+            if lane.state_digest != *state_digest {
+                lane.state_digest = state_digest.clone();
+                changed = true;
+            }
+        }
+        if let Some(receipt_id) = update.latest_receipt_id.as_ref() {
+            if lane.latest_receipt_id.as_ref() != Some(receipt_id) {
+                lane.latest_receipt_id = Some(receipt_id.clone());
+                changed = true;
+            }
+        }
+        if changed {
+            lane.updated_at = now_label();
+        }
+    }
 }
 
 fn dashboard_snapshot(
@@ -748,6 +797,102 @@ fn dashboard_snapshot(
             .clone()
             .unwrap_or_else(|| "Connected to the local RGK wallet daemon.".to_string()),
     })
+}
+
+fn resolve_indexed_lanes<B, I>(
+    backend: &B,
+    indexer: &I,
+    chain_id: KaspaChainId,
+    lanes: &[AssetLane],
+) -> Vec<LaneResolutionUpdate>
+where
+    B: KaspaChainBackend,
+    I: Indexer,
+{
+    let resolver = RgkResolver::new(backend, indexer, chain_id);
+    lanes
+        .iter()
+        .map(|lane| resolve_indexed_lane(&resolver, lane))
+        .collect()
+}
+
+fn resolve_indexed_lane<B, I>(
+    resolver: &RgkResolver<'_, B, I>,
+    lane: &AssetLane,
+) -> LaneResolutionUpdate
+where
+    B: KaspaChainBackend,
+    I: Indexer,
+{
+    if let Some(lane_id) = parse_bytes32_handle(&lane.lane_id) {
+        match resolver.resolve_lane(lane_id) {
+            LaneResolverState::Resolved {
+                lane: indexed_lane,
+                state,
+            } => {
+                return lane_update_from_resolver_state(lane, Some(&indexed_lane), state.as_ref());
+            }
+            LaneResolverState::UnknownLane { .. } => {}
+            LaneResolverState::UnknownScanTag { .. } => {}
+        }
+    }
+
+    if let Some(covenant_id) = parse_bytes32_handle(&lane.covenant_id) {
+        let state = resolver.resolve_by_covenant(covenant_id);
+        return lane_update_from_resolver_state(lane, None, &state);
+    }
+
+    LaneResolutionUpdate {
+        lane_id: lane.lane_id.clone(),
+        resolver_state: ResolverStateName::Unknown,
+        covenant_id: None,
+        state_digest: None,
+        latest_receipt_id: None,
+    }
+}
+
+fn lane_update_from_resolver_state(
+    lane: &AssetLane,
+    indexed_lane: Option<&IndexedLane>,
+    state: &ResolverState,
+) -> LaneResolutionUpdate {
+    let (state_digest, latest_receipt_id) = match state {
+        ResolverState::Open { state, .. } => (Some(hex32_label(&state.state_digest)), None),
+        ResolverState::NativeTransitionedValid {
+            new_state,
+            receipt_id,
+            ..
+        } => (
+            Some(hex32_label(&new_state.state_digest)),
+            Some(format!("rgk:receipt:{}", hex32_label(receipt_id))),
+        ),
+        _ => (None, None),
+    };
+
+    LaneResolutionUpdate {
+        lane_id: lane.lane_id.clone(),
+        resolver_state: resolver_state_name(state),
+        covenant_id: indexed_lane.map(|indexed| hex32_label(&indexed.covenant_id)),
+        state_digest,
+        latest_receipt_id,
+    }
+}
+
+fn resolver_state_name(state: &ResolverState) -> ResolverStateName {
+    match state {
+        ResolverState::Open { .. } => ResolverStateName::Open,
+        ResolverState::NativeTransitionedValid { .. } => ResolverStateName::NativeTransitionedValid,
+        ResolverState::NativeTransitionedInvalid { .. } => {
+            ResolverStateName::NativeTransitionedInvalid
+        }
+        ResolverState::Unconfirmed { .. } => ResolverStateName::Unconfirmed,
+        ResolverState::ReorgRisk { .. } => ResolverStateName::ReorgRisk,
+        ResolverState::CompetingBranch { .. } => ResolverStateName::CompetingBranch,
+        ResolverState::PolicyMigrationRequired { .. } => ResolverStateName::PolicyMigrationRequired,
+        ResolverState::ReplayRejected { .. } => ResolverStateName::ReplayRejected,
+        ResolverState::Unknown { .. } => ResolverStateName::Unknown,
+        ResolverState::NodeDown { .. } => ResolverStateName::NodeDown,
+    }
 }
 
 fn validate_input_network(
@@ -1092,10 +1237,144 @@ fn hex_digest(domain: &str, value: &str, bytes: usize) -> String {
     format!("0x{}", hex::encode(&digest[..bytes.min(digest.len())]))
 }
 
+fn parse_bytes32_handle(value: &str) -> Option<Bytes32> {
+    let segment = value.rsplit(':').next()?.trim();
+    let lower = segment.to_ascii_lowercase();
+    let hex = lower.strip_prefix("0x").unwrap_or(&lower);
+    from_hex::<32>(hex).ok()
+}
+
+fn hex32_label(value: &Bytes32) -> String {
+    format!("0x{}", to_hex(value))
+}
+
 fn now_label() -> String {
     let seconds = SystemTime::now()
         .duration_since(UNIX_EPOCH)
         .map(|duration| duration.as_secs())
         .unwrap_or_default();
     format!("unix:{seconds}")
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use rgk_core::{KaspaOutpoint, ReceiptPolicy, RgkStateCommitment, KASPA_LOCAL_TOCCATA};
+    use rgk_indexer::InMemoryIndexer;
+    use rgk_kaspa::{FixtureBackend, KaspaUtxo};
+
+    fn sample_lane(lane_id: Bytes32, covenant_id: Bytes32) -> AssetLane {
+        AssetLane {
+            lineage_id: "rgk:lineage:test".to_string(),
+            lane_id: format!("rgk:lane:public:{}", hex32_label(&lane_id)),
+            label: "Test lane".to_string(),
+            ticker: "RGK".to_string(),
+            balance: "1.0000".to_string(),
+            privacy: PrivacyMode::PublicLineage,
+            proof_policy: ReceiptPolicyName::VerifierOnly,
+            resolver_state: ResolverStateName::Unknown,
+            covenant_id: hex32_label(&covenant_id),
+            state_digest: hex32_label(&[0u8; 32]),
+            latest_receipt_id: None,
+            updated_at: "unix:0".to_string(),
+        }
+    }
+
+    #[test]
+    fn parse_bytes32_handle_accepts_prefixed_lane_handles_only_at_full_width() {
+        let lane_id = [0x11u8; 32];
+        assert_eq!(
+            parse_bytes32_handle(&format!("rgk:lane:private:{}", hex32_label(&lane_id))),
+            Some(lane_id)
+        );
+        assert_eq!(parse_bytes32_handle(&hex32_label(&lane_id)), Some(lane_id));
+        assert_eq!(
+            parse_bytes32_handle(&format!("rgk:lane:private:0X{}", to_hex(&lane_id))),
+            Some(lane_id)
+        );
+        assert_eq!(parse_bytes32_handle("rgk:lane:private:0x1111"), None);
+        assert_eq!(parse_bytes32_handle("rgk:lane:private:not-hex"), None);
+    }
+
+    #[test]
+    fn resolve_indexed_lanes_refreshes_open_lane_from_indexer_and_backend() {
+        let covenant_id = [0x21u8; 32];
+        let asset_id = [0x22u8; 32];
+        let lane_id = [0x23u8; 32];
+        let state_digest = [0x24u8; 32];
+        let open_outpoint = KaspaOutpoint {
+            transaction_id: [0x25u8; 32],
+            index: 0,
+        };
+        let state = RgkStateCommitment::new(
+            KASPA_LOCAL_TOCCATA,
+            covenant_id,
+            asset_id,
+            state_digest,
+            ReceiptPolicy::VerifierOnly,
+        )
+        .expect("state");
+        let mut indexer = InMemoryIndexer::new();
+        indexer
+            .open(
+                KASPA_LOCAL_TOCCATA,
+                covenant_id,
+                [0x26u8; 32],
+                state,
+                open_outpoint,
+                10,
+            )
+            .expect("open covenant");
+        indexer
+            .register_lane(IndexedLane::new(
+                KASPA_LOCAL_TOCCATA,
+                covenant_id,
+                asset_id,
+                lane_id,
+                0,
+                None,
+                true,
+                state_digest,
+                10,
+            ))
+            .expect("register lane");
+
+        let mut backend = FixtureBackend::new(KASPA_LOCAL_TOCCATA);
+        backend.add_utxo_at(
+            10,
+            KaspaUtxo::new(open_outpoint, 1, Vec::new(), Some(10), None).expect("utxo"),
+        );
+
+        let updates = resolve_indexed_lanes(
+            &backend,
+            &indexer,
+            KASPA_LOCAL_TOCCATA,
+            &[sample_lane(lane_id, covenant_id)],
+        );
+
+        assert_eq!(updates.len(), 1);
+        assert_eq!(updates[0].resolver_state, ResolverStateName::Open);
+        assert_eq!(updates[0].covenant_id, Some(hex32_label(&covenant_id)));
+        assert_eq!(updates[0].state_digest, Some(hex32_label(&state_digest)));
+        assert_eq!(updates[0].latest_receipt_id, None);
+    }
+
+    #[test]
+    fn resolve_indexed_lanes_keeps_short_legacy_handles_unknown() {
+        let lane = AssetLane {
+            lane_id: "rgk:lane:public:0x1234".to_string(),
+            covenant_id: "0xabcd".to_string(),
+            ..sample_lane([0x31u8; 32], [0x32u8; 32])
+        };
+        let backend = FixtureBackend::new(KASPA_LOCAL_TOCCATA);
+        let indexer = InMemoryIndexer::new();
+
+        let updates = resolve_indexed_lanes(&backend, &indexer, KASPA_LOCAL_TOCCATA, &[lane]);
+
+        assert_eq!(updates.len(), 1);
+        assert_eq!(updates[0].resolver_state, ResolverStateName::Unknown);
+        assert_eq!(updates[0].covenant_id, None);
+        assert_eq!(updates[0].state_digest, None);
+        assert_eq!(updates[0].latest_receipt_id, None);
+    }
 }

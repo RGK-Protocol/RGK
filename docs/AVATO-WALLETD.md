@@ -67,6 +67,8 @@ is written with private user-only permissions so local metadata is not
 group/world readable. New and imported wallet profiles start without synthetic
 lane or proof records; lanes and receipt evidence appear only after explicit
 wallet actions or future scanner/resolver/prover integration.
+New locally-staged lanes use protocol-width 32-byte textual handles but start
+in `unknown`, not `open`, because a frontend action is not chain evidence.
 Manual `POST /proofs` calls stage local receipt evidence as `pending`; they do
 not mark a receipt as verified and do not move a lane into
 `NativeTransitionedValid`. That transition is reserved for verifier,
@@ -74,12 +76,15 @@ scanner/resolver, or prover-backed evidence.
 `POST /wallet/sync` now runs one restart-safe `rgk-sync` scanner tick against
 the wallet profile's Kaspa wRPC endpoint. The scanner persists observed spend
 records to sled before advancing the scan cursor; the cursor must not outrun
-the evidence that the resolver will need later. If the node or scanner database
-is unavailable, the endpoint still returns a dashboard, but marks the profile
-`service-required`, the scanner `unavailable`, and the service mode
-`unavailable`. Scanner failure must not be collapsed into verified receipt
-state. Resolver/prover integration should extend this daemon behind the same
-HTTP contract instead of changing the frontend shape.
+the evidence that the resolver will need later. After a successful scan, the
+daemon re-runs the RGK resolver for dashboard lanes that carry parseable
+32-byte lane or covenant handles, and only resolver output may promote those
+lanes to `open`, `native-transitioned-valid`, or another classified state. If
+the node or scanner database is unavailable, the endpoint still returns a
+dashboard, but marks the profile `service-required`, the scanner `unavailable`,
+and the service mode `unavailable`. Scanner failure must not be collapsed into
+verified receipt state. Prover integration should extend this daemon behind the
+same HTTP contract instead of changing the frontend shape.
 
 To verify the daemon against the Avato frontend contract:
 
