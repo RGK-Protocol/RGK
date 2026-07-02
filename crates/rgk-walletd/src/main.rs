@@ -118,14 +118,13 @@ impl CliNetwork {
         }
     }
 
-    const fn default_kaspa_endpoint(self) -> &'static str {
+    const fn default_kaspa_endpoint(self) -> Option<&'static str> {
         match self {
-            Self::Mainnet => "wss://host.example/v2/kaspa/mainnet/tls/wrpc/borsh",
-            Self::Testnet10 => "wss://host.example/v2/kaspa/testnet-10/tls/wrpc/borsh",
-            Self::Testnet12 => "wss://host.example/v2/kaspa/testnet-12/tls/wrpc/borsh",
-            Self::Devnet => "ws://127.0.0.1:19111/v2/kaspa/devnet/no-tls/wrpc/borsh",
-            Self::Simnet => "ws://127.0.0.1:18111/v2/kaspa/simnet/no-tls/wrpc/borsh",
-            Self::LocalToccata => "ws://127.0.0.1:18111/v2/kaspa/simnet/no-tls/wrpc/borsh",
+            Self::Mainnet | Self::Testnet10 | Self::Testnet12 => None,
+            Self::Devnet => Some("ws://127.0.0.1:19111/v2/kaspa/devnet/no-tls/wrpc/borsh"),
+            Self::Simnet | Self::LocalToccata => {
+                Some("ws://127.0.0.1:18111/v2/kaspa/simnet/no-tls/wrpc/borsh")
+            }
         }
     }
 
@@ -159,7 +158,7 @@ struct AppState {
 #[derive(Debug)]
 struct DaemonConfig {
     network: CliNetwork,
-    kaspa_endpoint: String,
+    kaspa_endpoint: Option<String>,
     state_path: PathBuf,
     sync_db_path: PathBuf,
 }
@@ -566,9 +565,11 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let cli = Cli::parse();
     let config = Arc::new(DaemonConfig {
         network: cli.network,
-        kaspa_endpoint: cli
-            .kaspa_endpoint
-            .unwrap_or_else(|| cli.network.default_kaspa_endpoint().to_string()),
+        kaspa_endpoint: cli.kaspa_endpoint.or_else(|| {
+            cli.network
+                .default_kaspa_endpoint()
+                .map(ToString::to_string)
+        }),
         sync_db_path: cli
             .sync_db
             .unwrap_or_else(|| default_sync_db_path(&cli.state)),
@@ -986,8 +987,7 @@ async fn upsert_wallet(state: AppState, input: CreateWalletInput) -> ApiResult<W
     let wallet_id = validate_wallet_id(&input.wallet_id)?;
     let recovery_phrase = validate_recovery_phrase(&input.recovery_phrase)?;
     let passphrase = Zeroizing::new(validate_passphrase(&input.passphrase)?);
-    let kaspa_endpoint = validate_optional_kaspa_endpoint(&input.kaspa_endpoint)?
-        .unwrap_or_else(|| state.config.kaspa_endpoint.clone());
+    let kaspa_endpoint = select_kaspa_endpoint(&state.config, &input.kaspa_endpoint)?;
     let identity_context = IdentityVaultContext {
         wallet_id: wallet_id.clone(),
         network_id: state.config.network.network_id().to_string(),
@@ -1853,6 +1853,21 @@ fn validate_optional_kaspa_endpoint(
         )));
     }
     Ok(Some(trimmed.to_string()))
+}
+
+fn select_kaspa_endpoint(
+    config: &DaemonConfig,
+    value: &str,
+) -> Result<String, (StatusCode, Json<ApiError>)> {
+    if let Some(endpoint) = validate_optional_kaspa_endpoint(value)? {
+        return Ok(endpoint);
+    }
+    config.kaspa_endpoint.clone().ok_or_else(|| {
+        api_error(WalletdError::BadRequest(
+            "kaspaEndpoint is required when rgk-walletd has no configured Kaspa wRPC endpoint"
+                .to_string(),
+        ))
+    })
 }
 
 fn validate_lane_label(value: &str) -> Result<String, (StatusCode, Json<ApiError>)> {
@@ -2759,6 +2774,42 @@ mod tests {
         assert_eq!(format_kas_balance(1), "0.00000001 KAS");
         assert_eq!(format_kas_balance(123_456_789), "1.23456789 KAS");
         assert_eq!(format_kas_balance(10_000_000_000), "100.00000000 KAS");
+    }
+
+    #[test]
+    fn kaspa_endpoint_selection_uses_configured_default_only_when_available() {
+        let local_endpoint = CliNetwork::LocalToccata
+            .default_kaspa_endpoint()
+            .expect("local endpoint")
+            .to_string();
+        let local_config = DaemonConfig {
+            network: CliNetwork::LocalToccata,
+            kaspa_endpoint: Some(local_endpoint.clone()),
+            state_path: temp_path("rgk-walletd-local-state"),
+            sync_db_path: temp_path("rgk-walletd-local-sync"),
+        };
+
+        assert_eq!(
+            select_kaspa_endpoint(&local_config, "").expect("local fallback"),
+            local_endpoint
+        );
+
+        let testnet_config = DaemonConfig {
+            network: CliNetwork::Testnet12,
+            kaspa_endpoint: None,
+            state_path: temp_path("rgk-walletd-testnet-state"),
+            sync_db_path: temp_path("rgk-walletd-testnet-sync"),
+        };
+
+        assert!(select_kaspa_endpoint(&testnet_config, "").is_err());
+        assert_eq!(
+            select_kaspa_endpoint(
+                &testnet_config,
+                "wss://example.com/v2/kaspa/testnet-12/tls/wrpc/borsh",
+            )
+            .expect("explicit endpoint"),
+            "wss://example.com/v2/kaspa/testnet-12/tls/wrpc/borsh"
+        );
     }
 
     #[test]
