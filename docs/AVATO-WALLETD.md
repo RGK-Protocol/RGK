@@ -57,6 +57,10 @@ is written with private user-only permissions so local metadata is not
 group/world readable. New and imported wallet profiles start without synthetic
 lane or proof records; lanes and receipt evidence appear only after explicit
 wallet actions or future scanner/resolver/prover integration.
+Manual `POST /proofs` calls stage local receipt evidence as `pending`; they do
+not mark a receipt as verified and do not move a lane into
+`NativeTransitionedValid`. That transition is reserved for verifier,
+scanner/resolver, or prover-backed evidence.
 Scanner/resolver/prover integration should extend this daemon behind the same
 HTTP contract instead of changing the frontend shape.
 

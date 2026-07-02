@@ -98,7 +98,14 @@ def request(method, path, payload=None, expected_status=200):
     )
     if not body:
         return None
-    return json.loads(body)
+    try:
+        return json.loads(body)
+    except json.JSONDecodeError:
+        assert expected_status >= 400, (
+            f"{method} {path} returned non-JSON body for status {status}: "
+            f"{body.decode('utf-8', 'replace')}"
+        )
+        return body.decode("utf-8", "replace")
 
 health = request("GET", "/health")
 assert health["service"] == "rgk-wallet"
@@ -177,22 +184,30 @@ request("POST", "/proofs", {
     "proofMode": "verifier-receipt",
     "receiptPolicy": "verifier-only",
     "strategy": "contract-smoke-orphan",
-    "verifierStatus": "pending",
     "txid": "",
     "confirmations": 0,
 }, expected_status=400)
+
+request("POST", "/proofs", {
+    "laneId": lane["laneId"],
+    "proofMode": "verifier-receipt",
+    "receiptPolicy": "verifier-only",
+    "strategy": "contract-smoke-stale-client",
+    "verifierStatus": "verified",
+    "txid": "contract-smoke-stale-txid",
+    "confirmations": 1,
+}, expected_status=422)
 
 proof = request("POST", "/proofs", {
     "laneId": lane["laneId"],
     "proofMode": "verifier-receipt",
     "receiptPolicy": "verifier-only",
     "strategy": "contract-smoke-verifier",
-    "verifierStatus": "verified",
     "txid": "contract-smoke-txid",
     "confirmations": 1,
 })
 assert proof["strategy"] == "contract-smoke-verifier"
-assert proof["verifierStatus"] == "verified"
+assert proof["verifierStatus"] == "pending"
 assert proof["confirmations"] == 1
 
 dashboard_after_actions = request("GET", "/dashboard")
@@ -202,7 +217,7 @@ assert any(item["laneId"] == lane["laneId"] for item in dashboard_after_actions[
 assert any(item["receiptId"] == proof["receiptId"] for item in dashboard_after_actions["proofs"])
 updated_lane = next(item for item in dashboard_after_actions["lanes"] if item["laneId"] == lane["laneId"])
 assert updated_lane["latestReceiptId"] == proof["receiptId"]
-assert updated_lane["resolverState"] == "native-transitioned-valid"
+assert updated_lane["resolverState"] == lane["resolverState"]
 
 request("POST", "/wallet/lock", expected_status=204)
 request("GET", "/dashboard", expected_status=401)

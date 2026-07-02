@@ -318,13 +318,12 @@ struct CreateLaneInput {
 }
 
 #[derive(Debug, Deserialize)]
-#[serde(rename_all = "camelCase")]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
 struct RecordProofInput {
     lane_id: String,
     proof_mode: ProofModeName,
     receipt_policy: ReceiptPolicyName,
     strategy: String,
-    verifier_status: ProofVerifierStatus,
     txid: String,
     confirmations: u64,
 }
@@ -549,7 +548,7 @@ async fn record_proof(
         proof_mode: input.proof_mode,
         receipt_policy: input.receipt_policy,
         strategy,
-        verifier_status: input.verifier_status,
+        verifier_status: ProofVerifierStatus::Pending,
         txid,
         confirmations: input.confirmations,
         updated_at: updated_at.clone(),
@@ -568,9 +567,6 @@ async fn record_proof(
 
     lane.latest_receipt_id = Some(proof.receipt_id.clone());
     lane.updated_at = updated_at;
-    if matches!(proof.verifier_status, ProofVerifierStatus::Verified) {
-        lane.resolver_state = ResolverStateName::NativeTransitionedValid;
-    }
 
     store.proofs.push(proof.clone());
     store.scan.scan_mode = ScanMode::Idle;
