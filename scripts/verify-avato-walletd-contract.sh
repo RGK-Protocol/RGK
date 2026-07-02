@@ -147,6 +147,18 @@ wrong_network["protocolNetworkId"] = "testnet-12"
 wrong_network["canonicalChainDomain"] = "kaspa-testnet"
 request("POST", "/wallets", wrong_network, expected_status=400)
 
+stale_wallet = dict(valid_payload)
+stale_wallet["unexpectedField"] = "stale-client"
+request("POST", "/wallets", stale_wallet, expected_status=422)
+
+bad_wallet_id = dict(valid_payload)
+bad_wallet_id["walletId"] = "bad wallet id"
+request("POST", "/wallets", bad_wallet_id, expected_status=400)
+
+bad_endpoint = dict(valid_payload)
+bad_endpoint["kaspaEndpoint"] = "https://example.invalid/not-wrpc"
+request("POST", "/wallets", bad_endpoint, expected_status=400)
+
 profile = request("POST", "/wallets", valid_payload)
 assert profile["walletId"] == "avato-contract-smoke"
 assert profile["protocol"] == "rgk"
@@ -166,6 +178,31 @@ assert dashboard["serviceMode"] in contract["enums"]["serviceMode"]
 assert dashboard["lanes"] == [], "new wallet must not invent RGK lanes"
 assert dashboard["proofs"] == [], "new wallet must not invent RGK proofs"
 assert dashboard["scan"]["scanMode"] in contract["enums"]["scanMode"]
+
+request("POST", "/lanes", {
+    "label": "Bad ticker lane",
+    "ticker": "bad",
+    "balance": "1.0000",
+    "privacy": "public-lineage",
+    "proofPolicy": "verifier-only",
+}, expected_status=400)
+
+request("POST", "/lanes", {
+    "label": "Bad balance lane",
+    "ticker": "BAD",
+    "balance": "-1.0000",
+    "privacy": "public-lineage",
+    "proofPolicy": "verifier-only",
+}, expected_status=400)
+
+request("POST", "/lanes", {
+    "label": "Stale lane",
+    "ticker": "STL",
+    "balance": "1.0000",
+    "privacy": "public-lineage",
+    "proofPolicy": "verifier-only",
+    "unexpectedField": "stale-client",
+}, expected_status=422)
 
 lane = request("POST", "/lanes", {
     "label": "Contract smoke public lane",
@@ -194,16 +231,25 @@ request("POST", "/proofs", {
     "receiptPolicy": "verifier-only",
     "strategy": "contract-smoke-stale-client",
     "verifierStatus": "verified",
-    "txid": "contract-smoke-stale-txid",
+    "txid": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
     "confirmations": 1,
 }, expected_status=422)
+
+request("POST", "/proofs", {
+    "laneId": lane["laneId"],
+    "proofMode": "verifier-receipt",
+    "receiptPolicy": "verifier-only",
+    "strategy": "contract-smoke-bad-txid",
+    "txid": "contract-smoke-txid",
+    "confirmations": 1,
+}, expected_status=400)
 
 proof = request("POST", "/proofs", {
     "laneId": lane["laneId"],
     "proofMode": "verifier-receipt",
     "receiptPolicy": "verifier-only",
     "strategy": "contract-smoke-verifier",
-    "txid": "contract-smoke-txid",
+    "txid": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
     "confirmations": 1,
 })
 assert proof["strategy"] == "contract-smoke-verifier"
@@ -233,6 +279,12 @@ request(
     "/wallet/unlock",
     {"passphrase": "incorrect-passphrase"},
     expected_status=401,
+)
+request(
+    "POST",
+    "/wallet/unlock",
+    {"passphrase": "contract-passphrase", "unexpectedField": "stale-client"},
+    expected_status=422,
 )
 unlocked = request("POST", "/wallet/unlock", {"passphrase": "contract-passphrase"})
 assert unlocked["lifecycle"] == "ready"

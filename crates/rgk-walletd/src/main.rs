@@ -290,7 +290,7 @@ enum ServiceMode {
 }
 
 #[derive(Debug, Deserialize)]
-#[serde(rename_all = "camelCase")]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
 struct CreateWalletInput {
     wallet_id: String,
     network_id: String,
@@ -302,13 +302,13 @@ struct CreateWalletInput {
 }
 
 #[derive(Debug, Deserialize)]
-#[serde(rename_all = "camelCase")]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
 struct UnlockWalletInput {
     passphrase: String,
 }
 
 #[derive(Debug, Deserialize)]
-#[serde(rename_all = "camelCase")]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
 struct CreateLaneInput {
     label: String,
     ticker: String,
@@ -501,9 +501,9 @@ async fn create_lane(
 ) -> ApiResult<AssetLane> {
     let mut store = state.store()?;
     let wallet_id = ready_wallet_id(&store)?;
-    let label = trimmed_or_default(&input.label, "New RGK lane");
-    let ticker = trimmed_or_default(&input.ticker, "RGK");
-    let balance = trimmed_or_default(&input.balance, "0.0000");
+    let label = validate_lane_label(&input.label)?;
+    let ticker = validate_ticker(&input.ticker)?;
+    let balance = validate_balance(&input.balance)?;
     let seed = format!("{}:{}:{}:{}", wallet_id, label, ticker, store.lanes.len());
     let updated_at = now_label();
     let lane = AssetLane {
@@ -539,9 +539,9 @@ async fn record_proof(
 ) -> ApiResult<ProofSummary> {
     let mut store = state.store()?;
     let wallet_id = ready_wallet_id(&store)?;
-    let strategy = trimmed_or_default(&input.strategy, "verifier-receipt-baseline");
+    let strategy = validate_strategy(&input.strategy)?;
     let seed = format!("{}:{}:{}", wallet_id, strategy, store.proofs.len());
-    let txid = trimmed_optional(&input.txid);
+    let txid = validate_optional_txid(&input.txid)?;
     let updated_at = now_label();
     let proof = ProofSummary {
         receipt_id: format!("rgk:receipt:{}", hex_digest("receipt", &seed, 8)),
@@ -585,34 +585,25 @@ async fn record_proof(
 
 async fn upsert_wallet(state: AppState, input: CreateWalletInput) -> ApiResult<WalletProfile> {
     validate_input_network(&state.config, &input)?;
-    if input.recovery_phrase.len() < 12 {
-        return Err(api_error(WalletdError::BadRequest(
-            "recoveryPhrase must contain at least 12 words".to_string(),
-        )));
-    }
-    if input.passphrase.len() < 8 {
-        return Err(api_error(WalletdError::BadRequest(
-            "passphrase must contain at least 8 characters".to_string(),
-        )));
-    }
+    let wallet_id = validate_wallet_id(&input.wallet_id)?;
+    validate_recovery_phrase(&input.recovery_phrase)?;
+    let passphrase = validate_passphrase(&input.passphrase)?;
+    let kaspa_endpoint = validate_optional_kaspa_endpoint(&input.kaspa_endpoint)?
+        .unwrap_or_else(|| state.config.kaspa_endpoint.clone());
 
     let mut store = state.store()?;
     let profile = WalletProfile {
-        wallet_id: input.wallet_id.clone(),
+        wallet_id: wallet_id.clone(),
         protocol: "rgk".to_string(),
         network_id: state.config.network.network_id().to_string(),
         protocol_network_id: state.config.network.protocol_network_id().to_string(),
         canonical_chain_domain: state.config.network.chain_id().as_domain_str().to_string(),
-        kaspa_endpoint: if input.kaspa_endpoint.trim().is_empty() {
-            state.config.kaspa_endpoint.clone()
-        } else {
-            input.kaspa_endpoint
-        },
-        wallet_set_id: Some(hex_digest("wallet-set", &input.wallet_id, 32)),
+        kaspa_endpoint,
+        wallet_set_id: Some(hex_digest("wallet-set", &wallet_id, 32)),
         address: Some(format!(
             "{}:qavato{}",
             state.config.network.address_prefix(),
-            &hex_digest("address", &input.wallet_id, 12)[2..],
+            &hex_digest("address", &wallet_id, 12)[2..],
         )),
         lifecycle: WalletLifecycle::Ready,
     };
@@ -620,7 +611,7 @@ async fn upsert_wallet(state: AppState, input: CreateWalletInput) -> ApiResult<W
     store.passphrase_verifier = Some(passphrase_verifier_with_salt(
         &passphrase_salt,
         &profile.wallet_id,
-        &input.passphrase,
+        &passphrase,
     ));
     store.passphrase_salt = Some(passphrase_salt);
     store.kas_balance = "0.00000000 KAS".to_string();
@@ -659,6 +650,145 @@ fn validate_input_network(
         ))));
     }
     Ok(())
+}
+
+fn validate_wallet_id(value: &str) -> Result<String, (StatusCode, Json<ApiError>)> {
+    let trimmed = value.trim();
+    if trimmed.len() < 3 || trimmed.len() > 64 {
+        return Err(api_error(WalletdError::BadRequest(
+            "walletId must be 3-64 characters".to_string(),
+        )));
+    }
+    if !trimmed
+        .bytes()
+        .all(|byte| byte.is_ascii_alphanumeric() || matches!(byte, b'-' | b'_' | b'.'))
+    {
+        return Err(api_error(WalletdError::BadRequest(
+            "walletId may contain only letters, numbers, dash, underscore, or dot".to_string(),
+        )));
+    }
+    Ok(trimmed.to_string())
+}
+
+fn validate_passphrase(value: &str) -> Result<String, (StatusCode, Json<ApiError>)> {
+    if value.len() < 8 || value.len() > 256 {
+        return Err(api_error(WalletdError::BadRequest(
+            "passphrase must contain 8-256 characters".to_string(),
+        )));
+    }
+    Ok(value.to_string())
+}
+
+fn validate_recovery_phrase(words: &[String]) -> Result<(), (StatusCode, Json<ApiError>)> {
+    if words.len() < 12 {
+        return Err(api_error(WalletdError::BadRequest(
+            "recoveryPhrase must contain at least 12 words".to_string(),
+        )));
+    }
+    if words.iter().any(|word| word.trim().is_empty()) {
+        return Err(api_error(WalletdError::BadRequest(
+            "recoveryPhrase words must be non-empty".to_string(),
+        )));
+    }
+    Ok(())
+}
+
+fn validate_optional_kaspa_endpoint(
+    value: &str,
+) -> Result<Option<String>, (StatusCode, Json<ApiError>)> {
+    let trimmed = value.trim();
+    if trimmed.is_empty() {
+        return Ok(None);
+    }
+    if trimmed.len() > 2048
+        || trimmed.bytes().any(|byte| byte.is_ascii_whitespace())
+        || !(trimmed.starts_with("ws://") || trimmed.starts_with("wss://"))
+    {
+        return Err(api_error(WalletdError::BadRequest(
+            "kaspaEndpoint must be a ws:// or wss:// URL without whitespace".to_string(),
+        )));
+    }
+    Ok(Some(trimmed.to_string()))
+}
+
+fn validate_lane_label(value: &str) -> Result<String, (StatusCode, Json<ApiError>)> {
+    let label = trimmed_or_default(value, "New RGK lane");
+    if label.len() > 64 {
+        return Err(api_error(WalletdError::BadRequest(
+            "label must be 64 characters or fewer".to_string(),
+        )));
+    }
+    Ok(label)
+}
+
+fn validate_ticker(value: &str) -> Result<String, (StatusCode, Json<ApiError>)> {
+    let ticker = trimmed_or_default(value, "RGK");
+    if ticker.len() < 2
+        || ticker.len() > 12
+        || !ticker
+            .bytes()
+            .all(|byte| byte.is_ascii_uppercase() || byte.is_ascii_digit())
+    {
+        return Err(api_error(WalletdError::BadRequest(
+            "ticker must be 2-12 uppercase letters or digits".to_string(),
+        )));
+    }
+    Ok(ticker)
+}
+
+fn validate_balance(value: &str) -> Result<String, (StatusCode, Json<ApiError>)> {
+    let balance = trimmed_or_default(value, "0.0000");
+    if balance.len() > 40 || !valid_decimal(&balance, 8) {
+        return Err(api_error(WalletdError::BadRequest(
+            "balance must be a non-negative decimal with up to 8 fractional digits".to_string(),
+        )));
+    }
+    Ok(balance)
+}
+
+fn validate_strategy(value: &str) -> Result<String, (StatusCode, Json<ApiError>)> {
+    let strategy = trimmed_or_default(value, "verifier-receipt-baseline");
+    if strategy.len() > 80
+        || !strategy
+            .bytes()
+            .all(|byte| byte.is_ascii_alphanumeric() || matches!(byte, b'-' | b'_' | b'.' | b':'))
+    {
+        return Err(api_error(WalletdError::BadRequest(
+            "strategy must be 80 characters or fewer and contain only letters, numbers, dash, underscore, dot, or colon".to_string(),
+        )));
+    }
+    Ok(strategy)
+}
+
+fn validate_optional_txid(value: &str) -> Result<Option<String>, (StatusCode, Json<ApiError>)> {
+    let Some(txid) = trimmed_optional(value) else {
+        return Ok(None);
+    };
+    if txid.len() != 64 || !txid.bytes().all(|byte| byte.is_ascii_hexdigit()) {
+        return Err(api_error(WalletdError::BadRequest(
+            "txid must be 64 hexadecimal characters".to_string(),
+        )));
+    }
+    Ok(Some(txid.to_ascii_lowercase()))
+}
+
+fn valid_decimal(value: &str, max_fractional_digits: usize) -> bool {
+    let mut parts = value.split('.');
+    let Some(whole) = parts.next() else {
+        return false;
+    };
+    if whole.is_empty() || !whole.bytes().all(|byte| byte.is_ascii_digit()) {
+        return false;
+    }
+    match (parts.next(), parts.next()) {
+        (None, None) => true,
+        (Some(fractional), None) => {
+            !fractional.is_empty()
+                && fractional.len() <= max_fractional_digits
+                && fractional.bytes().all(|byte| byte.is_ascii_digit())
+        }
+        _ => false,
+    }
 }
 
 fn ready_wallet_id(store: &PersistedState) -> Result<String, (StatusCode, Json<ApiError>)> {

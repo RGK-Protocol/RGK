@@ -50,6 +50,14 @@ differs from its configured `--network`. RGK receipt evidence is chain-domain
 separated, so `kaspa-local-toccata`, `kaspa-testnet`, and `kaspa-mainnet` must
 not be treated as interchangeable display labels.
 
+JSON request bodies are treated as a strict local API contract. Wallet, unlock,
+lane, and proof endpoints reject unknown fields so stale clients cannot smuggle
+obsolete state across the Avato boundary. User-controlled strings are also
+normalised at the daemon boundary: wallet ids are limited to stable local id
+characters, Kaspa endpoints must be `ws://` or `wss://`, lane tickers are
+uppercase asset symbols, balances are non-negative decimals, and manual proof
+txids must be 64 hexadecimal characters when present.
+
 The first implementation persists wallet profile/dashboard metadata, staged RGK
 lanes, staged proof receipts, and a salted passphrase verifier. It does not
 persist recovery phrases or raw passphrases. On Unix platforms, the state file
