@@ -6,6 +6,8 @@ FRONTEND_CONTRACT="${AVATO_RGK_CONTRACT:-${ROOT}/../avato-wallet-frontend/contra
 PORT="${RGK_WALLETD_CONTRACT_PORT:-$((18000 + ($$ % 10000)))}"
 BASE_URL="http://127.0.0.1:${PORT}"
 STATE="${RGK_WALLETD_CONTRACT_STATE:-${ROOT}/target/rgk-walletd/contract-smoke-${PORT}.json}"
+SYNC_DB="${RGK_WALLETD_CONTRACT_SYNC_DB:-${ROOT}/target/rgk-walletd/contract-smoke-${PORT}.sled}"
+KASPA_ENDPOINT="${RGK_WALLETD_CONTRACT_KASPA_ENDPOINT:-ws://127.0.0.1:9/v2/kaspa/simnet/no-tls/wrpc/borsh}"
 LOG="${ROOT}/target/rgk-walletd/contract-smoke-${PORT}.log"
 
 if [ ! -f "${FRONTEND_CONTRACT}" ]; then
@@ -15,19 +17,23 @@ fi
 
 mkdir -p "$(dirname "${STATE}")"
 rm -f "${STATE}" "${LOG}"
+rm -rf "${SYNC_DB}"
 
 (
     cd "${ROOT}"
     cargo run -q -p rgk-walletd -- \
         --listen "127.0.0.1:${PORT}" \
         --network local-toccata \
-        --state "${STATE}"
+        --kaspa-endpoint "${KASPA_ENDPOINT}" \
+        --state "${STATE}" \
+        --sync-db "${SYNC_DB}"
 ) >"${LOG}" 2>&1 &
 PID="$!"
 
 cleanup() {
     kill "${PID}" >/dev/null 2>&1 || true
     wait "${PID}" >/dev/null 2>&1 || true
+    rm -rf "${SYNC_DB}"
 }
 trap cleanup EXIT
 
@@ -44,7 +50,7 @@ if ! curl -fsS "${BASE_URL}/health" >/dev/null 2>&1; then
     exit 1
 fi
 
-BASE_URL="${BASE_URL}" STATE="${STATE}" FRONTEND_CONTRACT="${FRONTEND_CONTRACT}" python3 - <<'PY'
+BASE_URL="${BASE_URL}" STATE="${STATE}" FRONTEND_CONTRACT="${FRONTEND_CONTRACT}" KASPA_ENDPOINT="${KASPA_ENDPOINT}" python3 - <<'PY'
 import json
 import os
 import urllib.error
@@ -53,6 +59,7 @@ import urllib.request
 base_url = os.environ["BASE_URL"]
 state_path = os.environ["STATE"]
 contract_path = os.environ["FRONTEND_CONTRACT"]
+kaspa_endpoint = os.environ["KASPA_ENDPOINT"]
 
 with open(contract_path, "r", encoding="utf-8") as handle:
     contract = json.load(handle)
@@ -123,7 +130,7 @@ valid_payload = {
     "networkId": "rgk:kaspa-local-toccata",
     "protocolNetworkId": "kaspa-local-toccata",
     "canonicalChainDomain": "kaspa-local-toccata",
-    "kaspaEndpoint": "ws://127.0.0.1:18111/v2/kaspa/simnet/no-tls/wrpc/borsh",
+    "kaspaEndpoint": kaspa_endpoint,
     "passphrase": "contract-passphrase",
     "recoveryPhrase": [
         "abandon",
@@ -259,6 +266,8 @@ assert proof["confirmations"] == 1
 dashboard_after_actions = request("GET", "/dashboard")
 assert len(dashboard_after_actions["lanes"]) == 1
 assert len(dashboard_after_actions["proofs"]) == 1
+assert dashboard_after_actions["scan"]["indexedSpends"] == 0
+assert dashboard_after_actions["scan"]["observedSpends"] == 0
 assert any(item["laneId"] == lane["laneId"] for item in dashboard_after_actions["lanes"])
 assert any(item["receiptId"] == proof["receiptId"] for item in dashboard_after_actions["proofs"])
 updated_lane = next(item for item in dashboard_after_actions["lanes"] if item["laneId"] == lane["laneId"])
@@ -288,7 +297,11 @@ request(
 )
 unlocked = request("POST", "/wallet/unlock", {"passphrase": "contract-passphrase"})
 assert unlocked["lifecycle"] == "ready"
-request("POST", "/wallet/sync")
+sync_dashboard = request("POST", "/wallet/sync")
+assert sync_dashboard["profile"]["lifecycle"] == "service-required"
+assert sync_dashboard["scan"]["scanMode"] == "unavailable"
+assert sync_dashboard["serviceMode"] == "unavailable"
+assert "scanner unavailable" in sync_dashboard["serviceNotice"].lower()
 
 with open(state_path, "r", encoding="utf-8") as handle:
     state_text = handle.read()

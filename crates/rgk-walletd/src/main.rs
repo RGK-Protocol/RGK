@@ -13,6 +13,9 @@ use axum::routing::{get, post};
 use axum::{Json, Router};
 use clap::{Parser, ValueEnum};
 use rgk_core::KaspaChainId;
+use rgk_indexer::SledIndexer;
+use rgk_kaspa::{WrpcBackend, WrpcNetwork};
+use rgk_sync::{ScanService, ScanServiceConfig, ScanTick};
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
 use thiserror::Error;
@@ -45,6 +48,10 @@ struct Cli {
         default_value = "target/rgk-walletd/state.json"
     )]
     state: PathBuf,
+
+    /// Sled database directory for restart-safe scanner cursors.
+    #[arg(long, env = "RGK_SYNC_DB", value_name = "PATH")]
+    sync_db: Option<PathBuf>,
 }
 
 #[derive(Copy, Clone, Debug, ValueEnum)]
@@ -110,6 +117,16 @@ impl CliNetwork {
             Self::Simnet | Self::LocalToccata => "kaspasim",
         }
     }
+
+    const fn wrpc_network(self) -> WrpcNetwork {
+        match self {
+            Self::Mainnet => WrpcNetwork::Mainnet,
+            Self::Testnet10 | Self::Testnet12 => WrpcNetwork::Testnet,
+            Self::Devnet => WrpcNetwork::Devnet,
+            Self::Simnet => WrpcNetwork::Simnet,
+            Self::LocalToccata => WrpcNetwork::LocalToccata,
+        }
+    }
 }
 
 #[derive(Clone)]
@@ -123,6 +140,7 @@ struct DaemonConfig {
     network: CliNetwork,
     kaspa_endpoint: String,
     state_path: PathBuf,
+    sync_db_path: PathBuf,
 }
 
 #[derive(Clone, Debug, Default, Serialize, Deserialize)]
@@ -135,6 +153,8 @@ struct PersistedState {
     lanes: Vec<AssetLane>,
     proofs: Vec<ProofSummary>,
     scan: ScanStatus,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    scan_notice: Option<String>,
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
@@ -286,6 +306,7 @@ struct DashboardSnapshot {
 #[derive(Copy, Clone, Debug, Serialize)]
 #[serde(rename_all = "kebab-case")]
 enum ServiceMode {
+    Unavailable,
     Connected,
 }
 
@@ -373,6 +394,9 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         kaspa_endpoint: cli
             .kaspa_endpoint
             .unwrap_or_else(|| cli.network.default_kaspa_endpoint().to_string()),
+        sync_db_path: cli
+            .sync_db
+            .unwrap_or_else(|| default_sync_db_path(&cli.state)),
         state_path: cli.state,
     });
     let store = Arc::new(Mutex::new(load_state(&config.state_path)?));
@@ -472,27 +496,35 @@ async fn unlock_wallet(
 }
 
 async fn sync_wallet(State(state): State<AppState>) -> ApiResult<DashboardSnapshot> {
-    dashboard(State(state)).await
+    let kaspa_endpoint = {
+        let store = state.store()?;
+        let profile = ready_profile(&store)?;
+        if matches!(profile.lifecycle, WalletLifecycle::Locked) {
+            return Err(api_error(WalletdError::Locked));
+        }
+        profile.kaspa_endpoint.clone()
+    };
+
+    let scan_result = run_scan_tick(Arc::clone(&state.config), kaspa_endpoint).await;
+
+    let mut store = state.store()?;
+    if matches!(
+        store.profile.as_ref().map(|profile| profile.lifecycle),
+        Some(WalletLifecycle::Locked)
+    ) {
+        return Err(api_error(WalletdError::Locked));
+    }
+    match scan_result {
+        Ok(tick) => apply_successful_scan(&mut store, &tick),
+        Err(message) => apply_failed_scan(&mut store, message),
+    }
+    save_state(&state.config.state_path, &store)?;
+    Ok(Json(dashboard_snapshot(&store)?))
 }
 
 async fn dashboard(State(state): State<AppState>) -> ApiResult<DashboardSnapshot> {
     let store = state.store()?;
-    let profile = store
-        .profile
-        .clone()
-        .ok_or_else(|| api_error(WalletdError::NotFound))?;
-    if matches!(profile.lifecycle, WalletLifecycle::Locked) {
-        return Err(api_error(WalletdError::Locked));
-    }
-    Ok(Json(DashboardSnapshot {
-        profile,
-        kas_balance: store.kas_balance.clone(),
-        lanes: store.lanes.clone(),
-        proofs: store.proofs.clone(),
-        scan: store.scan.clone(),
-        service_mode: ServiceMode::Connected,
-        service_notice: "Connected to the local RGK wallet daemon.".to_string(),
-    }))
+    Ok(Json(dashboard_snapshot(&store)?))
 }
 
 async fn create_lane(
@@ -569,16 +601,6 @@ async fn record_proof(
     lane.updated_at = updated_at;
 
     store.proofs.push(proof.clone());
-    store.scan.scan_mode = ScanMode::Idle;
-    store.scan.indexed_spends = store.scan.indexed_spends.saturating_add(1);
-    store.scan.observed_spends = store.scan.observed_spends.saturating_add(1);
-    store.scan.last_daa_score = Some(
-        store
-            .scan
-            .last_daa_score
-            .unwrap_or_default()
-            .saturating_add(1),
-    );
     save_state(&state.config.state_path, &store)?;
     Ok(Json(proof))
 }
@@ -625,9 +647,96 @@ async fn upsert_wallet(state: AppState, input: CreateWalletInput) -> ApiResult<W
         observed_spends: 0,
         reorg_risk_count: 0,
     };
+    store.scan_notice = None;
     store.profile = Some(profile.clone());
     save_state(&state.config.state_path, &store)?;
     Ok(Json(profile))
+}
+
+async fn run_scan_tick(
+    config: Arc<DaemonConfig>,
+    kaspa_endpoint: String,
+) -> Result<ScanTick, String> {
+    let backend = WrpcBackend::connect_borsh(&kaspa_endpoint, config.network.wrpc_network())
+        .await
+        .map_err(|error| format!("failed to connect to Kaspa wRPC: {error}"))?;
+    let sync_db_path = config.sync_db_path.clone();
+    let chain_id = config.network.chain_id();
+    let cursor_name = "avato-rgk".to_string();
+
+    tokio::task::spawn_blocking(move || {
+        let mut indexer = SledIndexer::open_path(&sync_db_path)
+            .map_err(|error| format!("failed to open scanner database: {error}"))?;
+        let mut scan_config = ScanServiceConfig::new(chain_id);
+        scan_config.cursor_name = cursor_name;
+        let tick = {
+            let mut service = ScanService::new(&backend, &mut indexer, scan_config);
+            service.tick().map_err(|error| error.to_string())?
+        };
+        indexer
+            .flush()
+            .map_err(|error| format!("failed to flush scanner database: {error}"))?;
+        Ok(tick)
+    })
+    .await
+    .map_err(|error| format!("scanner task failed: {error}"))?
+}
+
+fn apply_successful_scan(store: &mut PersistedState, tick: &ScanTick) {
+    if let Some(profile) = store.profile.as_mut() {
+        profile.lifecycle = WalletLifecycle::Ready;
+    }
+    store.scan.scan_mode = ScanMode::Idle;
+    store.scan.last_daa_score = Some(tick.end_cursor.daa_score);
+    store.scan.observed_spends = store
+        .scan
+        .observed_spends
+        .saturating_add(u64::try_from(tick.observed_spends).unwrap_or(u64::MAX));
+    store.scan_notice = Some(if tick.initialised_cursor {
+        format!(
+            "RGK scanner cursor initialised at DAA {}.",
+            tick.end_cursor.daa_score
+        )
+    } else {
+        format!(
+            "RGK scanner tick completed: {} added chain block(s), {} observed spend(s), cursor DAA {}.",
+            tick.added_chain_blocks, tick.observed_spends, tick.end_cursor.daa_score
+        )
+    });
+}
+
+fn apply_failed_scan(store: &mut PersistedState, message: String) {
+    if let Some(profile) = store.profile.as_mut() {
+        profile.lifecycle = WalletLifecycle::ServiceRequired;
+    }
+    store.scan.scan_mode = ScanMode::Unavailable;
+    store.scan_notice = Some(format!("RGK scanner unavailable: {message}"));
+}
+
+fn dashboard_snapshot(
+    store: &PersistedState,
+) -> Result<DashboardSnapshot, (StatusCode, Json<ApiError>)> {
+    let profile = ready_profile(store)?.clone();
+    if matches!(profile.lifecycle, WalletLifecycle::Locked) {
+        return Err(api_error(WalletdError::Locked));
+    }
+    let service_mode = if matches!(store.scan.scan_mode, ScanMode::Unavailable) {
+        ServiceMode::Unavailable
+    } else {
+        ServiceMode::Connected
+    };
+    Ok(DashboardSnapshot {
+        profile,
+        kas_balance: store.kas_balance.clone(),
+        lanes: store.lanes.clone(),
+        proofs: store.proofs.clone(),
+        scan: store.scan.clone(),
+        service_mode,
+        service_notice: store
+            .scan_notice
+            .clone()
+            .unwrap_or_else(|| "Connected to the local RGK wallet daemon.".to_string()),
+    })
 }
 
 fn validate_input_network(
@@ -792,6 +901,10 @@ fn valid_decimal(value: &str, max_fractional_digits: usize) -> bool {
 }
 
 fn ready_wallet_id(store: &PersistedState) -> Result<String, (StatusCode, Json<ApiError>)> {
+    Ok(ready_profile(store)?.wallet_id.clone())
+}
+
+fn ready_profile(store: &PersistedState) -> Result<&WalletProfile, (StatusCode, Json<ApiError>)> {
     let profile = store
         .profile
         .as_ref()
@@ -799,7 +912,7 @@ fn ready_wallet_id(store: &PersistedState) -> Result<String, (StatusCode, Json<A
     if matches!(profile.lifecycle, WalletLifecycle::Locked) {
         return Err(api_error(WalletdError::Locked));
     }
-    Ok(profile.wallet_id.clone())
+    Ok(profile)
 }
 
 fn trimmed_or_default(value: &str, fallback: &str) -> String {
@@ -841,6 +954,12 @@ fn load_state(path: &PathBuf) -> Result<PersistedState, Box<dyn std::error::Erro
     }
     let bytes = fs::read(path)?;
     Ok(serde_json::from_slice(&bytes)?)
+}
+
+fn default_sync_db_path(state_path: &Path) -> PathBuf {
+    let mut path = state_path.to_path_buf();
+    path.set_extension("sled");
+    path
 }
 
 fn save_state(path: &Path, state: &PersistedState) -> Result<(), (StatusCode, Json<ApiError>)> {

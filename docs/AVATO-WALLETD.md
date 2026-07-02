@@ -15,7 +15,9 @@ That command starts this daemon from the sibling RGK checkout, waits for
 `GET /health`, exports `VITE_RGK_API_BASE_URL`, and then starts the RGK frontend.
 Set `AVATO_RGK_REPO`, `RGK_WALLETD_LISTEN`, `RGK_WALLETD_NETWORK`, or
 `RGK_WALLETD_STATE` when the checkout path, port, network, or state location
-differs from the defaults.
+differs from the defaults. Set `RGK_SYNC_DB` to choose the restart-safe scanner
+cursor database; otherwise the daemon derives a sibling `.sled` directory from
+the JSON state path.
 
 Run a local Toccata daemon for the frontend default:
 
@@ -69,8 +71,14 @@ Manual `POST /proofs` calls stage local receipt evidence as `pending`; they do
 not mark a receipt as verified and do not move a lane into
 `NativeTransitionedValid`. That transition is reserved for verifier,
 scanner/resolver, or prover-backed evidence.
-Scanner/resolver/prover integration should extend this daemon behind the same
-HTTP contract instead of changing the frontend shape.
+`POST /wallet/sync` now runs one restart-safe `rgk-sync` scanner tick against
+the wallet profile's Kaspa wRPC endpoint and records the scanner cursor in the
+sled database. If the node or scanner database is unavailable, the endpoint
+still returns a dashboard, but marks the profile `service-required`, the
+scanner `unavailable`, and the service mode `unavailable`. Scanner failure must
+not be collapsed into verified receipt state. Resolver/prover integration
+should extend this daemon behind the same HTTP contract instead of changing the
+frontend shape.
 
 To verify the daemon against the Avato frontend contract:
 

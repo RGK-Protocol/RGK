@@ -13,6 +13,9 @@ clap = { version = "4", features = ["derive", "env"] }
 getrandom.workspace = true
 hex.workspace = true
 rgk-core = { workspace = true, features = ["serde"] }
+rgk-indexer = { workspace = true, features = ["persistent"] }
+rgk-kaspa = { workspace = true, features = ["wrpc"] }
+rgk-sync = { workspace = true, features = ["wrpc"] }
 serde.workspace = true
 serde_json.workspace = true
 sha2.workspace = true
