@@ -1,0 +1,25 @@
+[package]
+name = "rgk-walletd"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+description = "Local RGK wallet HTTP daemon for Avato and other non-custodial frontends"
+
+[dependencies]
+axum = { version = "0.8", features = ["json"] }
+clap = { version = "4", features = ["derive", "env"] }
+hex.workspace = true
+rgk-core = { workspace = true, features = ["serde"] }
+serde.workspace = true
+serde_json.workspace = true
+sha2.workspace = true
+thiserror.workspace = true
+tokio = { version = "1", features = ["macros", "net", "rt-multi-thread", "signal"] }
+tower-http = { version = "0.6", features = ["cors"] }
+
+[[bin]]
+name = "rgk-walletd"
+path = "src/main.rs"
+
