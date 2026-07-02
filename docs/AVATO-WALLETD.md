@@ -5,6 +5,18 @@ non-custodial local daemon: the browser talks to this process, and this process
 owns local profile state, health checks, lock/unlock state, and the future
 handoff to scanner/resolver/prover services.
 
+From the Avato frontend checkout, the preferred local launch path is:
+
+```bash
+pnpm dev:rgk:local
+```
+
+That command starts this daemon from the sibling RGK checkout, waits for
+`GET /health`, exports `VITE_RGK_API_BASE_URL`, and then starts the RGK frontend.
+Set `AVATO_RGK_REPO`, `RGK_WALLETD_LISTEN`, `RGK_WALLETD_NETWORK`, or
+`RGK_WALLETD_STATE` when the checkout path, port, network, or state location
+differs from the defaults.
+
 Run a local Toccata daemon for the frontend default:
 
 ```bash
