@@ -12,6 +12,7 @@ use axum::extract::State;
 use axum::http::StatusCode;
 use axum::routing::{get, post};
 use axum::{Json, Router};
+use bip39::{Language, Mnemonic};
 use chacha20poly1305::aead::{Aead, KeyInit, Payload};
 use chacha20poly1305::{XChaCha20Poly1305, XNonce};
 use clap::{Parser, ValueEnum};
@@ -1834,6 +1835,12 @@ fn validate_recovery_phrase(words: &[String]) -> Result<Vec<String>, (StatusCode
             "recoveryPhrase words must be non-empty".to_string(),
         )));
     }
+    let phrase = normalised.join(" ");
+    Mnemonic::parse_in_normalized(Language::English, &phrase).map_err(|_| {
+        api_error(WalletdError::BadRequest(
+            "recoveryPhrase must be a valid English BIP39 mnemonic".to_string(),
+        ))
+    })?;
     Ok(normalised)
 }
 
@@ -2702,6 +2709,24 @@ mod tests {
         .iter()
         .map(|word| word.to_string())
         .collect()
+    }
+
+    #[test]
+    fn recovery_phrase_validation_requires_bip39_checksum() {
+        assert_eq!(
+            validate_recovery_phrase(&recovery_words()).expect("valid recovery phrase"),
+            recovery_words()
+        );
+
+        let invalid = [
+            "abandon", "abandon", "abandon", "abandon", "abandon", "abandon", "abandon", "abandon",
+            "abandon", "abandon", "abandon", "abandon",
+        ]
+        .iter()
+        .map(|word| word.to_string())
+        .collect::<Vec<_>>();
+
+        assert!(validate_recovery_phrase(&invalid).is_err());
     }
 
     fn profile_with_identity(identity_fingerprint: String) -> WalletProfile {

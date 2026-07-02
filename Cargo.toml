@@ -40,6 +40,7 @@ rgk-walletd   = { version = "0.1.0", path = "crates/rgk-walletd" }
 
 # Shared, lightweight, conflict-free dependencies.
 argon2   = "0.5"
+bip39 = "2.2.2"
 chacha20poly1305 = { version = "0.10", features = ["alloc"] }
 kaspa-addresses = { path = "../rusty-kaspa/crypto/addresses", default-features = false }
 secp256k1 = { version = "0.29", default-features = false, features = ["std"] }
