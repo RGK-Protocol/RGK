@@ -13,7 +13,7 @@ use axum::routing::{get, post};
 use axum::{Json, Router};
 use clap::{Parser, ValueEnum};
 use rgk_core::KaspaChainId;
-use rgk_indexer::SledIndexer;
+use rgk_indexer::{ObservedSpendStore, SledIndexer};
 use rgk_kaspa::{WrpcBackend, WrpcNetwork};
 use rgk_sync::{ScanService, ScanServiceConfig, ScanTick};
 use serde::{Deserialize, Serialize};
@@ -515,7 +515,7 @@ async fn sync_wallet(State(state): State<AppState>) -> ApiResult<DashboardSnapsh
         return Err(api_error(WalletdError::Locked));
     }
     match scan_result {
-        Ok(tick) => apply_successful_scan(&mut store, &tick),
+        Ok(scan) => apply_successful_scan(&mut store, &scan),
         Err(message) => apply_failed_scan(&mut store, message),
     }
     save_state(&state.config.state_path, &store)?;
@@ -653,10 +653,15 @@ async fn upsert_wallet(state: AppState, input: CreateWalletInput) -> ApiResult<W
     Ok(Json(profile))
 }
 
+struct WalletdScanResult {
+    tick: ScanTick,
+    indexed_spends: usize,
+}
+
 async fn run_scan_tick(
     config: Arc<DaemonConfig>,
     kaspa_endpoint: String,
-) -> Result<ScanTick, String> {
+) -> Result<WalletdScanResult, String> {
     let backend = WrpcBackend::connect_borsh(&kaspa_endpoint, config.network.wrpc_network())
         .await
         .map_err(|error| format!("failed to connect to Kaspa wRPC: {error}"))?;
@@ -676,22 +681,28 @@ async fn run_scan_tick(
         indexer
             .flush()
             .map_err(|error| format!("failed to flush scanner database: {error}"))?;
-        Ok(tick)
+        let indexed_spends = indexer
+            .observed_spend_count()
+            .map_err(|error| format!("failed to count observed spends: {error}"))?;
+        Ok(WalletdScanResult {
+            tick,
+            indexed_spends,
+        })
     })
     .await
     .map_err(|error| format!("scanner task failed: {error}"))?
 }
 
-fn apply_successful_scan(store: &mut PersistedState, tick: &ScanTick) {
+fn apply_successful_scan(store: &mut PersistedState, scan: &WalletdScanResult) {
     if let Some(profile) = store.profile.as_mut() {
         profile.lifecycle = WalletLifecycle::Ready;
     }
+    let tick = &scan.tick;
     store.scan.scan_mode = ScanMode::Idle;
     store.scan.last_daa_score = Some(tick.end_cursor.daa_score);
-    store.scan.observed_spends = store
-        .scan
-        .observed_spends
-        .saturating_add(u64::try_from(tick.observed_spends).unwrap_or(u64::MAX));
+    let indexed_spends = u64::try_from(scan.indexed_spends).unwrap_or(u64::MAX);
+    store.scan.indexed_spends = indexed_spends;
+    store.scan.observed_spends = indexed_spends;
     store.scan_notice = Some(if tick.initialised_cursor {
         format!(
             "RGK scanner cursor initialised at DAA {}.",

@@ -193,6 +193,12 @@ pub struct SpendingInfo {
     pub block_daa_score: Option<u64>,
 }
 
+#[derive(Clone, Debug, PartialEq, Eq, Hash)]
+pub struct ObservedSpend {
+    pub spent: KaspaOutpoint,
+    pub info: SpendingInfo,
+}
+
 /// Typed errors. Every variant maps to a specific resolver classification
 /// (see [`crate::ResolverClassify`]).
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Error)]

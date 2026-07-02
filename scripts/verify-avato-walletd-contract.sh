@@ -37,7 +37,7 @@ cleanup() {
 }
 trap cleanup EXIT
 
-for _ in $(seq 1 80); do
+for _ in $(seq 1 240); do
     if curl -fsS "${BASE_URL}/health" >/dev/null 2>&1; then
         break
     fi

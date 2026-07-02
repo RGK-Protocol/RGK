@@ -19,8 +19,8 @@ use alloc::vec::Vec;
 
 use rgk_core::{Bytes32, KaspaChainId, KaspaOutpoint};
 use rgk_indexer::{
-    IndexerError, RebuildSource, RebuildSpendEvidence, ScanCursor, ScanCursorStore,
-    DEFAULT_SCAN_CURSOR,
+    IndexerError, ObservedSpendRecord, ObservedSpendStore, RebuildSource, RebuildSpendEvidence,
+    ScanCursor, ScanCursorStore, DEFAULT_SCAN_CURSOR,
 };
 use rgk_kaspa::KaspaChainBackend;
 #[cfg(test)]
@@ -34,6 +34,7 @@ pub struct ScanBatch {
     pub added_chain_block_hashes: Vec<Bytes32>,
     pub last_added_daa_score: Option<u64>,
     pub observed_spends: usize,
+    pub observed_spend_records: Vec<ObservedSpendRecord>,
 }
 
 impl ScanBatch {
@@ -43,6 +44,7 @@ impl ScanBatch {
             added_chain_block_hashes: Vec::new(),
             last_added_daa_score: None,
             observed_spends: 0,
+            observed_spend_records: Vec::new(),
         }
     }
 }
@@ -106,6 +108,11 @@ pub enum SyncError {
     },
     #[error("scan batch added blocks but did not report a DAA score")]
     MissingAddedDaaScore,
+    #[error("scan batch reported {observed_spends} observed spend(s) but supplied {records} durable record(s)")]
+    ObservedSpendRecordMismatch {
+        observed_spends: usize,
+        records: usize,
+    },
     #[error("indexer cursor storage error: {0}")]
     Indexer(#[from] IndexerError),
     #[error("chain scan error: {0}")]
@@ -113,13 +120,13 @@ pub enum SyncError {
 }
 
 /// Restart-safe scanner driver.
-pub struct ScanService<'a, B: ScanBackend, C: ScanCursorStore> {
+pub struct ScanService<'a, B: ScanBackend, C: ScanCursorStore + ObservedSpendStore> {
     backend: &'a B,
     cursor_store: &'a mut C,
     config: ScanServiceConfig,
 }
 
-impl<'a, B: ScanBackend, C: ScanCursorStore> ScanService<'a, B, C> {
+impl<'a, B: ScanBackend, C: ScanCursorStore + ObservedSpendStore> ScanService<'a, B, C> {
     pub fn new(backend: &'a B, cursor_store: &'a mut C, config: ScanServiceConfig) -> Self {
         Self {
             backend,
@@ -160,6 +167,12 @@ impl<'a, B: ScanBackend, C: ScanCursorStore> ScanService<'a, B, C> {
                 removed_chain_block_hashes: batch.removed_chain_block_hashes,
             });
         }
+        if batch.observed_spends != batch.observed_spend_records.len() {
+            return Err(SyncError::ObservedSpendRecordMismatch {
+                observed_spends: batch.observed_spends,
+                records: batch.observed_spend_records.len(),
+            });
+        }
 
         let end_cursor = if let Some(last_hash) = batch.added_chain_block_hashes.last().copied() {
             ScanCursor {
@@ -172,6 +185,10 @@ impl<'a, B: ScanBackend, C: ScanCursorStore> ScanService<'a, B, C> {
         } else {
             start_cursor.clone()
         };
+
+        for record in batch.observed_spend_records {
+            self.cursor_store.record_observed_spend(record)?;
+        }
 
         if end_cursor != start_cursor {
             self.cursor_store
@@ -312,6 +329,16 @@ impl ScanBackend for rgk_kaspa::WrpcBackend {
             added_chain_block_hashes: scan.added_chain_block_hashes,
             last_added_daa_score: scan.last_added_daa_score,
             observed_spends: scan.observed_spends,
+            observed_spend_records: scan
+                .observed_spend_records
+                .into_iter()
+                .map(|spend| ObservedSpendRecord {
+                    spent: spend.spent,
+                    spending_txid: spend.info.txid,
+                    input_index: spend.info.input_index,
+                    block_daa_score: spend.info.block_daa_score,
+                })
+                .collect(),
         })
     }
 }
@@ -382,6 +409,18 @@ mod tests {
         }
     }
 
+    fn observed_spend(byte: u8, input_index: u32, daa_score: u64) -> ObservedSpendRecord {
+        ObservedSpendRecord {
+            spent: KaspaOutpoint {
+                transaction_id: [byte; 32],
+                index: input_index,
+            },
+            spending_txid: [byte.saturating_add(10); 32],
+            input_index,
+            block_daa_score: Some(daa_score),
+        }
+    }
+
     #[test]
     fn first_tick_initialises_missing_cursor() {
         let backend = FixtureScanBackend {
@@ -420,7 +459,8 @@ mod tests {
             removed_chain_block_hashes: Vec::new(),
             added_chain_block_hashes: vec![[2u8; 32], [3u8; 32]],
             last_added_daa_score: Some(12),
-            observed_spends: 4,
+            observed_spends: 2,
+            observed_spend_records: vec![observed_spend(4, 0, 11), observed_spend(5, 1, 12)],
         });
         let mut service = ScanService::new(
             &backend,
@@ -431,13 +471,20 @@ mod tests {
         let tick = service.tick().expect("tick");
         assert!(!tick.initialised_cursor);
         assert_eq!(tick.added_chain_blocks, 2);
-        assert_eq!(tick.observed_spends, 4);
+        assert_eq!(tick.observed_spends, 2);
         assert_eq!(tick.end_cursor, cursor(3, 12));
         assert_eq!(
             indexer
                 .load_scan_cursor(DEFAULT_SCAN_CURSOR)
                 .expect("load cursor"),
             Some(cursor(3, 12))
+        );
+        assert_eq!(indexer.observed_spend_count().expect("spend count"), 2);
+        assert_eq!(
+            indexer
+                .observed_spend(observed_spend(4, 0, 11).spent)
+                .expect("observed spend"),
+            Some(observed_spend(4, 0, 11))
         );
     }
 
@@ -456,6 +503,7 @@ mod tests {
             added_chain_block_hashes: Vec::new(),
             last_added_daa_score: None,
             observed_spends: 0,
+            observed_spend_records: Vec::new(),
         });
         let mut service = ScanService::new(
             &backend,
@@ -476,6 +524,47 @@ mod tests {
                 .expect("load cursor"),
             Some(cursor(1, 10))
         );
+    }
+
+    #[test]
+    fn tick_rejects_count_only_observed_spends_before_cursor_advance() {
+        let mut indexer = InMemoryIndexer::new();
+        indexer
+            .store_scan_cursor(DEFAULT_SCAN_CURSOR, cursor(1, 10))
+            .expect("store cursor");
+        let mut backend = FixtureScanBackend {
+            current: None,
+            batches: VecDeque::new(),
+        };
+        backend.batches.push_back(ScanBatch {
+            removed_chain_block_hashes: Vec::new(),
+            added_chain_block_hashes: vec![[2u8; 32]],
+            last_added_daa_score: Some(11),
+            observed_spends: 1,
+            observed_spend_records: Vec::new(),
+        });
+        let mut service = ScanService::new(
+            &backend,
+            &mut indexer,
+            ScanServiceConfig::new(KASPA_LOCAL_TOCCATA),
+        );
+
+        let err = service.tick().expect_err("record mismatch expected");
+
+        assert!(matches!(
+            err,
+            SyncError::ObservedSpendRecordMismatch {
+                observed_spends: 1,
+                records: 0,
+            }
+        ));
+        assert_eq!(
+            indexer
+                .load_scan_cursor(DEFAULT_SCAN_CURSOR)
+                .expect("load cursor"),
+            Some(cursor(1, 10))
+        );
+        assert_eq!(indexer.observed_spend_count().expect("spend count"), 0);
     }
 
     #[test]
@@ -511,6 +600,7 @@ mod tests {
                 added_chain_block_hashes: vec![[2u8; 32]],
                 last_added_daa_score: Some(11),
                 observed_spends: 1,
+                observed_spend_records: vec![observed_spend(6, 0, 11)],
             },
             ScanBatch::empty(),
         ]);

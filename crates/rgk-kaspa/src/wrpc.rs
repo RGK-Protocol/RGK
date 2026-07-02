@@ -26,7 +26,7 @@ use kaspa_wrpc_client::{
 
 use crate::{
     KaspaBlockHash, KaspaChainBackend, KaspaNetworkError, KaspaTip, KaspaTxId, KaspaTxSummary,
-    KaspaUtxo, SpendingInfo,
+    KaspaUtxo, ObservedSpend, SpendingInfo,
 };
 use rgk_core::{KaspaChainId, KaspaOutpoint};
 
@@ -84,6 +84,7 @@ pub struct WrpcVirtualChainScan {
     pub added_chain_block_hashes: Vec<KaspaBlockHash>,
     pub last_added_daa_score: Option<u64>,
     pub observed_spends: usize,
+    pub observed_spend_records: Vec<ObservedSpend>,
 }
 
 impl WrpcBackend {
@@ -198,8 +199,8 @@ impl WrpcBackend {
         let spends = observed_spends_from_rpc_transaction(txid, transaction, block_daa_score)?;
         let observed = spends.len();
         let mut cache = self.observed_spends_lock()?;
-        for (spent, info) in spends {
-            cache.insert(spent, info);
+        for spend in spends {
+            cache.insert(spend.spent, spend.info);
         }
         Ok(observed)
     }
@@ -210,16 +211,26 @@ impl WrpcBackend {
     /// so each transaction carries either verbose transaction id data or a
     /// matching id in the block-level verbose transaction id vector.
     pub fn observe_rpc_block_spends(&self, block: &RpcBlock) -> Result<usize, KaspaNetworkError> {
-        let mut observed = 0usize;
+        Ok(self.observe_rpc_block_spend_records(block)?.len())
+    }
+
+    /// Ingest every transaction input in a fully-fetched RPC block and return
+    /// the typed spend records that were stored in the observed-spend cache.
+    pub fn observe_rpc_block_spend_records(
+        &self,
+        block: &RpcBlock,
+    ) -> Result<Vec<ObservedSpend>, KaspaNetworkError> {
+        let mut observed = Vec::new();
         let accepting_daa_score = rpc_block_accepting_daa_score(block)?;
         let mut cache = self.observed_spends_lock()?;
         for (transaction_index, transaction) in block.transactions.iter().enumerate() {
             let txid = rpc_transaction_id_from_block(block, transaction, transaction_index)?;
             let spends =
                 observed_spends_from_rpc_transaction(txid, transaction, Some(accepting_daa_score))?;
-            observed += spends.len();
-            for (spent, info) in spends {
-                cache.insert(spent, info);
+            observed.reserve(spends.len());
+            for spend in spends {
+                cache.insert(spend.spent, spend.info.clone());
+                observed.push(spend);
             }
         }
         Ok(observed)
@@ -243,12 +254,12 @@ impl WrpcBackend {
             min_confirmation_count,
         ))?;
 
-        let mut observed_spends = 0usize;
+        let mut observed_spend_records = Vec::new();
         let mut last_added_daa_score = None;
         for block_hash in &response.added_chain_block_hashes {
             let block = self.run_rpc(self.client.get_block(*block_hash, true))?;
             last_added_daa_score = Some(rpc_block_accepting_daa_score(&block)?);
-            observed_spends += self.observe_rpc_block_spends(&block)?;
+            observed_spend_records.extend(self.observe_rpc_block_spend_records(&block)?);
         }
 
         Ok(WrpcVirtualChainScan {
@@ -263,7 +274,8 @@ impl WrpcBackend {
                 .map(|hash| hash.as_bytes())
                 .collect(),
             last_added_daa_score,
-            observed_spends,
+            observed_spends: observed_spend_records.len(),
+            observed_spend_records,
         })
     }
 
@@ -383,7 +395,7 @@ fn observed_spends_from_rpc_transaction(
     txid: KaspaTxId,
     transaction: &RpcTransaction,
     block_daa_score: Option<u64>,
-) -> Result<Vec<(KaspaOutpoint, SpendingInfo)>, KaspaNetworkError> {
+) -> Result<Vec<ObservedSpend>, KaspaNetworkError> {
     let mut spends = Vec::with_capacity(transaction.inputs.len());
     for (input_index, input) in transaction.inputs.iter().enumerate() {
         let input_index = u32::try_from(input_index).map_err(|_| {
@@ -396,14 +408,14 @@ fn observed_spends_from_rpc_transaction(
         if spent == KaspaOutpoint::NULL {
             continue;
         }
-        spends.push((
+        spends.push(ObservedSpend {
             spent,
-            SpendingInfo {
+            info: SpendingInfo {
                 txid,
                 input_index,
                 block_daa_score,
             },
-        ));
+        });
     }
     Ok(spends)
 }

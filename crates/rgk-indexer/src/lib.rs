@@ -20,6 +20,7 @@
 //! * optional canonical allocation-audit certificates attached to accepted
 //!   spends
 //! * optional scan cursors for live-chain polling loops
+//! * observed chain spend facts discovered by live scanners
 //!
 //! ## What the indexer does NOT do
 //!
@@ -240,6 +241,18 @@ pub struct RebuildSpendEvidence {
     pub confirmation_depth: Option<u64>,
 }
 
+/// Durable chain-side spend fact discovered by a scanner or listener.
+///
+/// This is not enough to mark an RGK transition valid. It is the typed evidence
+/// the resolver later cross-checks against indexed covenant state and receipts.
+#[derive(Clone, Debug, PartialEq, Eq, Hash)]
+pub struct ObservedSpendRecord {
+    pub spent: KaspaOutpoint,
+    pub spending_txid: Bytes32,
+    pub input_index: u32,
+    pub block_daa_score: Option<u64>,
+}
+
 /// Minimal evidence source needed by [`RebuildIndexer::rebuild_from`].
 ///
 /// A production source can back this with `KaspaChainBackend`, a virtual-chain
@@ -409,6 +422,20 @@ pub trait ScanCursorStore {
     fn load_scan_cursor(&self, name: &str) -> Result<Option<ScanCursor>, IndexerError>;
     fn store_scan_cursor(&mut self, name: &str, cursor: ScanCursor) -> Result<(), IndexerError>;
     fn clear_scan_cursor(&mut self, name: &str) -> Result<(), IndexerError>;
+}
+
+/// Storage for chain-side spend facts observed while scanning.
+///
+/// Scanner implementations must persist these records before advancing the
+/// scan cursor. Otherwise a restart can skip the block range that contained the
+/// evidence needed by the resolver.
+pub trait ObservedSpendStore {
+    fn record_observed_spend(&mut self, record: ObservedSpendRecord) -> Result<(), IndexerError>;
+    fn observed_spend(
+        &self,
+        spent: KaspaOutpoint,
+    ) -> Result<Option<ObservedSpendRecord>, IndexerError>;
+    fn observed_spend_count(&self) -> Result<usize, IndexerError>;
 }
 
 /// Optional durable store for allocation-audit certificate bytes attached to
@@ -911,6 +938,7 @@ pub struct InMemoryIndexer {
     lanes: BTreeMap<Bytes32, IndexedLane>,
     lane_scan_tags: BTreeMap<Bytes32, Bytes32>,
     scan_cursors: BTreeMap<String, ScanCursor>,
+    observed_spends: BTreeMap<KaspaOutpoint, ObservedSpendRecord>,
 }
 
 impl InMemoryIndexer {
@@ -920,6 +948,7 @@ impl InMemoryIndexer {
             lanes: BTreeMap::new(),
             lane_scan_tags: BTreeMap::new(),
             scan_cursors: BTreeMap::new(),
+            observed_spends: BTreeMap::new(),
         }
     }
 }
@@ -1138,6 +1167,24 @@ impl ScanCursorStore for InMemoryIndexer {
     }
 }
 
+impl ObservedSpendStore for InMemoryIndexer {
+    fn record_observed_spend(&mut self, record: ObservedSpendRecord) -> Result<(), IndexerError> {
+        self.observed_spends.insert(record.spent, record);
+        Ok(())
+    }
+
+    fn observed_spend(
+        &self,
+        spent: KaspaOutpoint,
+    ) -> Result<Option<ObservedSpendRecord>, IndexerError> {
+        Ok(self.observed_spends.get(&spent).cloned())
+    }
+
+    fn observed_spend_count(&self) -> Result<usize, IndexerError> {
+        Ok(self.observed_spends.len())
+    }
+}
+
 // ---------------- sled-backed persistent indexer ----------------
 
 #[cfg(feature = "persistent")]
@@ -1148,6 +1195,9 @@ const SLED_SCAN_CURSORS_TREE: &str = "rgk.scan_cursors.v0";
 
 #[cfg(feature = "persistent")]
 const SLED_LANES_TREE: &str = "rgk.lanes.v0";
+
+#[cfg(feature = "persistent")]
+const SLED_OBSERVED_SPENDS_TREE: &str = "rgk.observed_spends.v0";
 
 #[cfg(feature = "persistent")]
 const INDEXED_COVENANT_MAGIC: &[u8; 8] = b"rgkidx3\0";
@@ -1161,6 +1211,9 @@ const SCAN_CURSOR_MAGIC: &[u8; 8] = b"rgkscan\0";
 #[cfg(feature = "persistent")]
 const INDEXED_LANE_MAGIC: &[u8; 8] = b"rgklane\0";
 
+#[cfg(feature = "persistent")]
+const OBSERVED_SPEND_MAGIC: &[u8; 8] = b"rgkspnd\0";
+
 /// Persistent [`Indexer`] backed by sled.
 ///
 /// The on-disk value is a canonical RGK-specific binary record, not `serde`.
@@ -1172,6 +1225,7 @@ pub struct SledIndexer {
     covenants: sled::Tree,
     lanes: sled::Tree,
     scan_cursors: sled::Tree,
+    observed_spends: sled::Tree,
 }
 
 #[cfg(feature = "persistent")]
@@ -1185,11 +1239,15 @@ impl SledIndexer {
         let covenants = db.open_tree(SLED_COVENANTS_TREE).map_err(storage_err)?;
         let lanes = db.open_tree(SLED_LANES_TREE).map_err(storage_err)?;
         let scan_cursors = db.open_tree(SLED_SCAN_CURSORS_TREE).map_err(storage_err)?;
+        let observed_spends = db
+            .open_tree(SLED_OBSERVED_SPENDS_TREE)
+            .map_err(storage_err)?;
         Ok(Self {
             db,
             covenants,
             lanes,
             scan_cursors,
+            observed_spends,
         })
     }
 
@@ -1289,6 +1347,35 @@ impl ScanCursorStore for SledIndexer {
         self.scan_cursors.remove(key).map_err(storage_err)?;
         self.scan_cursors.flush().map_err(storage_err)?;
         Ok(())
+    }
+}
+
+#[cfg(feature = "persistent")]
+impl ObservedSpendStore for SledIndexer {
+    fn record_observed_spend(&mut self, record: ObservedSpendRecord) -> Result<(), IndexerError> {
+        self.observed_spends
+            .insert(
+                encode_observed_spend_key(record.spent),
+                encode_observed_spend_record(&record),
+            )
+            .map_err(storage_err)?;
+        self.observed_spends.flush().map_err(storage_err)?;
+        Ok(())
+    }
+
+    fn observed_spend(
+        &self,
+        spent: KaspaOutpoint,
+    ) -> Result<Option<ObservedSpendRecord>, IndexerError> {
+        self.observed_spends
+            .get(encode_observed_spend_key(spent))
+            .map_err(storage_err)?
+            .map(|bytes| decode_observed_spend_record(&bytes))
+            .transpose()
+    }
+
+    fn observed_spend_count(&self) -> Result<usize, IndexerError> {
+        Ok(self.observed_spends.len())
     }
 }
 
@@ -1767,6 +1854,53 @@ fn decode_indexed_lane(buf: &[u8]) -> Result<IndexedLane, IndexerError> {
         return Err(IndexerError::Storage("bad lane scan tag".into()));
     }
     Ok(lane)
+}
+
+#[cfg(feature = "persistent")]
+fn encode_observed_spend_key(spent: KaspaOutpoint) -> Vec<u8> {
+    let mut w = Writer::new();
+    spent.encode(&mut w);
+    w.into_vec()
+}
+
+#[cfg(feature = "persistent")]
+fn encode_observed_spend_record(record: &ObservedSpendRecord) -> Vec<u8> {
+    let mut w = Writer::new();
+    w.write_bytes(OBSERVED_SPEND_MAGIC);
+    record.spent.encode(&mut w);
+    w.write_bytes32(&record.spending_txid);
+    w.write_u32(record.input_index);
+    w.write_bool(record.block_daa_score.is_some());
+    if let Some(daa_score) = record.block_daa_score {
+        w.write_u64(daa_score);
+    }
+    w.into_vec()
+}
+
+#[cfg(feature = "persistent")]
+fn decode_observed_spend_record(buf: &[u8]) -> Result<ObservedSpendRecord, IndexerError> {
+    let mut r = Reader::new(buf);
+    let magic = r.read_array::<8>().map_err(decode_err)?;
+    if magic != *OBSERVED_SPEND_MAGIC {
+        return Err(IndexerError::Storage(
+            "bad observed spend record magic".into(),
+        ));
+    }
+    let spent = KaspaOutpoint::decode(&mut r).map_err(decode_err)?;
+    let spending_txid = r.read_bytes32().map_err(decode_err)?;
+    let input_index = r.read_u32().map_err(decode_err)?;
+    let block_daa_score = if r.read_bool().map_err(decode_err)? {
+        Some(r.read_u64().map_err(decode_err)?)
+    } else {
+        None
+    };
+    r.ensure_consumed().map_err(decode_err)?;
+    Ok(ObservedSpendRecord {
+        spent,
+        spending_txid,
+        input_index,
+        block_daa_score,
+    })
 }
 
 fn validate_scan_cursor_name(name: &str) -> Result<&[u8], IndexerError> {
@@ -2743,6 +2877,25 @@ mod tests {
     }
 
     #[test]
+    fn observed_spend_store_round_trips_in_memory() {
+        let mut idx = InMemoryIndexer::new();
+        let record = ObservedSpendRecord {
+            spent: KaspaOutpoint {
+                transaction_id: [1u8; 32],
+                index: 7,
+            },
+            spending_txid: [2u8; 32],
+            input_index: 3,
+            block_daa_score: Some(42),
+        };
+
+        idx.record_observed_spend(record.clone()).unwrap();
+
+        assert_eq!(idx.observed_spend_count().unwrap(), 1);
+        assert_eq!(idx.observed_spend(record.spent).unwrap(), Some(record));
+    }
+
+    #[test]
     fn empty_scan_cursor_name_rejected() {
         let mut idx = InMemoryIndexer::new();
         let err = idx
@@ -2756,6 +2909,36 @@ mod tests {
             )
             .unwrap_err();
         assert!(matches!(err, IndexerError::Invariant(_)));
+    }
+
+    #[cfg(feature = "persistent")]
+    #[test]
+    fn sled_indexer_persists_observed_spends_after_reopen() {
+        let path = temp_path("rgk-sled-observed-spend-test");
+        let _ = std::fs::remove_dir_all(&path);
+        let record = ObservedSpendRecord {
+            spent: KaspaOutpoint {
+                transaction_id: [0x11; 32],
+                index: 1,
+            },
+            spending_txid: [0x22; 32],
+            input_index: 4,
+            block_daa_score: Some(101),
+        };
+
+        {
+            let mut idx = SledIndexer::open_path(&path).unwrap();
+            idx.record_observed_spend(record.clone()).unwrap();
+            idx.flush().unwrap();
+        }
+
+        {
+            let idx = SledIndexer::open_path(&path).unwrap();
+            assert_eq!(idx.observed_spend_count().unwrap(), 1);
+            assert_eq!(idx.observed_spend(record.spent).unwrap(), Some(record));
+        }
+
+        let _ = std::fs::remove_dir_all(&path);
     }
 
     #[cfg(feature = "persistent")]

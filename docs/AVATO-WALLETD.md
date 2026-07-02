@@ -72,13 +72,14 @@ not mark a receipt as verified and do not move a lane into
 `NativeTransitionedValid`. That transition is reserved for verifier,
 scanner/resolver, or prover-backed evidence.
 `POST /wallet/sync` now runs one restart-safe `rgk-sync` scanner tick against
-the wallet profile's Kaspa wRPC endpoint and records the scanner cursor in the
-sled database. If the node or scanner database is unavailable, the endpoint
-still returns a dashboard, but marks the profile `service-required`, the
-scanner `unavailable`, and the service mode `unavailable`. Scanner failure must
-not be collapsed into verified receipt state. Resolver/prover integration
-should extend this daemon behind the same HTTP contract instead of changing the
-frontend shape.
+the wallet profile's Kaspa wRPC endpoint. The scanner persists observed spend
+records to sled before advancing the scan cursor; the cursor must not outrun
+the evidence that the resolver will need later. If the node or scanner database
+is unavailable, the endpoint still returns a dashboard, but marks the profile
+`service-required`, the scanner `unavailable`, and the service mode
+`unavailable`. Scanner failure must not be collapsed into verified receipt
+state. Resolver/prover integration should extend this daemon behind the same
+HTTP contract instead of changing the frontend shape.
 
 To verify the daemon against the Avato frontend contract:
 
