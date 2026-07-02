@@ -198,6 +198,10 @@ assert profile["protocolNetworkId"] == "kaspa-local-toccata"
 assert profile["canonicalChainDomain"] == "kaspa-local-toccata"
 assert profile["lifecycle"] == "ready"
 assert profile["lifecycle"] in contract["enums"]["walletLifecycle"]
+assert profile["identityVaultStatus"] == "unlocked"
+assert profile["identityVaultStatus"] in contract["enums"]["identityVaultStatus"]
+assert_hex32(profile["identityFingerprint"], "identityFingerprint")
+assert profile.get("address") is None
 
 stored_profile = request("GET", "/wallet/profile")
 assert stored_profile == profile
@@ -482,8 +486,11 @@ request(
 )
 unlocked = request("POST", "/wallet/unlock", {"passphrase": "contract-passphrase"})
 assert unlocked["lifecycle"] == "ready"
+assert unlocked["identityVaultStatus"] == "unlocked"
+assert unlocked["identityFingerprint"] == profile["identityFingerprint"]
 sync_dashboard = request("POST", "/wallet/sync")
 assert sync_dashboard["profile"]["lifecycle"] == "service-required"
+assert sync_dashboard["profile"]["identityVaultStatus"] == "unlocked"
 assert sync_dashboard["scan"]["scanMode"] == "unavailable"
 assert sync_dashboard["serviceMode"] == "unavailable"
 assert "scanner unavailable" in sync_dashboard["serviceNotice"].lower()
@@ -493,8 +500,16 @@ with open(state_path, "r", encoding="utf-8") as handle:
 
 assert "contract-passphrase" not in state_text
 assert "abandon" not in state_text
+state_json = json.loads(state_text)
+assert state_json["profile"]["lifecycle"] == "locked"
+assert state_json["profile"]["identityVaultStatus"] == "encrypted"
+assert state_json["profile"]["identityFingerprint"] == profile["identityFingerprint"]
+assert state_json["identityVault"]["cipher"] == "xchacha20poly1305"
+assert state_json["identityVault"]["kdf"]["algorithm"] == "argon2id"
+assert state_json["passphraseVerifier"].startswith("argon2id:v2:")
 assert "passphraseSalt" in state_text
 assert "passphraseVerifier" in state_text
+assert "identityVault" in state_text
 
 if os.name == "posix":
     mode = os.stat(state_path).st_mode & 0o777

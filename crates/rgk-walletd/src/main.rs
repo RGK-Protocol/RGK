@@ -7,10 +7,13 @@ use std::path::{Path, PathBuf};
 use std::sync::{Arc, Mutex, MutexGuard};
 use std::time::{SystemTime, UNIX_EPOCH};
 
+use argon2::{Algorithm, Argon2, Params, Version};
 use axum::extract::State;
 use axum::http::StatusCode;
 use axum::routing::{get, post};
 use axum::{Json, Router};
+use chacha20poly1305::aead::{Aead, KeyInit, Payload};
+use chacha20poly1305::{XChaCha20Poly1305, XNonce};
 use clap::{Parser, ValueEnum};
 use rgk_core::{
     from_hex, receipt_commitment, replay_nonce, to_hex, Bytes32, Canonical, KaspaChainId,
@@ -26,6 +29,16 @@ use sha2::{Digest, Sha256};
 use thiserror::Error;
 use tokio::net::TcpListener;
 use tower_http::cors::CorsLayer;
+use zeroize::{Zeroize, Zeroizing};
+
+const IDENTITY_VAULT_VERSION: u16 = 1;
+const IDENTITY_VAULT_KDF_ALGORITHM: &str = "argon2id";
+const IDENTITY_VAULT_CIPHER: &str = "xchacha20poly1305";
+const IDENTITY_VAULT_KDF_MEMORY_KIB: u32 = 19 * 1024;
+const IDENTITY_VAULT_KDF_ITERATIONS: u32 = 2;
+const IDENTITY_VAULT_KDF_PARALLELISM: u32 = 1;
+const IDENTITY_VAULT_SALT_BYTES: usize = 16;
+const IDENTITY_VAULT_NONCE_BYTES: usize = 24;
 
 #[derive(Debug, Parser)]
 #[command(
@@ -114,15 +127,6 @@ impl CliNetwork {
         }
     }
 
-    const fn address_prefix(self) -> &'static str {
-        match self {
-            Self::Mainnet => "kaspa",
-            Self::Testnet10 | Self::Testnet12 => "kaspatest",
-            Self::Devnet => "kaspadev",
-            Self::Simnet | Self::LocalToccata => "kaspasim",
-        }
-    }
-
     const fn wrpc_network(self) -> WrpcNetwork {
         match self {
             Self::Mainnet => WrpcNetwork::Mainnet,
@@ -138,6 +142,7 @@ impl CliNetwork {
 struct AppState {
     config: Arc<DaemonConfig>,
     store: Arc<Mutex<PersistedState>>,
+    identity_session: Arc<Mutex<RuntimeIdentitySession>>,
 }
 
 #[derive(Debug)]
@@ -154,12 +159,87 @@ struct PersistedState {
     profile: Option<WalletProfile>,
     passphrase_salt: Option<String>,
     passphrase_verifier: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    identity_vault: Option<IdentityVault>,
     kas_balance: String,
     lanes: Vec<AssetLane>,
     proofs: Vec<ProofSummary>,
     scan: ScanStatus,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     scan_notice: Option<String>,
+}
+
+#[derive(Default)]
+struct RuntimeIdentitySession {
+    wallet_id: Option<String>,
+    identity_fingerprint: Option<String>,
+    identity_secret: Option<Zeroizing<Vec<u8>>>,
+}
+
+impl RuntimeIdentitySession {
+    fn unlock(&mut self, wallet_id: String, identity: UnlockedIdentity) {
+        self.wallet_id = Some(wallet_id);
+        self.identity_fingerprint = Some(identity.identity_fingerprint);
+        self.identity_secret = Some(identity.identity_secret);
+    }
+
+    fn clear(&mut self) {
+        self.wallet_id = None;
+        self.identity_fingerprint = None;
+        self.identity_secret = None;
+    }
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct IdentityVault {
+    version: u16,
+    cipher: String,
+    kdf: IdentityVaultKdf,
+    salt: String,
+    nonce: String,
+    ciphertext: String,
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct IdentityVaultKdf {
+    algorithm: String,
+    memory_kib: u32,
+    iterations: u32,
+    parallelism: u32,
+}
+
+#[derive(Clone, Debug)]
+struct IdentityVaultContext {
+    wallet_id: String,
+    network_id: String,
+    protocol_network_id: String,
+    canonical_chain_domain: String,
+}
+
+struct WalletIdentityMaterial {
+    passphrase_salt: String,
+    passphrase_verifier: String,
+    vault: IdentityVault,
+    identity_fingerprint: String,
+    identity_secret: Zeroizing<Vec<u8>>,
+}
+
+struct UnlockedIdentity {
+    identity_fingerprint: String,
+    identity_secret: Zeroizing<Vec<u8>>,
+}
+
+#[derive(Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct IdentityVaultPlaintext {
+    version: u16,
+    wallet_id: String,
+    network_id: String,
+    protocol_network_id: String,
+    canonical_chain_domain: String,
+    recovery_phrase: Vec<String>,
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
@@ -173,7 +253,20 @@ struct WalletProfile {
     kaspa_endpoint: String,
     wallet_set_id: Option<String>,
     address: Option<String>,
+    #[serde(default)]
+    identity_vault_status: IdentityVaultStatus,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    identity_fingerprint: Option<String>,
     lifecycle: WalletLifecycle,
+}
+
+#[derive(Copy, Clone, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "kebab-case")]
+enum IdentityVaultStatus {
+    #[default]
+    Missing,
+    Encrypted,
+    Unlocked,
 }
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
@@ -445,8 +538,12 @@ enum WalletdError {
     BadRequest(String),
     #[error("state lock is poisoned")]
     PoisonedState,
+    #[error("identity session lock is poisoned")]
+    PoisonedIdentitySession,
     #[error("state persistence failed: {0}")]
     Persist(String),
+    #[error("identity vault operation failed: {0}")]
+    Crypto(String),
     #[error("failed to read local entropy: {0}")]
     Entropy(String),
 }
@@ -467,7 +564,11 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         state_path: cli.state,
     });
     let store = Arc::new(Mutex::new(load_state(&config.state_path)?));
-    let app_state = AppState { config, store };
+    let app_state = AppState {
+        config,
+        store,
+        identity_session: Arc::new(Mutex::new(RuntimeIdentitySession::default())),
+    };
     let app = Router::new()
         .route("/health", get(health))
         .route("/wallet/profile", get(profile))
@@ -528,10 +629,14 @@ async fn lock_wallet(
     State(state): State<AppState>,
 ) -> Result<StatusCode, (StatusCode, Json<ApiError>)> {
     let mut store = state.store()?;
+    let identity_vault_status = stored_identity_vault_status(store.identity_vault.is_some());
     let Some(profile) = store.profile.as_mut() else {
         return Err(api_error(WalletdError::NotFound));
     };
     profile.lifecycle = WalletLifecycle::Locked;
+    profile.identity_vault_status = identity_vault_status;
+    let mut identity_session = state.identity_session()?;
+    identity_session.clear();
     save_state(&state.config.state_path, &store)?;
     Ok(StatusCode::NO_CONTENT)
 }
@@ -540,24 +645,42 @@ async fn unlock_wallet(
     State(state): State<AppState>,
     Json(input): Json<UnlockWalletInput>,
 ) -> ApiResult<WalletProfile> {
-    let mut store = state.store()?;
-    let verifier = store
-        .passphrase_verifier
-        .clone()
-        .ok_or_else(|| api_error(WalletdError::NotFound))?;
-    let passphrase_salt = store.passphrase_salt.clone();
-    let profile = store
-        .profile
-        .as_mut()
-        .ok_or_else(|| api_error(WalletdError::NotFound))?;
-    let accepted = match passphrase_salt.as_deref() {
-        Some(salt) => passphrase_verifier_with_salt(salt, &profile.wallet_id, &input.passphrase),
-        None => legacy_passphrase_verifier(&profile.wallet_id, &input.passphrase),
+    let passphrase = Zeroizing::new(validate_passphrase(&input.passphrase)?);
+    let (profile_snapshot, vault) = {
+        let store = state.store()?;
+        let profile = store
+            .profile
+            .clone()
+            .ok_or_else(|| api_error(WalletdError::NotFound))?;
+        let vault = store.identity_vault.clone().ok_or_else(|| {
+            api_error(WalletdError::BadRequest(
+                "identity vault is missing; re-import this RGK wallet".to_string(),
+            ))
+        })?;
+        (profile, vault)
     };
-    if accepted != verifier {
-        return Err(api_error(WalletdError::Unauthorized));
-    }
+
+    let unlocked_identity = tokio::task::spawn_blocking(move || {
+        decrypt_identity_vault(&profile_snapshot, &vault, &passphrase)
+    })
+    .await
+    .map_err(|error| {
+        api_error(WalletdError::Crypto(format!(
+            "identity worker did not complete: {error}"
+        )))
+    })?
+    .map_err(api_error)?;
+
+    let identity_fingerprint = unlocked_identity.identity_fingerprint.clone();
+    let mut store = state.store()?;
+    let Some(profile) = store.profile.as_mut() else {
+        return Err(api_error(WalletdError::NotFound));
+    };
     profile.lifecycle = WalletLifecycle::Ready;
+    profile.identity_vault_status = IdentityVaultStatus::Unlocked;
+    profile.identity_fingerprint = Some(identity_fingerprint);
+    let mut identity_session = state.identity_session()?;
+    identity_session.unlock(profile.wallet_id.clone(), unlocked_identity);
     let profile = profile.clone();
     save_state(&state.config.state_path, &store)?;
     Ok(Json(profile))
@@ -835,10 +958,26 @@ async fn record_transition(
 async fn upsert_wallet(state: AppState, input: CreateWalletInput) -> ApiResult<WalletProfile> {
     validate_input_network(&state.config, &input)?;
     let wallet_id = validate_wallet_id(&input.wallet_id)?;
-    validate_recovery_phrase(&input.recovery_phrase)?;
-    let passphrase = validate_passphrase(&input.passphrase)?;
+    let recovery_phrase = validate_recovery_phrase(&input.recovery_phrase)?;
+    let passphrase = Zeroizing::new(validate_passphrase(&input.passphrase)?);
     let kaspa_endpoint = validate_optional_kaspa_endpoint(&input.kaspa_endpoint)?
         .unwrap_or_else(|| state.config.kaspa_endpoint.clone());
+    let identity_context = IdentityVaultContext {
+        wallet_id: wallet_id.clone(),
+        network_id: state.config.network.network_id().to_string(),
+        protocol_network_id: state.config.network.protocol_network_id().to_string(),
+        canonical_chain_domain: state.config.network.chain_id().as_domain_str().to_string(),
+    };
+    let identity_material = tokio::task::spawn_blocking(move || {
+        build_wallet_identity_material(identity_context, recovery_phrase, passphrase)
+    })
+    .await
+    .map_err(|error| {
+        api_error(WalletdError::Crypto(format!(
+            "identity worker did not complete: {error}"
+        )))
+    })?
+    .map_err(api_error)?;
 
     let mut store = state.store()?;
     let profile = WalletProfile {
@@ -848,21 +987,23 @@ async fn upsert_wallet(state: AppState, input: CreateWalletInput) -> ApiResult<W
         protocol_network_id: state.config.network.protocol_network_id().to_string(),
         canonical_chain_domain: state.config.network.chain_id().as_domain_str().to_string(),
         kaspa_endpoint,
-        wallet_set_id: Some(hex_digest("wallet-set", &wallet_id, 32)),
-        address: Some(format!(
-            "{}:qavato{}",
-            state.config.network.address_prefix(),
-            &hex_digest("address", &wallet_id, 12)[2..],
+        wallet_set_id: Some(hex_digest(
+            "wallet-set",
+            &format!(
+                "{}:{}",
+                state.config.network.chain_id().as_domain_str(),
+                identity_material.identity_fingerprint
+            ),
+            32,
         )),
+        address: None,
+        identity_vault_status: IdentityVaultStatus::Unlocked,
+        identity_fingerprint: Some(identity_material.identity_fingerprint.clone()),
         lifecycle: WalletLifecycle::Ready,
     };
-    let passphrase_salt = new_passphrase_salt().map_err(api_error)?;
-    store.passphrase_verifier = Some(passphrase_verifier_with_salt(
-        &passphrase_salt,
-        &profile.wallet_id,
-        &passphrase,
-    ));
-    store.passphrase_salt = Some(passphrase_salt);
+    store.passphrase_verifier = Some(identity_material.passphrase_verifier.clone());
+    store.passphrase_salt = Some(identity_material.passphrase_salt.clone());
+    store.identity_vault = Some(identity_material.vault.clone());
     store.kas_balance = "0.00000000 KAS".to_string();
     store.lanes.clear();
     store.proofs.clear();
@@ -876,6 +1017,14 @@ async fn upsert_wallet(state: AppState, input: CreateWalletInput) -> ApiResult<W
     };
     store.scan_notice = None;
     store.profile = Some(profile.clone());
+    let mut identity_session = state.identity_session()?;
+    identity_session.unlock(
+        profile.wallet_id.clone(),
+        UnlockedIdentity {
+            identity_fingerprint: identity_material.identity_fingerprint,
+            identity_secret: identity_material.identity_secret,
+        },
+    );
     save_state(&state.config.state_path, &store)?;
     Ok(Json(profile))
 }
@@ -1628,18 +1777,22 @@ fn validate_passphrase(value: &str) -> Result<String, (StatusCode, Json<ApiError
     Ok(value.to_string())
 }
 
-fn validate_recovery_phrase(words: &[String]) -> Result<(), (StatusCode, Json<ApiError>)> {
+fn validate_recovery_phrase(words: &[String]) -> Result<Vec<String>, (StatusCode, Json<ApiError>)> {
     if words.len() < 12 {
         return Err(api_error(WalletdError::BadRequest(
             "recoveryPhrase must contain at least 12 words".to_string(),
         )));
     }
-    if words.iter().any(|word| word.trim().is_empty()) {
+    let normalised = words
+        .iter()
+        .map(|word| word.trim().to_ascii_lowercase())
+        .collect::<Vec<_>>();
+    if normalised.iter().any(|word| word.is_empty()) {
         return Err(api_error(WalletdError::BadRequest(
             "recoveryPhrase words must be non-empty".to_string(),
         )));
     }
-    Ok(())
+    Ok(normalised)
 }
 
 fn validate_optional_kaspa_endpoint(
@@ -1786,6 +1939,14 @@ impl AppState {
             .lock()
             .map_err(|_| api_error(WalletdError::PoisonedState))
     }
+
+    fn identity_session(
+        &self,
+    ) -> Result<MutexGuard<'_, RuntimeIdentitySession>, (StatusCode, Json<ApiError>)> {
+        self.identity_session
+            .lock()
+            .map_err(|_| api_error(WalletdError::PoisonedIdentitySession))
+    }
 }
 
 fn load_state(path: &PathBuf) -> Result<PersistedState, Box<dyn std::error::Error>> {
@@ -1793,7 +1954,9 @@ fn load_state(path: &PathBuf) -> Result<PersistedState, Box<dyn std::error::Erro
         return Ok(PersistedState::default());
     }
     let bytes = fs::read(path)?;
-    Ok(serde_json::from_slice(&bytes)?)
+    let mut state = serde_json::from_slice::<PersistedState>(&bytes)?;
+    normalise_loaded_state(&mut state);
+    Ok(state)
 }
 
 fn default_sync_db_path(state_path: &Path) -> PathBuf {
@@ -1807,10 +1970,39 @@ fn save_state(path: &Path, state: &PersistedState) -> Result<(), (StatusCode, Js
         fs::create_dir_all(parent)
             .map_err(|error| api_error(WalletdError::Persist(error.to_string())))?;
     }
-    let bytes = serde_json::to_vec_pretty(state)
+    let disk_state = state_for_disk(state);
+    let bytes = serde_json::to_vec_pretty(&disk_state)
         .map_err(|error| api_error(WalletdError::Persist(error.to_string())))?;
     write_private_state_file(path, &bytes)
         .map_err(|error| api_error(WalletdError::Persist(error.to_string())))
+}
+
+fn normalise_loaded_state(state: &mut PersistedState) {
+    let identity_vault_status = stored_identity_vault_status(state.identity_vault.is_some());
+    if let Some(profile) = state.profile.as_mut() {
+        profile.lifecycle = WalletLifecycle::Locked;
+        profile.identity_vault_status = identity_vault_status;
+    }
+}
+
+fn state_for_disk(state: &PersistedState) -> PersistedState {
+    let mut disk_state = state.clone();
+    let identity_vault_status = stored_identity_vault_status(disk_state.identity_vault.is_some());
+    if let Some(profile) = disk_state.profile.as_mut() {
+        if !matches!(profile.lifecycle, WalletLifecycle::NotCreated) {
+            profile.lifecycle = WalletLifecycle::Locked;
+        }
+        profile.identity_vault_status = identity_vault_status;
+    }
+    disk_state
+}
+
+const fn stored_identity_vault_status(has_vault: bool) -> IdentityVaultStatus {
+    if has_vault {
+        IdentityVaultStatus::Encrypted
+    } else {
+        IdentityVaultStatus::Missing
+    }
 }
 
 fn write_private_state_file(path: &Path, bytes: &[u8]) -> std::io::Result<()> {
@@ -1874,9 +2066,11 @@ fn api_error(error: WalletdError) -> (StatusCode, Json<ApiError>) {
         WalletdError::NotFound => StatusCode::NOT_FOUND,
         WalletdError::Locked | WalletdError::Unauthorized => StatusCode::UNAUTHORIZED,
         WalletdError::BadRequest(_) => StatusCode::BAD_REQUEST,
-        WalletdError::PoisonedState | WalletdError::Persist(_) | WalletdError::Entropy(_) => {
-            StatusCode::INTERNAL_SERVER_ERROR
-        }
+        WalletdError::PoisonedState
+        | WalletdError::PoisonedIdentitySession
+        | WalletdError::Persist(_)
+        | WalletdError::Crypto(_)
+        | WalletdError::Entropy(_) => StatusCode::INTERNAL_SERVER_ERROR,
     };
     (
         status,
@@ -1886,30 +2080,302 @@ fn api_error(error: WalletdError) -> (StatusCode, Json<ApiError>) {
     )
 }
 
-fn passphrase_verifier_with_salt(salt: &str, wallet_id: &str, passphrase: &str) -> String {
-    let mut hasher = Sha256::new();
-    hasher.update(b"rgk-walletd:passphrase:v1");
-    hasher.update(salt.as_bytes());
-    hasher.update(b":");
-    hasher.update(wallet_id.as_bytes());
-    hasher.update(b":");
-    hasher.update(passphrase.as_bytes());
-    format!("0x{}", hex::encode(hasher.finalize()))
+fn build_wallet_identity_material(
+    context: IdentityVaultContext,
+    mut recovery_phrase: Vec<String>,
+    passphrase: Zeroizing<String>,
+) -> Result<WalletIdentityMaterial, WalletdError> {
+    let passphrase_salt = random_hex(IDENTITY_VAULT_SALT_BYTES)?;
+    let passphrase_verifier =
+        passphrase_verifier_with_salt(&passphrase_salt, context.wallet_id.as_str(), &passphrase)?;
+    let identity_fingerprint = identity_fingerprint(&context, &recovery_phrase);
+    let identity_secret = identity_secret(&context, &recovery_phrase);
+    let vault = encrypt_identity_vault(&context, &recovery_phrase, &passphrase)?;
+    zeroize_words(&mut recovery_phrase);
+
+    Ok(WalletIdentityMaterial {
+        passphrase_salt,
+        passphrase_verifier,
+        vault,
+        identity_fingerprint,
+        identity_secret,
+    })
 }
 
-fn legacy_passphrase_verifier(wallet_id: &str, passphrase: &str) -> String {
-    let mut hasher = Sha256::new();
-    hasher.update(b"rgk-walletd:passphrase:v1");
-    hasher.update(wallet_id.as_bytes());
-    hasher.update(b":");
-    hasher.update(passphrase.as_bytes());
-    format!("0x{}", hex::encode(hasher.finalize()))
+fn encrypt_identity_vault(
+    context: &IdentityVaultContext,
+    recovery_phrase: &[String],
+    passphrase: &str,
+) -> Result<IdentityVault, WalletdError> {
+    let mut salt = vec![0u8; IDENTITY_VAULT_SALT_BYTES];
+    let mut nonce = vec![0u8; IDENTITY_VAULT_NONCE_BYTES];
+    getrandom::getrandom(&mut salt).map_err(|error| WalletdError::Entropy(error.to_string()))?;
+    getrandom::getrandom(&mut nonce).map_err(|error| WalletdError::Entropy(error.to_string()))?;
+
+    let mut plaintext = IdentityVaultPlaintext {
+        version: IDENTITY_VAULT_VERSION,
+        wallet_id: context.wallet_id.clone(),
+        network_id: context.network_id.clone(),
+        protocol_network_id: context.protocol_network_id.clone(),
+        canonical_chain_domain: context.canonical_chain_domain.clone(),
+        recovery_phrase: recovery_phrase.to_vec(),
+    };
+    let mut plaintext_bytes =
+        Zeroizing::new(serde_json::to_vec(&plaintext).map_err(|error| {
+            WalletdError::Crypto(format!("encode identity plaintext: {error}"))
+        })?);
+    zeroize_words(&mut plaintext.recovery_phrase);
+    let mut key = Zeroizing::new(derive_argon2_key(
+        b"rgk-walletd:identity-vault-key:v1",
+        passphrase,
+        &salt,
+    )?);
+    let cipher = XChaCha20Poly1305::new_from_slice(&key[..])
+        .map_err(|_| WalletdError::Crypto("invalid vault key length".to_string()))?;
+    let aad = identity_vault_aad(context);
+    let ciphertext = cipher
+        .encrypt(
+            XNonce::from_slice(&nonce),
+            Payload {
+                msg: plaintext_bytes.as_slice(),
+                aad: aad.as_bytes(),
+            },
+        )
+        .map_err(|_| WalletdError::Crypto("identity vault encryption failed".to_string()))?;
+    plaintext_bytes.zeroize();
+    key.zeroize();
+
+    Ok(IdentityVault {
+        version: IDENTITY_VAULT_VERSION,
+        cipher: IDENTITY_VAULT_CIPHER.to_string(),
+        kdf: IdentityVaultKdf {
+            algorithm: IDENTITY_VAULT_KDF_ALGORITHM.to_string(),
+            memory_kib: IDENTITY_VAULT_KDF_MEMORY_KIB,
+            iterations: IDENTITY_VAULT_KDF_ITERATIONS,
+            parallelism: IDENTITY_VAULT_KDF_PARALLELISM,
+        },
+        salt: format!("0x{}", hex::encode(salt)),
+        nonce: format!("0x{}", hex::encode(nonce)),
+        ciphertext: format!("0x{}", hex::encode(ciphertext)),
+    })
 }
 
-fn new_passphrase_salt() -> Result<String, WalletdError> {
-    let mut bytes = [0u8; 16];
-    getrandom::getrandom(&mut bytes).map_err(|error| WalletdError::Entropy(error.to_string()))?;
-    Ok(format!("0x{}", hex::encode(bytes)))
+fn decrypt_identity_vault(
+    profile: &WalletProfile,
+    vault: &IdentityVault,
+    passphrase: &str,
+) -> Result<UnlockedIdentity, WalletdError> {
+    validate_identity_vault_header(vault)?;
+    let context = IdentityVaultContext::from_profile(profile);
+    let salt = decode_prefixed_hex(&vault.salt, "identity vault salt")?;
+    let nonce = decode_prefixed_hex(&vault.nonce, "identity vault nonce")?;
+    if nonce.len() != IDENTITY_VAULT_NONCE_BYTES {
+        return Err(WalletdError::Crypto(format!(
+            "identity vault nonce must be {IDENTITY_VAULT_NONCE_BYTES} bytes"
+        )));
+    }
+    let ciphertext = decode_prefixed_hex(&vault.ciphertext, "identity vault ciphertext")?;
+    let mut key = Zeroizing::new(derive_argon2_key(
+        b"rgk-walletd:identity-vault-key:v1",
+        passphrase,
+        &salt,
+    )?);
+    let cipher = XChaCha20Poly1305::new_from_slice(&key[..])
+        .map_err(|_| WalletdError::Crypto("invalid vault key length".to_string()))?;
+    let aad = identity_vault_aad(&context);
+    let mut plaintext_bytes = Zeroizing::new(
+        cipher
+            .decrypt(
+                XNonce::from_slice(&nonce),
+                Payload {
+                    msg: &ciphertext,
+                    aad: aad.as_bytes(),
+                },
+            )
+            .map_err(|_| WalletdError::Unauthorized)?,
+    );
+    key.zeroize();
+    let mut plaintext = serde_json::from_slice::<IdentityVaultPlaintext>(&plaintext_bytes)
+        .map_err(|error| WalletdError::Crypto(format!("decode identity plaintext: {error}")))?;
+    plaintext_bytes.zeroize();
+    validate_identity_plaintext(&context, &plaintext)?;
+
+    let identity_fingerprint = identity_fingerprint(&context, &plaintext.recovery_phrase);
+    let identity_secret = identity_secret(&context, &plaintext.recovery_phrase);
+    zeroize_words(&mut plaintext.recovery_phrase);
+    Ok(UnlockedIdentity {
+        identity_fingerprint,
+        identity_secret,
+    })
+}
+
+impl IdentityVaultContext {
+    fn from_profile(profile: &WalletProfile) -> Self {
+        Self {
+            wallet_id: profile.wallet_id.clone(),
+            network_id: profile.network_id.clone(),
+            protocol_network_id: profile.protocol_network_id.clone(),
+            canonical_chain_domain: profile.canonical_chain_domain.clone(),
+        }
+    }
+}
+
+fn validate_identity_vault_header(vault: &IdentityVault) -> Result<(), WalletdError> {
+    if vault.version != IDENTITY_VAULT_VERSION {
+        return Err(WalletdError::Crypto(format!(
+            "unsupported identity vault version {}",
+            vault.version
+        )));
+    }
+    if vault.cipher != IDENTITY_VAULT_CIPHER {
+        return Err(WalletdError::Crypto(format!(
+            "unsupported identity vault cipher {}",
+            vault.cipher
+        )));
+    }
+    if vault.kdf.algorithm != IDENTITY_VAULT_KDF_ALGORITHM
+        || vault.kdf.memory_kib != IDENTITY_VAULT_KDF_MEMORY_KIB
+        || vault.kdf.iterations != IDENTITY_VAULT_KDF_ITERATIONS
+        || vault.kdf.parallelism != IDENTITY_VAULT_KDF_PARALLELISM
+    {
+        return Err(WalletdError::Crypto(
+            "unsupported identity vault KDF parameters".to_string(),
+        ));
+    }
+    Ok(())
+}
+
+fn validate_identity_plaintext(
+    context: &IdentityVaultContext,
+    plaintext: &IdentityVaultPlaintext,
+) -> Result<(), WalletdError> {
+    if plaintext.version != IDENTITY_VAULT_VERSION
+        || plaintext.wallet_id != context.wallet_id
+        || plaintext.network_id != context.network_id
+        || plaintext.protocol_network_id != context.protocol_network_id
+        || plaintext.canonical_chain_domain != context.canonical_chain_domain
+    {
+        return Err(WalletdError::Crypto(
+            "identity vault plaintext does not match wallet profile".to_string(),
+        ));
+    }
+    Ok(())
+}
+
+fn passphrase_verifier_with_salt(
+    salt: &str,
+    wallet_id: &str,
+    passphrase: &str,
+) -> Result<String, WalletdError> {
+    let salt_bytes = decode_prefixed_hex(salt, "passphrase salt")?;
+    let mut password_material = Zeroizing::new(Vec::new());
+    password_material.extend_from_slice(wallet_id.as_bytes());
+    password_material.push(0);
+    password_material.extend_from_slice(passphrase.as_bytes());
+    let verifier = derive_argon2_key(
+        b"rgk-walletd:passphrase-verifier:v2",
+        std::str::from_utf8(&password_material)
+            .map_err(|error| WalletdError::Crypto(format!("passphrase encoding: {error}")))?,
+        &salt_bytes,
+    )?;
+    password_material.zeroize();
+    Ok(format!("argon2id:v2:0x{}", hex::encode(verifier)))
+}
+
+fn derive_argon2_key(
+    domain: &[u8],
+    passphrase: &str,
+    salt: &[u8],
+) -> Result<[u8; 32], WalletdError> {
+    let params = Params::new(
+        IDENTITY_VAULT_KDF_MEMORY_KIB,
+        IDENTITY_VAULT_KDF_ITERATIONS,
+        IDENTITY_VAULT_KDF_PARALLELISM,
+        Some(32),
+    )
+    .map_err(|error| WalletdError::Crypto(format!("invalid Argon2 parameters: {error}")))?;
+    let argon2 = Argon2::new(Algorithm::Argon2id, Version::V0x13, params);
+    let mut password_material = Zeroizing::new(Vec::new());
+    password_material.extend_from_slice(domain);
+    password_material.push(0);
+    password_material.extend_from_slice(passphrase.as_bytes());
+    let mut key = [0u8; 32];
+    argon2
+        .hash_password_into(&password_material, salt, &mut key)
+        .map_err(|error| WalletdError::Crypto(format!("Argon2 failed: {error}")))?;
+    password_material.zeroize();
+    Ok(key)
+}
+
+fn identity_fingerprint(context: &IdentityVaultContext, recovery_phrase: &[String]) -> String {
+    let digest = identity_digest(
+        b"rgk-walletd:identity-fingerprint:v1",
+        context,
+        recovery_phrase,
+    );
+    format!("0x{}", hex::encode(digest))
+}
+
+fn identity_secret(
+    context: &IdentityVaultContext,
+    recovery_phrase: &[String],
+) -> Zeroizing<Vec<u8>> {
+    Zeroizing::new(
+        identity_digest(b"rgk-walletd:identity-secret:v1", context, recovery_phrase).to_vec(),
+    )
+}
+
+fn identity_digest(
+    domain: &[u8],
+    context: &IdentityVaultContext,
+    recovery_phrase: &[String],
+) -> [u8; 32] {
+    let mut hasher = Sha256::new();
+    hasher.update(domain);
+    hasher.update(b":");
+    hasher.update(context.network_id.as_bytes());
+    hasher.update(b":");
+    hasher.update(context.protocol_network_id.as_bytes());
+    hasher.update(b":");
+    hasher.update(context.canonical_chain_domain.as_bytes());
+    hasher.update(b":");
+    for word in recovery_phrase {
+        hasher.update(word.as_bytes());
+        hasher.update([0u8]);
+    }
+    hasher.finalize().into()
+}
+
+fn identity_vault_aad(context: &IdentityVaultContext) -> String {
+    format!(
+        "rgk-walletd:identity-vault:v1:{}:{}:{}:{}",
+        context.wallet_id,
+        context.network_id,
+        context.protocol_network_id,
+        context.canonical_chain_domain
+    )
+}
+
+fn decode_prefixed_hex(value: &str, field: &str) -> Result<Vec<u8>, WalletdError> {
+    let trimmed = value.trim();
+    let hex = trimmed.strip_prefix("0x").unwrap_or(trimmed);
+    if hex.is_empty() || hex.len() % 2 != 0 {
+        return Err(WalletdError::Crypto(format!("{field} is not valid hex")));
+    }
+    hex::decode(hex)
+        .map_err(|error| WalletdError::Crypto(format!("{field} is not valid hex: {error}")))
+}
+
+fn random_hex(bytes: usize) -> Result<String, WalletdError> {
+    let mut value = vec![0u8; bytes];
+    getrandom::getrandom(&mut value).map_err(|error| WalletdError::Entropy(error.to_string()))?;
+    Ok(format!("0x{}", hex::encode(value)))
+}
+
+fn zeroize_words(words: &mut [String]) {
+    for word in words {
+        word.zeroize();
+    }
 }
 
 fn hex_digest(domain: &str, value: &str, bytes: usize) -> String {
@@ -2106,6 +2572,105 @@ mod tests {
             .map(|duration| duration.as_nanos())
             .unwrap_or_default();
         std::env::temp_dir().join(format!("{prefix}-{}-{timestamp}", std::process::id()))
+    }
+
+    fn identity_context() -> IdentityVaultContext {
+        IdentityVaultContext {
+            wallet_id: "test-wallet".to_string(),
+            network_id: "rgk:kaspa-local-toccata".to_string(),
+            protocol_network_id: "kaspa-local-toccata".to_string(),
+            canonical_chain_domain: "kaspa-local-toccata".to_string(),
+        }
+    }
+
+    fn recovery_words() -> Vec<String> {
+        [
+            "abandon", "abandon", "abandon", "abandon", "abandon", "abandon", "abandon", "abandon",
+            "abandon", "abandon", "abandon", "about",
+        ]
+        .iter()
+        .map(|word| word.to_string())
+        .collect()
+    }
+
+    fn profile_with_identity(identity_fingerprint: String) -> WalletProfile {
+        WalletProfile {
+            wallet_id: "test-wallet".to_string(),
+            protocol: "rgk".to_string(),
+            network_id: "rgk:kaspa-local-toccata".to_string(),
+            protocol_network_id: "kaspa-local-toccata".to_string(),
+            canonical_chain_domain: "kaspa-local-toccata".to_string(),
+            kaspa_endpoint: "ws://127.0.0.1:18111/v2/kaspa/simnet/no-tls/wrpc/borsh".to_string(),
+            wallet_set_id: Some("0xwalletset".to_string()),
+            address: None,
+            identity_vault_status: IdentityVaultStatus::Unlocked,
+            identity_fingerprint: Some(identity_fingerprint),
+            lifecycle: WalletLifecycle::Ready,
+        }
+    }
+
+    #[test]
+    fn identity_vault_encrypts_recovery_phrase_and_requires_passphrase() {
+        let context = identity_context();
+        let material = build_wallet_identity_material(
+            context,
+            recovery_words(),
+            Zeroizing::new("correct-passphrase".to_string()),
+        )
+        .expect("identity material");
+        let vault_json = serde_json::to_string(&material.vault).expect("vault json");
+        assert!(vault_json.contains("xchacha20poly1305"));
+        assert!(!vault_json.contains("abandon"));
+        assert!(!vault_json.contains("about"));
+
+        let profile = profile_with_identity(material.identity_fingerprint.clone());
+        let unlocked = decrypt_identity_vault(&profile, &material.vault, "correct-passphrase")
+            .expect("unlock identity vault");
+
+        assert_eq!(unlocked.identity_fingerprint, material.identity_fingerprint);
+        assert!(matches!(
+            decrypt_identity_vault(&profile, &material.vault, "wrong-passphrase"),
+            Err(WalletdError::Unauthorized)
+        ));
+    }
+
+    #[test]
+    fn save_state_writes_locked_encrypted_profile_without_recovery_phrase() {
+        let path = temp_path("rgk-walletd-vault-state");
+        let _ = std::fs::remove_file(&path);
+        let material = build_wallet_identity_material(
+            identity_context(),
+            recovery_words(),
+            Zeroizing::new("state-passphrase".to_string()),
+        )
+        .expect("identity material");
+        let state = PersistedState {
+            profile: Some(profile_with_identity(material.identity_fingerprint)),
+            passphrase_salt: Some(material.passphrase_salt),
+            passphrase_verifier: Some(material.passphrase_verifier),
+            identity_vault: Some(material.vault),
+            ..PersistedState::default()
+        };
+
+        save_state(&path, &state).expect("save state");
+        let state_text = std::fs::read_to_string(&path).expect("state text");
+        assert!(!state_text.contains("abandon"));
+        assert!(!state_text.contains("about"));
+        assert!(state_text.contains("identityVault"));
+
+        let state_json: serde_json::Value = serde_json::from_str(&state_text).expect("state json");
+        assert_eq!(state_json["profile"]["lifecycle"], "locked");
+        assert_eq!(state_json["profile"]["identityVaultStatus"], "encrypted");
+
+        let loaded = load_state(&path).expect("load state");
+        let loaded_profile = loaded.profile.expect("loaded profile");
+        assert_eq!(loaded_profile.lifecycle, WalletLifecycle::Locked);
+        assert_eq!(
+            loaded_profile.identity_vault_status,
+            IdentityVaultStatus::Encrypted
+        );
+
+        let _ = std::fs::remove_file(&path);
     }
 
     #[test]
