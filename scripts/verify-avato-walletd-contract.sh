@@ -71,6 +71,7 @@ expected_endpoints = {
     ("POST", "/wallet/import"),
     ("POST", "/wallet/lock"),
     ("POST", "/wallet/unlock"),
+    ("POST", "/wallet/kaspa-endpoint"),
     ("POST", "/wallet/sync"),
     ("GET", "/dashboard"),
     ("POST", "/lanes"),
@@ -202,6 +203,24 @@ assert profile["identityVaultStatus"] == "unlocked"
 assert profile["identityVaultStatus"] in contract["enums"]["identityVaultStatus"]
 assert_hex32(profile["identityFingerprint"], "identityFingerprint")
 assert profile["address"].startswith("kaspasim:")
+
+bad_update_endpoint = {"kaspaEndpoint": "https://example.invalid/not-wrpc"}
+request("POST", "/wallet/kaspa-endpoint", bad_update_endpoint, expected_status=400)
+
+stale_update_endpoint = {
+    "kaspaEndpoint": kaspa_endpoint,
+    "unexpectedField": "stale-client",
+}
+request("POST", "/wallet/kaspa-endpoint", stale_update_endpoint, expected_status=422)
+
+updated_kaspa_endpoint = "ws://127.0.0.1:10/v2/kaspa/simnet/no-tls/wrpc/borsh"
+profile = request(
+    "POST",
+    "/wallet/kaspa-endpoint",
+    {"kaspaEndpoint": updated_kaspa_endpoint},
+)
+assert profile["kaspaEndpoint"] == updated_kaspa_endpoint
+assert profile["lifecycle"] == "ready"
 
 stored_profile = request("GET", "/wallet/profile")
 assert stored_profile == profile
@@ -464,6 +483,12 @@ assert updated_indexed_lane["stateDigest"] == hex32(0x68)
 
 request("POST", "/wallet/lock", expected_status=204)
 request("GET", "/dashboard", expected_status=401)
+request(
+    "POST",
+    "/wallet/kaspa-endpoint",
+    {"kaspaEndpoint": kaspa_endpoint},
+    expected_status=401,
+)
 request("POST", "/lanes", {
     "label": "Locked lane",
     "ticker": "LCK",
@@ -506,6 +531,7 @@ assert state_json["profile"]["lifecycle"] == "locked"
 assert state_json["profile"]["identityVaultStatus"] == "encrypted"
 assert state_json["profile"]["identityFingerprint"] == profile["identityFingerprint"]
 assert state_json["profile"]["address"] == profile["address"]
+assert state_json["profile"]["kaspaEndpoint"] == updated_kaspa_endpoint
 assert state_json["identityVault"]["cipher"] == "xchacha20poly1305"
 assert state_json["identityVault"]["kdf"]["algorithm"] == "argon2id"
 assert state_json["passphraseVerifier"].startswith("argon2id:v2:")

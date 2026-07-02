@@ -447,6 +447,12 @@ struct UnlockWalletInput {
     passphrase: String,
 }
 
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+struct UpdateKaspaEndpointInput {
+    kaspa_endpoint: String,
+}
+
 #[derive(Clone, Debug, Deserialize)]
 #[serde(rename_all = "camelCase", deny_unknown_fields)]
 struct CreateLaneInput {
@@ -596,6 +602,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .route("/wallet/import", post(import_wallet))
         .route("/wallet/lock", post(lock_wallet))
         .route("/wallet/unlock", post(unlock_wallet))
+        .route("/wallet/kaspa-endpoint", post(update_kaspa_endpoint))
         .route("/wallet/sync", post(sync_wallet))
         .route("/dashboard", get(dashboard))
         .route("/lanes", post(create_lane))
@@ -643,6 +650,29 @@ async fn import_wallet(
     Json(input): Json<CreateWalletInput>,
 ) -> ApiResult<WalletProfile> {
     upsert_wallet(state, input).await
+}
+
+async fn update_kaspa_endpoint(
+    State(state): State<AppState>,
+    Json(input): Json<UpdateKaspaEndpointInput>,
+) -> ApiResult<WalletProfile> {
+    let kaspa_endpoint = select_kaspa_endpoint(&state.config, &input.kaspa_endpoint)?;
+    let mut store = state.store()?;
+    let Some(profile) = store.profile.as_mut() else {
+        return Err(api_error(WalletdError::NotFound));
+    };
+    if matches!(profile.lifecycle, WalletLifecycle::Locked) {
+        return Err(api_error(WalletdError::Locked));
+    }
+    profile.kaspa_endpoint = kaspa_endpoint;
+    profile.lifecycle = WalletLifecycle::Ready;
+    let profile = profile.clone();
+    store.scan.scan_mode = ScanMode::Idle;
+    store.scan_notice = Some(
+        "Kaspa wRPC endpoint updated. Sync the wallet to verify the new endpoint.".to_string(),
+    );
+    save_state(&state.config.state_path, &store)?;
+    Ok(Json(profile))
 }
 
 async fn lock_wallet(
