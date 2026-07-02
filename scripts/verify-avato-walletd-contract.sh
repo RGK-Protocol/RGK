@@ -125,6 +125,13 @@ def assert_hex32(value, label):
 def assert_handle_hex32(value, label):
     assert_hex32(value.rsplit(":", 1)[-1], label)
 
+def assert_hex_blob(value, label):
+    assert isinstance(value, str), f"{label} must be a string"
+    assert value.startswith("0x") and len(value) > 66 and len(value) % 2 == 0, (
+        f"{label} must be non-empty 0x-prefixed hex bytes, got {value}"
+    )
+    int(value[2:], 16)
+
 def hex32(byte):
     return "0x" + f"{byte:02x}" * 32
 
@@ -358,6 +365,11 @@ assert transition["proofMode"] == "verifier-receipt"
 assert transition["txid"] == txid(0x6c)
 assert transition["confirmations"] == 0
 assert_handle_hex32(transition["receiptId"], "transition receiptId")
+assert_hex_blob(transition["receiptBytes"], "transition receiptBytes")
+assert transition["transitionDigest"] == hex32(0x69)
+assert transition["continuationCommitment"] == hex32(0x6a)
+assert transition["continuationShapeRoot"] == hex32(0x6b)
+assert transition["newStateDigest"] == hex32(0x68)
 
 empty_proof_evidence = {
     "receiptBytes": "",
@@ -436,6 +448,9 @@ assert any(item["laneId"] == lane["laneId"] for item in dashboard_after_actions[
 assert any(item["laneId"] == indexed_lane["laneId"] for item in dashboard_after_actions["lanes"])
 assert any(item["receiptId"] == proof["receiptId"] for item in dashboard_after_actions["proofs"])
 assert any(item["receiptId"] == transition["receiptId"] for item in dashboard_after_actions["proofs"])
+dashboard_transition = next(item for item in dashboard_after_actions["proofs"] if item["receiptId"] == transition["receiptId"])
+assert dashboard_transition["receiptBytes"] == transition["receiptBytes"]
+assert dashboard_transition["transitionDigest"] == hex32(0x69)
 updated_lane = next(item for item in dashboard_after_actions["lanes"] if item["laneId"] == lane["laneId"])
 assert updated_lane["latestReceiptId"] == proof["receiptId"]
 assert updated_lane["resolverState"] == lane["resolverState"]

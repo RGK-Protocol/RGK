@@ -84,8 +84,10 @@ not move a lane into `NativeTransitionedValid`. If the request includes
 canonical `receiptBytes`, `covenantId`, spent/new outpoints, a continuation
 shape root, and DAA score, walletd verifies the receipt against the indexed
 covenant state and records the spend in sled before returning `verified`.
-Partial receipt bundles are rejected. `NativeTransitionedValid` remains
-reserved for scanner/resolver-backed chain evidence.
+Verified proof summaries retain the canonical receipt bytes and continuation
+metadata so the frontend can export the artifact. Partial receipt bundles are
+rejected. `NativeTransitionedValid` remains reserved for
+scanner/resolver-backed chain evidence.
 `POST /transitions` is the wallet-built receipt path. It requires an Avato lane
 that was created with a complete covenant evidence bundle and therefore exists
 in the local sled indexer. The request supplies the selected lane, proof mode,
@@ -95,9 +97,11 @@ walletd reads the indexed current state and open outpoint, rejects policy
 mismatches and metadata-only lanes, derives a replay nonce from the open
 outpoint plus transition digest, builds a canonical RGK receipt, verifies it
 locally, and then records the spend in sled before returning a `verified`
-`RgkProofSummary`. This proves the local receipt is structurally valid against
-the indexed lane state; it does not by itself prove the transition was
-broadcast, confirmed, or classified by the resolver.
+`RgkProofSummary` with exportable `receiptBytes`, transition digest,
+continuation commitment, continuation shape root, and new state digest. This
+proves the local receipt is structurally valid against the indexed lane state;
+it does not by itself prove the transition was broadcast, confirmed, or
+classified by the resolver.
 `POST /wallet/sync` now runs one restart-safe `rgk-sync` scanner tick against
 the wallet profile's Kaspa wRPC endpoint. The scanner persists observed spend
 records to sled before advancing the scan cursor; the cursor must not outrun

@@ -243,6 +243,16 @@ struct ProofSummary {
     verifier_status: ProofVerifierStatus,
     txid: Option<String>,
     confirmations: u64,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    receipt_bytes: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    transition_digest: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    continuation_commitment: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    continuation_shape_root: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    new_state_digest: Option<String>,
     updated_at: String,
 }
 
@@ -716,6 +726,21 @@ async fn record_proof(
         },
         txid,
         confirmations: input.confirmations,
+        receipt_bytes: verified
+            .as_ref()
+            .map(|evidence| evidence.receipt_bytes.clone()),
+        transition_digest: verified
+            .as_ref()
+            .map(|evidence| hex32_label(&evidence.transition_digest)),
+        continuation_commitment: verified
+            .as_ref()
+            .map(|evidence| hex32_label(&evidence.continuation_commitment)),
+        continuation_shape_root: verified
+            .as_ref()
+            .map(|evidence| hex32_label(&evidence.continuation_shape_root)),
+        new_state_digest: verified
+            .as_ref()
+            .map(|evidence| hex32_label(&evidence.new_state_digest)),
         updated_at: updated_at.clone(),
     };
 
@@ -779,6 +804,11 @@ async fn record_transition(
         verifier_status: ProofVerifierStatus::Verified,
         txid: Some(hex32_plain(&evidence.new_outpoint.transaction_id)),
         confirmations: 0,
+        receipt_bytes: Some(evidence.receipt_bytes.clone()),
+        transition_digest: Some(hex32_label(&evidence.transition_digest)),
+        continuation_commitment: Some(hex32_label(&evidence.continuation_commitment)),
+        continuation_shape_root: Some(hex32_label(&evidence.continuation_shape_root)),
+        new_state_digest: Some(hex32_label(&evidence.new_state_digest)),
         updated_at: updated_at.clone(),
     };
 
@@ -884,6 +914,10 @@ struct VerifiedProofEvidence {
     receipt_policy: ReceiptPolicyName,
     new_outpoint: KaspaOutpoint,
     new_state_digest: Bytes32,
+    receipt_bytes: String,
+    transition_digest: Bytes32,
+    continuation_commitment: Bytes32,
+    continuation_shape_root: Bytes32,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -893,6 +927,10 @@ struct TransitionReceiptEvidence {
     receipt_policy: ReceiptPolicyName,
     new_outpoint: KaspaOutpoint,
     new_state_digest: Bytes32,
+    receipt_bytes: String,
+    transition_digest: Bytes32,
+    continuation_commitment: Bytes32,
+    continuation_shape_root: Bytes32,
 }
 
 async fn run_scan_tick(
@@ -1180,6 +1218,10 @@ fn ingest_proof_evidence_at_path(
         receipt_policy: receipt_policy_name(receipt.new_state.receipt_policy),
         new_outpoint,
         new_state_digest: receipt.new_state.state_digest,
+        receipt_bytes: format!("0x{}", hex::encode(receipt_bytes)),
+        transition_digest: receipt.transition_digest,
+        continuation_commitment: receipt.continuation_commitment,
+        continuation_shape_root: shape_root,
     }))
 }
 
@@ -1259,7 +1301,7 @@ fn build_transition_receipt_at_path(
         nonce,
     )
     .map_err(|error| format!("transition receipt input is invalid: {error}"))?;
-    let (receipt, receipt_id, _receipt_bytes) = ReceiptBuilder::build(&receipt_input)
+    let (receipt, receipt_id, receipt_bytes) = ReceiptBuilder::build(&receipt_input)
         .map_err(|error| format!("failed to build transition receipt: {error}"))?;
     let verified_id =
         ReceiptVerifier::verify_local_structured(&receipt, covenant_id, &old_state, chain_id)
@@ -1292,6 +1334,10 @@ fn build_transition_receipt_at_path(
         receipt_policy: input.receipt_policy,
         new_outpoint,
         new_state_digest,
+        receipt_bytes: format!("0x{}", hex::encode(receipt_bytes)),
+        transition_digest,
+        continuation_commitment,
+        continuation_shape_root,
     })
 }
 
@@ -2188,6 +2234,11 @@ mod tests {
         assert_eq!(receipt.proof_mode, ProofModeName::VerifierReceipt);
         assert_eq!(receipt.receipt_policy, ReceiptPolicyName::VerifierOnly);
         assert_eq!(receipt.new_state_digest, [0x68u8; 32]);
+        assert!(receipt.receipt_bytes.starts_with("0x"));
+        assert!(receipt.receipt_bytes.len() > 66);
+        assert_eq!(receipt.transition_digest, [0x69u8; 32]);
+        assert_eq!(receipt.continuation_commitment, [0x6au8; 32]);
+        assert_eq!(receipt.continuation_shape_root, [0x6bu8; 32]);
         assert_eq!(
             receipt.new_outpoint,
             KaspaOutpoint {
@@ -2434,6 +2485,10 @@ mod tests {
         assert_eq!(evidence.receipt_policy, ReceiptPolicyName::VerifierOnly);
         assert_eq!(evidence.new_outpoint, created);
         assert_eq!(evidence.new_state_digest, [0x44u8; 32]);
+        assert_eq!(evidence.receipt_bytes, request.receipt_bytes);
+        assert_eq!(evidence.transition_digest, transition_digest);
+        assert_eq!(evidence.continuation_commitment, continuation_commitment);
+        assert_eq!(evidence.continuation_shape_root, shape_root);
 
         let indexer = SledIndexer::open_path(&path).expect("reopen indexer");
         assert_eq!(indexer.latest_state(covenant_id), Some(new_state));
