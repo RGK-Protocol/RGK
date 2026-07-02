@@ -156,12 +156,8 @@ dashboard = request("GET", "/dashboard")
 assert dashboard["profile"] == profile
 assert dashboard["serviceMode"] == "connected"
 assert dashboard["serviceMode"] in contract["enums"]["serviceMode"]
-assert dashboard["lanes"], "dashboard must expose at least one RGK lane"
-assert dashboard["proofs"], "dashboard must expose at least one RGK proof"
-assert dashboard["lanes"][0]["resolverState"] in contract["enums"]["resolverState"]
-assert dashboard["lanes"][0]["proofPolicy"] in contract["enums"]["receiptPolicy"]
-assert dashboard["proofs"][0]["proofMode"] in contract["enums"]["proofMode"]
-assert dashboard["proofs"][0]["verifierStatus"] in contract["enums"]["proofVerifierStatus"]
+assert dashboard["lanes"] == [], "new wallet must not invent RGK lanes"
+assert dashboard["proofs"] == [], "new wallet must not invent RGK proofs"
 assert dashboard["scan"]["scanMode"] in contract["enums"]["scanMode"]
 
 lane = request("POST", "/lanes", {
@@ -200,6 +196,8 @@ assert proof["verifierStatus"] == "verified"
 assert proof["confirmations"] == 1
 
 dashboard_after_actions = request("GET", "/dashboard")
+assert len(dashboard_after_actions["lanes"]) == 1
+assert len(dashboard_after_actions["proofs"]) == 1
 assert any(item["laneId"] == lane["laneId"] for item in dashboard_after_actions["lanes"])
 assert any(item["receiptId"] == proof["receiptId"] for item in dashboard_after_actions["proofs"])
 updated_lane = next(item for item in dashboard_after_actions["lanes"] if item["laneId"] == lane["laneId"])

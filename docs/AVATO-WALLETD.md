@@ -54,7 +54,9 @@ The first implementation persists wallet profile/dashboard metadata, staged RGK
 lanes, staged proof receipts, and a salted passphrase verifier. It does not
 persist recovery phrases or raw passphrases. On Unix platforms, the state file
 is written with private user-only permissions so local metadata is not
-group/world readable.
+group/world readable. New and imported wallet profiles start without synthetic
+lane or proof records; lanes and receipt evidence appear only after explicit
+wallet actions or future scanner/resolver/prover integration.
 Scanner/resolver/prover integration should extend this daemon behind the same
 HTTP contract instead of changing the frontend shape.
 
@@ -66,6 +68,7 @@ bash scripts/verify-avato-walletd-contract.sh
 
 The script starts `rgk-walletd` on an isolated local port, reads
 `../avato-wallet-frontend/contracts/rgk-wallet-http-contract.json`, exercises
-health/profile/create/dashboard/lane/proof/lock/unlock/sync, rejects a
-mismatched network request, and checks the state file for raw phrase/passphrase
-leakage and unsafe group/world-readable permissions.
+health/profile/create/dashboard/lane/proof/lock/unlock/sync, verifies that new
+wallets do not contain synthetic lane/proof records, rejects a mismatched
+network request, and checks the state file for raw phrase/passphrase leakage and
+unsafe group/world-readable permissions.

@@ -628,8 +628,8 @@ async fn upsert_wallet(state: AppState, input: CreateWalletInput) -> ApiResult<W
     ));
     store.passphrase_salt = Some(passphrase_salt);
     store.kas_balance = "0.00000000 KAS".to_string();
-    store.lanes = sample_lanes(&state.config, &profile.wallet_id);
-    store.proofs = sample_proofs(&profile.wallet_id);
+    store.lanes.clear();
+    store.proofs.clear();
     store.scan = ScanStatus {
         cursor_name: "avato-rgk".to_string(),
         scan_mode: ScanMode::Idle,
@@ -842,39 +842,4 @@ fn now_label() -> String {
         .map(|duration| duration.as_secs())
         .unwrap_or_default();
     format!("unix:{seconds}")
-}
-
-fn sample_lanes(config: &DaemonConfig, wallet_id: &str) -> Vec<AssetLane> {
-    let updated_at = now_label();
-    vec![AssetLane {
-        lineage_id: format!("rgk:lineage:{}", hex_digest("lineage", wallet_id, 8)),
-        lane_id: format!("rgk:lane:private:{}", hex_digest("lane", wallet_id, 8)),
-        label: "Primary private lane".to_string(),
-        ticker: "RGK".to_string(),
-        balance: "0.0000".to_string(),
-        privacy: PrivacyMode::PrivateLane,
-        proof_policy: ReceiptPolicyName::ZkOrVerifier,
-        resolver_state: if config.network.chain_id().toccata_active_by_default() {
-            ResolverStateName::Open
-        } else {
-            ResolverStateName::NodeDown
-        },
-        covenant_id: hex_digest("covenant", wallet_id, 16),
-        state_digest: hex_digest("state", wallet_id, 16),
-        latest_receipt_id: None,
-        updated_at,
-    }]
-}
-
-fn sample_proofs(wallet_id: &str) -> Vec<ProofSummary> {
-    vec![ProofSummary {
-        receipt_id: format!("rgk:receipt:{}", hex_digest("receipt", wallet_id, 8)),
-        proof_mode: ProofModeName::VerifierReceipt,
-        receipt_policy: ReceiptPolicyName::ZkOrVerifier,
-        strategy: "verifier-receipt-baseline".to_string(),
-        verifier_status: ProofVerifierStatus::Pending,
-        txid: None,
-        confirmations: 0,
-        updated_at: now_label(),
-    }]
 }
