@@ -31,7 +31,7 @@
 //!   projections stay byte-aligned with the parent rusty-kaspa checkout.
 
 #![forbid(unsafe_code)]
-#![allow(clippy::unwrap_used, clippy::expect_used)]
+#![cfg_attr(test, allow(clippy::unwrap_used, clippy::expect_used))]
 #![allow(dead_code, unused_imports, unused_variables)]
 #![allow(clippy::needless_borrows_for_generic_args, clippy::vec_init_then_push)]
 #![allow(
@@ -48,14 +48,17 @@ use alloc::vec;
 use alloc::vec::Vec;
 
 use kaspa_hashes::{Hasher, HasherBase};
-use rgk_core::{Bytes32, KaspaChainId, KaspaCovenantId, KaspaOutpoint, RgkStateCommitment};
+use rgk_core::{Bytes32, KaspaChainId, KaspaCovenantId, KaspaOutpoint, RgkStateCommitment, Writer};
 use rgk_covenant::{CovenantSpec, CovenantState};
 use thiserror::Error;
+
+pub use rgk_core::{Hex32, ProofMode, ReceiptPolicy};
 
 pub const TX_VERSION_TOCCATA: u16 = 1;
 pub const SUBNETWORK_ID_SIZE: usize = 20;
 pub const SUBNETWORK_NAMESPACE_LEN: usize = 4;
 pub const SUBNETWORK_ZERO_TAIL_LEN: usize = SUBNETWORK_ID_SIZE - SUBNETWORK_NAMESPACE_LEN;
+pub const TOCCATA_SCRIPT_PUBLIC_KEY_MAX_SCRIPT_LEN: usize = u16::MAX as usize;
 pub const SUBNETWORK_ID_NATIVE: ToccataSubnetworkId = [0u8; SUBNETWORK_ID_SIZE];
 pub const SUBNETWORK_ID_COINBASE: ToccataSubnetworkId = {
     let mut bytes = [0u8; SUBNETWORK_ID_SIZE];
@@ -69,21 +72,20 @@ pub const SIG_HASH_NONE: ToccataSigHashType = ToccataSigHashType(0b0000_0010);
 pub const SIG_HASH_SINGLE: ToccataSigHashType = ToccataSigHashType(0b0000_0100);
 pub const SIG_HASH_ANY_ONE_CAN_PAY: ToccataSigHashType = ToccataSigHashType(0b1000_0000);
 pub const SIG_HASH_MASK: u8 = 0b0000_0111;
-const ALLOWED_SIG_HASH_TYPE_VALUES: [u8; 6] = [
-    SIG_HASH_ALL.0,
-    SIG_HASH_NONE.0,
-    SIG_HASH_SINGLE.0,
-    SIG_HASH_ALL.0 | SIG_HASH_ANY_ONE_CAN_PAY.0,
-    SIG_HASH_NONE.0 | SIG_HASH_ANY_ONE_CAN_PAY.0,
-    SIG_HASH_SINGLE.0 | SIG_HASH_ANY_ONE_CAN_PAY.0,
-];
 
-#[derive(Copy, Clone, Debug, PartialEq, Eq)]
+const fn is_allowed_sig_hash_type(value: u8) -> bool {
+    matches!(
+        value,
+        0b0000_0001 | 0b0000_0010 | 0b0000_0100 | 0b1000_0001 | 0b1000_0010 | 0b1000_0100
+    )
+}
+
+#[derive(Copy, Clone, Debug, PartialEq, Eq, Hash)]
 pub struct ToccataSigHashType(u8);
 
 impl ToccataSigHashType {
-    pub fn from_u8(value: u8) -> Result<Self, TxBuildError> {
-        if !ALLOWED_SIG_HASH_TYPE_VALUES.contains(&value) {
+    pub const fn from_u8(value: u8) -> Result<Self, TxBuildError> {
+        if !is_allowed_sig_hash_type(value) {
             return Err(TxBuildError::InvalidToccataSigHashType(value));
         }
         Ok(Self(value))
@@ -119,7 +121,7 @@ impl core::ops::BitOr for ToccataSigHashType {
 }
 
 /// Errors produced by transaction builders.
-#[derive(Debug, Clone, PartialEq, Eq, Error)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash, Error)]
 pub enum TxBuildError {
     #[error("fee amount must be non-negative and less than the input total: got fee={fee}, in={in_total}")]
     BadFee { fee: u64, in_total: u64 },
@@ -137,9 +139,11 @@ pub enum TxBuildError {
         actual: KaspaChainId,
     },
     #[error("covenant id mismatch: tx covenant {tx}, state lineage {state}")]
-    CovenantMismatch { tx: Hex32, state: HexBytes32 },
+    CovenantMismatch { tx: Hex32, state: Hex32 },
     #[error("Toccata script public key must contain a 2-byte version prefix")]
     MalformedScriptPublicKey,
+    #[error("Toccata script public key script length {len} exceeds max {max}")]
+    ScriptPublicKeyTooLong { len: usize, max: usize },
     #[error("Toccata subnetwork id is not native, coinbase, or a user-lane namespace")]
     InvalidToccataSubnetwork,
     #[error("gas is only allowed for Toccata user-lane subnetworks")]
@@ -157,37 +161,12 @@ pub enum TxBuildError {
     InvalidToccataCovenantGroup { reason: &'static str },
 }
 
-/// Display wrapper around a 32-byte value.
-#[derive(Clone, Debug, PartialEq, Eq)]
-pub struct Hex32(pub Bytes32);
-impl core::fmt::Display for Hex32 {
-    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-        use rgk_core::to_hex;
-        f.write_str("0x")?;
-        f.write_str(&to_hex(&self.0))
-    }
-}
-impl From<Bytes32> for Hex32 {
-    fn from(b: Bytes32) -> Self {
-        Hex32(b)
-    }
-}
-
-#[derive(Clone, Debug, PartialEq, Eq)]
-pub struct HexBytes32(pub Bytes32);
-impl core::fmt::Display for HexBytes32 {
-    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-        use rgk_core::to_hex;
-        f.write_str("0x")?;
-        f.write_str(&to_hex(&self.0))
-    }
-}
-
 /// A minimal transaction output. Matches `kaspa_consensus_core::tx::TransactionOutput`
 /// layout (value u64 LE, then var-len script_public_key). `covenant_binding` is
 /// optional; when present it carries `(authorizing_input, covenant_id)` for
 /// Toccata-aware outputs.
-#[derive(Clone, Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq, Eq, Hash)]
+#[non_exhaustive]
 pub struct TxOutput {
     pub value: u64,
     pub script_public_key: Vec<u8>,
@@ -196,13 +175,15 @@ pub struct TxOutput {
 
 /// A Toccata covenant binding on an output. Matches
 /// `kaspa_consensus_core::tx::CovenantBinding` (authorizing_input + covenant_id).
-#[derive(Copy, Clone, Debug, PartialEq, Eq)]
+#[derive(Copy, Clone, Debug, PartialEq, Eq, Hash)]
+#[non_exhaustive]
 pub struct CovenantBinding {
     pub authorizing_input: u16,
     pub covenant_id: KaspaCovenantId,
 }
 
-#[derive(Clone, Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq, Eq, Hash)]
+#[non_exhaustive]
 pub struct ToccataScriptPublicKey {
     pub version: u16,
     pub script: Vec<u8>,
@@ -216,6 +197,13 @@ impl ToccataScriptPublicKey {
     pub fn from_versioned_bytes(bytes: Vec<u8>) -> Result<Self, TxBuildError> {
         if bytes.len() < 2 {
             return Err(TxBuildError::MalformedScriptPublicKey);
+        }
+        let script_len = bytes.len() - 2;
+        if script_len > TOCCATA_SCRIPT_PUBLIC_KEY_MAX_SCRIPT_LEN {
+            return Err(TxBuildError::ScriptPublicKeyTooLong {
+                len: script_len,
+                max: TOCCATA_SCRIPT_PUBLIC_KEY_MAX_SCRIPT_LEN,
+            });
         }
         let version = u16::from_le_bytes([bytes[0], bytes[1]]);
         Ok(Self {
@@ -232,7 +220,8 @@ impl ToccataScriptPublicKey {
     }
 }
 
-#[derive(Clone, Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq, Eq, Hash)]
+#[non_exhaustive]
 pub struct ToccataTxInput {
     pub previous_outpoint: KaspaOutpoint,
     pub signature_script: Vec<u8>,
@@ -260,7 +249,8 @@ impl ToccataTxInput {
     }
 }
 
-#[derive(Clone, Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq, Eq, Hash)]
+#[non_exhaustive]
 pub struct ToccataTxOutput {
     pub value: u64,
     pub script_public_key: ToccataScriptPublicKey,
@@ -303,7 +293,8 @@ impl TryFrom<TxOutput> for ToccataTxOutput {
     }
 }
 
-#[derive(Clone, Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq, Eq, Hash)]
+#[non_exhaustive]
 pub struct ToccataUtxoEntry {
     pub amount: u64,
     pub script_public_key: ToccataScriptPublicKey,
@@ -318,7 +309,8 @@ impl ToccataUtxoEntry {
     }
 }
 
-#[derive(Clone, Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq, Eq, Hash)]
+#[non_exhaustive]
 pub struct ToccataV1Tx {
     pub inputs: Vec<ToccataTxInput>,
     pub outputs: Vec<ToccataTxOutput>,
@@ -329,7 +321,8 @@ pub struct ToccataV1Tx {
     pub mass: u64,
 }
 
-#[derive(Clone, Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq, Eq, Hash)]
+#[non_exhaustive]
 pub struct ToccataGenesisCovenantGroup {
     pub authorizing_input: u16,
     pub outputs: Vec<u32>,
@@ -379,10 +372,6 @@ impl ToccataV1Tx {
         self
     }
 
-    pub fn with_storage_mass(self, storage_mass: u64) -> Self {
-        self.with_mass(storage_mass)
-    }
-
     pub const fn version(&self) -> u16 {
         TX_VERSION_TOCCATA
     }
@@ -392,23 +381,23 @@ impl ToccataV1Tx {
     }
 
     pub fn to_borsh_bytes(&self) -> Vec<u8> {
-        let mut out = Vec::new();
-        write_borsh_u16(&mut out, TX_VERSION_TOCCATA);
-        write_borsh_len(&mut out, self.inputs.len());
+        let mut out = BorshWriter::new();
+        out.write_u16(TX_VERSION_TOCCATA);
+        out.write_len(self.inputs.len());
         for input in &self.inputs {
             write_borsh_toccata_input(&mut out, input);
         }
-        write_borsh_len(&mut out, self.outputs.len());
+        out.write_len(self.outputs.len());
         for output in &self.outputs {
             write_borsh_toccata_output(&mut out, output);
         }
-        write_borsh_u64(&mut out, self.lock_time);
-        out.extend_from_slice(&self.subnetwork_id);
-        write_borsh_u64(&mut out, self.gas);
-        write_borsh_vec(&mut out, &self.payload);
-        write_borsh_u64(&mut out, self.mass);
-        out.extend_from_slice(&self.txid());
-        out
+        out.write_u64(self.lock_time);
+        out.write_bytes(&self.subnetwork_id);
+        out.write_u64(self.gas);
+        out.write_vec(&self.payload);
+        out.write_u64(self.mass);
+        out.write_bytes(&self.txid());
+        out.into_vec()
     }
 
     pub fn rest_preimage(&self) -> Vec<u8> {
@@ -646,7 +635,7 @@ impl ToccataV1Tx {
 }
 
 bitflags::bitflags! {
-    #[derive(Clone, Copy, Debug, PartialEq, Eq)]
+    #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
     struct ToccataEncodingFlags: u8 {
         const FULL = 0;
         const EXCLUDE_SIGNATURE_SCRIPT = 1 << 0;
@@ -762,48 +751,75 @@ fn write_toccata_output<T: HasherBase>(hasher: &mut T, output: &ToccataTxOutput)
     }
 }
 
-fn write_borsh_len(out: &mut Vec<u8>, len: usize) {
-    let len = u32::try_from(len).expect("Toccata v1 Borsh vector length exceeds u32");
-    out.extend_from_slice(&len.to_le_bytes());
+struct BorshWriter {
+    inner: Writer,
 }
 
-fn write_borsh_u16(out: &mut Vec<u8>, value: u16) {
-    out.extend_from_slice(&value.to_le_bytes());
+impl BorshWriter {
+    fn new() -> Self {
+        Self {
+            inner: Writer::new(),
+        }
+    }
+
+    fn into_vec(self) -> Vec<u8> {
+        self.inner.into_vec()
+    }
+
+    fn write_len(&mut self, len: usize) {
+        assert!(
+            len <= u32::MAX as usize,
+            "Toccata v1 Borsh vector length exceeds u32"
+        );
+        self.inner.write_u32(len as u32);
+    }
+
+    fn write_u8(&mut self, value: u8) {
+        self.inner.write_u8(value);
+    }
+
+    fn write_u16(&mut self, value: u16) {
+        self.inner.write_u16(value);
+    }
+
+    fn write_u32(&mut self, value: u32) {
+        self.inner.write_u32(value);
+    }
+
+    fn write_u64(&mut self, value: u64) {
+        self.inner.write_u64(value);
+    }
+
+    fn write_bytes(&mut self, bytes: &[u8]) {
+        self.inner.write_bytes(bytes);
+    }
+
+    fn write_vec(&mut self, bytes: &[u8]) {
+        self.write_len(bytes.len());
+        self.write_bytes(bytes);
+    }
 }
 
-fn write_borsh_u32(out: &mut Vec<u8>, value: u32) {
-    out.extend_from_slice(&value.to_le_bytes());
+fn write_borsh_toccata_input(out: &mut BorshWriter, input: &ToccataTxInput) {
+    out.write_bytes(&input.previous_outpoint.transaction_id);
+    out.write_u32(input.previous_outpoint.index);
+    out.write_vec(&input.signature_script);
+    out.write_u64(input.sequence);
+    out.write_u8(1); // TxInputMass::ComputeBudget; v1 transactions cannot use SigopCount.
+    out.write_u16(input.compute_budget);
 }
 
-fn write_borsh_u64(out: &mut Vec<u8>, value: u64) {
-    out.extend_from_slice(&value.to_le_bytes());
-}
-
-fn write_borsh_vec(out: &mut Vec<u8>, bytes: &[u8]) {
-    write_borsh_len(out, bytes.len());
-    out.extend_from_slice(bytes);
-}
-
-fn write_borsh_toccata_input(out: &mut Vec<u8>, input: &ToccataTxInput) {
-    out.extend_from_slice(&input.previous_outpoint.transaction_id);
-    write_borsh_u32(out, input.previous_outpoint.index);
-    write_borsh_vec(out, &input.signature_script);
-    write_borsh_u64(out, input.sequence);
-    out.push(1); // TxInputMass::ComputeBudget; v1 transactions cannot use SigopCount.
-    write_borsh_u16(out, input.compute_budget);
-}
-
-fn write_borsh_toccata_output(out: &mut Vec<u8>, output: &ToccataTxOutput) {
-    write_borsh_u64(out, output.value);
-    write_borsh_u16(out, output.script_public_key.version);
-    write_borsh_vec(out, &output.script_public_key.script);
+fn write_borsh_toccata_output(out: &mut BorshWriter, output: &ToccataTxOutput) {
+    out.write_u64(output.value);
+    out.write_u16(output.script_public_key.version);
+    out.write_vec(&output.script_public_key.script);
     match output.covenant_binding {
         Some(binding) => {
-            out.push(1);
-            write_borsh_u16(out, binding.authorizing_input);
-            out.extend_from_slice(&binding.covenant_id);
+            out.write_u8(1);
+            out.write_u16(binding.authorizing_input);
+            out.write_bytes(&binding.covenant_id);
         }
-        None => out.push(0),
+        None => out.write_u8(0),
     }
 }
 
@@ -841,19 +857,37 @@ pub fn is_toccata_user_lane(id: ToccataSubnetworkId) -> bool {
 }
 
 impl TxOutput {
-    pub fn new(value: u64, script_public_key: Vec<u8>) -> Self {
-        Self {
+    pub fn new(value: u64, script_public_key: Vec<u8>) -> Result<Self, TxBuildError> {
+        if script_public_key.is_empty() {
+            return Err(TxBuildError::EmptyScriptPublicKey);
+        }
+        Ok(Self {
             value,
             script_public_key,
             covenant_binding: None,
-        }
+        })
     }
 
-    pub fn covenant(value: u64, script_public_key: Vec<u8>, binding: CovenantBinding) -> Self {
-        Self {
+    pub fn covenant(
+        value: u64,
+        script_public_key: Vec<u8>,
+        binding: CovenantBinding,
+    ) -> Result<Self, TxBuildError> {
+        if script_public_key.is_empty() {
+            return Err(TxBuildError::EmptyScriptPublicKey);
+        }
+        Ok(Self {
             value,
             script_public_key,
             covenant_binding: Some(binding),
+        })
+    }
+
+    pub fn fee_only(value: u64) -> Self {
+        Self {
+            value,
+            script_public_key: Vec::new(),
+            covenant_binding: None,
         }
     }
 
@@ -882,7 +916,7 @@ impl TxOutput {
 
 /// A transaction input. Minimal shape: outpoint + signature script (empty for
 /// unsigned tx).
-#[derive(Clone, Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq, Eq, Hash)]
 pub struct TxInput {
     pub previous_outpoint: KaspaOutpoint,
     pub signature_script: Vec<u8>,
@@ -910,7 +944,7 @@ impl TxInput {
 }
 
 /// The unsigned transaction we build. Holds inputs, outputs, payload, lock_time.
-#[derive(Clone, Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq, Eq, Hash)]
 pub struct UnsignedTx {
     pub inputs: Vec<TxInput>,
     pub outputs: Vec<TxOutput>,
@@ -986,17 +1020,17 @@ pub fn build_genesis_output(
     if covenant_id == [0u8; 32] {
         return Err(TxBuildError::CovenantMismatch {
             tx: covenant_id.into(),
-            state: HexBytes32(state.lineage_id),
+            state: Hex32(state.lineage_id),
         });
     }
-    Ok(TxOutput::covenant(
+    TxOutput::covenant(
         value,
         spk,
         CovenantBinding {
             authorizing_input,
             covenant_id,
         },
-    ))
+    )
 }
 
 /// Build the spend input for a transition: exactly the open covenant outpoint.
@@ -1022,7 +1056,7 @@ pub fn build_transition_outputs(
     if new_covenant_id == [0u8; 32] {
         return Err(TxBuildError::CovenantMismatch {
             tx: new_covenant_id.into(),
-            state: HexBytes32(new_state.lineage_id),
+            state: Hex32(new_state.lineage_id),
         });
     }
     if fee + new_value > in_total {
@@ -1040,11 +1074,11 @@ pub fn build_transition_outputs(
             authorizing_input: 0,
             covenant_id: new_covenant_id,
         },
-    );
+    )?;
     outs.push(covenant_out);
     if let Some(spk) = change_spk {
         if change_value > 0 {
-            outs.push(TxOutput::new(change_value, spk));
+            outs.push(TxOutput::new(change_value, spk)?);
         }
     }
     Ok(outs)
@@ -1052,7 +1086,7 @@ pub fn build_transition_outputs(
 
 /// Build a fee-only output (used when no change is desired).
 pub fn build_fee_output(value: u64) -> TxOutput {
-    TxOutput::new(value, vec![])
+    TxOutput::fee_only(value)
 }
 
 /// Validate that a transition tx is balanced: `sum(inputs) >= sum(outputs)`,
@@ -1125,13 +1159,12 @@ mod tests {
         mass::ComputeBudget,
         subnets::SubnetworkId,
         tx::{
-            CovenantBinding as UpstreamCovenantBinding,
+            ComputeCommit as UpstreamComputeCommit, CovenantBinding as UpstreamCovenantBinding,
             GenesisCovenantGroup as UpstreamGenesisCovenantGroup, PopulatedTransaction,
             ScriptPublicKey, Transaction as UpstreamTransaction,
             TransactionInput as UpstreamTransactionInput,
             TransactionOutpoint as UpstreamTransactionOutpoint,
-            TransactionOutput as UpstreamTransactionOutput, TxInputMass as UpstreamTxInputMass,
-            UtxoEntry as UpstreamUtxoEntry,
+            TransactionOutput as UpstreamTransactionOutput, UtxoEntry as UpstreamUtxoEntry,
         },
     };
     use kaspa_hashes::Hash;
@@ -1222,7 +1255,7 @@ mod tests {
                     ),
                     input.signature_script.clone(),
                     input.sequence,
-                    UpstreamTxInputMass::ComputeBudget(ComputeBudget(input.compute_budget)),
+                    UpstreamComputeCommit::ComputeBudget(ComputeBudget(input.compute_budget)),
                 )
             })
             .collect();
@@ -1298,7 +1331,7 @@ mod tests {
         let tx = sample_toccata_v1();
         let upstream = to_upstream_tx(&tx);
 
-        assert_eq!(tx.storage_mass(), upstream.mass());
+        assert_eq!(tx.storage_mass(), upstream.storage_mass());
         assert_eq!(tx.to_borsh_bytes(), borsh::to_vec(&upstream).unwrap());
     }
 
@@ -1317,9 +1350,9 @@ mod tests {
         assert_ne!(base_wire, changed_compute_budget.to_borsh_bytes());
         assert_eq!(base.txid(), changed_compute_budget.txid());
 
-        let changed_storage_mass = base.clone().with_storage_mass(base.storage_mass() + 1);
-        assert_ne!(base_wire, changed_storage_mass.to_borsh_bytes());
-        assert_eq!(base.txid(), changed_storage_mass.txid());
+        let changed_mass = base.clone().with_mass(base.storage_mass() + 1);
+        assert_ne!(base_wire, changed_mass.to_borsh_bytes());
+        assert_eq!(base.txid(), changed_mass.txid());
 
         let mut changed_payload = base.clone();
         changed_payload.payload.push(0xee);
@@ -1569,7 +1602,8 @@ mod tests {
                 authorizing_input: 0,
                 covenant_id: sample_covenant_id(),
             },
-        );
+        )
+        .unwrap();
         let tx = UnsignedTx {
             inputs: vec![TxInput::new(KaspaOutpoint {
                 transaction_id: [0x55; 32],
@@ -1594,6 +1628,22 @@ mod tests {
     }
 
     #[test]
+    fn toccata_script_public_key_rejects_oversize_script() {
+        let mut bytes = Vec::with_capacity(2 + TOCCATA_SCRIPT_PUBLIC_KEY_MAX_SCRIPT_LEN + 1);
+        bytes.extend_from_slice(&0u16.to_le_bytes());
+        bytes.resize(2 + TOCCATA_SCRIPT_PUBLIC_KEY_MAX_SCRIPT_LEN + 1, 0x51);
+
+        let err = ToccataScriptPublicKey::from_versioned_bytes(bytes).unwrap_err();
+        assert!(matches!(
+            err,
+            TxBuildError::ScriptPublicKeyTooLong {
+                len,
+                max: TOCCATA_SCRIPT_PUBLIC_KEY_MAX_SCRIPT_LEN
+            } if len == TOCCATA_SCRIPT_PUBLIC_KEY_MAX_SCRIPT_LEN + 1
+        ));
+    }
+
+    #[test]
     fn encode_output_roundtrip_structure() {
         let o = TxOutput::covenant(
             1234,
@@ -1602,7 +1652,8 @@ mod tests {
                 authorizing_input: 0,
                 covenant_id: sample_covenant_id(),
             },
-        );
+        )
+        .unwrap();
         let bytes = o.encode_canonical();
         // value(8) + spk_len(4) + spk(2) + Some(1) + u16(2) + cov_id(32) = 49
         assert_eq!(bytes.len(), 8 + 4 + 2 + 1 + 2 + 32);
@@ -1626,11 +1677,34 @@ mod tests {
     }
 
     #[test]
+    fn tx_output_constructors_reject_empty_script_except_fee_only() {
+        assert!(matches!(
+            TxOutput::new(1000, Vec::new()),
+            Err(TxBuildError::EmptyScriptPublicKey)
+        ));
+        assert!(matches!(
+            TxOutput::covenant(
+                1000,
+                Vec::new(),
+                CovenantBinding {
+                    authorizing_input: 0,
+                    covenant_id: sample_covenant_id(),
+                },
+            ),
+            Err(TxBuildError::EmptyScriptPublicKey)
+        ));
+
+        let fee = TxOutput::fee_only(1000);
+        assert!(fee.script_public_key.is_empty());
+        assert!(fee.covenant_binding.is_none());
+    }
+
+    #[test]
     fn encode_unsigned_tx() {
         // Plain (non-covenant) output is 14 bytes (value 8 + spk_len 4 + spk 1 + None 1).
         let tx = UnsignedTx {
             inputs: vec![TxInput::new(KaspaOutpoint::NULL)],
-            outputs: vec![TxOutput::new(1000, vec![0x76])],
+            outputs: vec![TxOutput::new(1000, vec![0x76]).unwrap()],
             payload: vec![1, 2, 3, 4],
             lock_time: 0,
         };

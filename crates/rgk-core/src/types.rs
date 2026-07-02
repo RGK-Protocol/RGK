@@ -16,7 +16,7 @@ use alloc::vec::Vec;
 
 use crate::bytes::{fmt_hex, Bytes32};
 use crate::chain::KaspaChainId;
-use crate::encoding::{Canonical, Reader, Writer};
+use crate::encoding::{Canonical, Reader, Writer, ENCODING_VERSION};
 use crate::error::DecodeError;
 use crate::policy::{ProofMode, ReceiptPolicy};
 
@@ -26,6 +26,7 @@ use crate::policy::{ProofMode, ReceiptPolicy};
 ///
 /// Both ids are RGK domain-separated commitments stored as raw `[u8;32]`.
 #[derive(Copy, Clone, Debug, PartialEq, Eq, Hash)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct RgkAssetRef {
     pub asset_id: RgkAssetId,
     pub schema_id: RgkSchemaId,
@@ -44,6 +45,7 @@ pub type KaspaCovenantId = Bytes32;
 /// `kaspa_consensus_core::tx::TransactionOutpoint` exactly in content
 /// (encoding order is fixed here, independent of upstream's borsh layout).
 #[derive(Copy, Clone, Debug, PartialEq, Eq, Hash, PartialOrd, Ord)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct KaspaOutpoint {
     pub transaction_id: Bytes32,
     pub index: u32,
@@ -80,6 +82,7 @@ pub type ReceiptId = Bytes32;
 /// Input fields a wallet or verifier supplies when constructing an explicit
 /// receipt-policy migration proof.
 #[derive(Copy, Clone, Debug, PartialEq, Eq, Hash)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct PolicyMigrationInput {
     pub previous_policy: ReceiptPolicy,
     pub new_policy: ReceiptPolicy,
@@ -95,6 +98,7 @@ pub struct PolicyMigrationInput {
 /// the previous and new policies to the old/new state digests, the native
 /// transition digest, and a wallet/verifier authorisation commitment.
 #[derive(Copy, Clone, Debug, PartialEq, Eq, Hash)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct PolicyMigrationProof {
     pub previous_policy: ReceiptPolicy,
     pub new_policy: ReceiptPolicy,
@@ -114,6 +118,8 @@ pub struct PolicyMigrationProof {
 /// `rgk-core` on purpose: the core only guarantees it is 32 bytes and that it
 /// is compared exactly by the verifier.
 #[derive(Clone, Debug, PartialEq, Eq, Hash)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[non_exhaustive]
 pub struct RgkStateCommitment {
     /// Canonical encoding version of this commitment (currently 0).
     pub version: u16,
@@ -128,6 +134,50 @@ pub struct RgkStateCommitment {
 impl RgkStateCommitment {
     /// Domain-separation literal for this struct (see [`crate::commit`]).
     pub const DOMAIN: &'static str = "rgk:state-commitment";
+
+    pub fn new(
+        chain_id: KaspaChainId,
+        covenant_id: KaspaCovenantId,
+        asset_id: RgkAssetId,
+        state_digest: Bytes32,
+        receipt_policy: ReceiptPolicy,
+    ) -> Result<Self, DecodeError> {
+        let commitment = Self {
+            version: ENCODING_VERSION,
+            chain_id,
+            covenant_id,
+            asset_id,
+            state_digest,
+            receipt_policy,
+        };
+        commitment.validate_structure()?;
+        Ok(commitment)
+    }
+
+    pub fn validate_structure(&self) -> Result<(), DecodeError> {
+        if self.version != ENCODING_VERSION {
+            return Err(DecodeError::Structural(format!(
+                "unsupported state commitment version: got {}, expected {}",
+                self.version, ENCODING_VERSION
+            )));
+        }
+        if self.covenant_id == [0u8; 32] {
+            return Err(DecodeError::Structural(
+                "state commitment covenant id missing".to_string(),
+            ));
+        }
+        if self.asset_id == [0u8; 32] {
+            return Err(DecodeError::Structural(
+                "state commitment asset id missing".to_string(),
+            ));
+        }
+        if self.state_digest == [0u8; 32] {
+            return Err(DecodeError::Structural(
+                "state commitment digest missing".to_string(),
+            ));
+        }
+        Ok(())
+    }
 }
 
 /// The RGK receipt: a typed, replay-protected statement that an RGK transition
@@ -137,6 +187,8 @@ impl RgkStateCommitment {
 /// validation results plus Kaspa covenant context, and verified by both the
 /// local verifier and (for output-shape + lineage) the on-chain covenant.
 #[derive(Clone, Debug, PartialEq, Eq, Hash)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[non_exhaustive]
 pub struct RgkReceipt {
     pub version: u16,
     pub chain_id: KaspaChainId,
@@ -155,10 +207,44 @@ pub struct RgkReceipt {
 impl RgkReceipt {
     pub const DOMAIN: &'static str = "rgk:receipt";
 
+    #[allow(clippy::too_many_arguments)]
+    pub fn new(
+        chain_id: KaspaChainId,
+        covenant_id: KaspaCovenantId,
+        old_state: RgkStateCommitment,
+        new_state: RgkStateCommitment,
+        transition_digest: TransitionDigest,
+        continuation_commitment: ContinuationCommitment,
+        proof_mode: ProofMode,
+        replay_nonce: Bytes32,
+    ) -> Result<Self, DecodeError> {
+        let receipt = Self {
+            version: ENCODING_VERSION,
+            chain_id,
+            covenant_id,
+            old_state,
+            new_state,
+            transition_digest,
+            continuation_commitment,
+            proof_mode,
+            replay_nonce,
+        };
+        receipt.validate_structure()?;
+        Ok(receipt)
+    }
+
     /// Cross-field structural invariants every well-formed receipt must satisfy.
     /// These are checked by the verifier too, but encoding refuses to produce a
     /// receipt that violates them, and decoding refuses to accept one.
     pub fn validate_structure(&self) -> Result<(), DecodeError> {
+        if self.version != ENCODING_VERSION {
+            return Err(DecodeError::Structural(format!(
+                "unsupported receipt version: got {}, expected {}",
+                self.version, ENCODING_VERSION
+            )));
+        }
+        self.old_state.validate_structure()?;
+        self.new_state.validate_structure()?;
         if self.old_state.chain_id != self.chain_id || self.new_state.chain_id != self.chain_id {
             return Err(DecodeError::Structural(
                 "chain id mismatch in receipt".to_string(),
@@ -187,6 +273,11 @@ impl RgkReceipt {
             // self-replay.
             return Err(DecodeError::Structural(
                 "state digest did not change".to_string(),
+            ));
+        }
+        if self.transition_digest == [0u8; 32] {
+            return Err(DecodeError::Structural(
+                "transition digest missing".to_string(),
             ));
         }
         if self.continuation_commitment == [0u8; 32] {
@@ -248,14 +339,16 @@ impl Canonical for RgkStateCommitment {
         let asset_id = r.read_bytes32()?;
         let state_digest = r.read_bytes32()?;
         let receipt_policy = ReceiptPolicy::decode(r)?;
-        Ok(RgkStateCommitment {
+        let commitment = RgkStateCommitment {
             version,
             chain_id,
             covenant_id,
             asset_id,
             state_digest,
             receipt_policy,
-        })
+        };
+        commitment.validate_structure()?;
+        Ok(commitment)
     }
 }
 

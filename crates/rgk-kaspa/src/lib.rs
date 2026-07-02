@@ -23,7 +23,7 @@
 
 #![forbid(unsafe_code)]
 #![cfg_attr(not(feature = "std"), no_std)]
-#![allow(clippy::unwrap_used, clippy::expect_used)]
+#![cfg_attr(test, allow(clippy::unwrap_used, clippy::expect_used))]
 #![allow(dead_code, unused_imports, unused_variables)]
 #![allow(clippy::needless_borrows_for_generic_args, clippy::vec_init_then_push)]
 #![allow(
@@ -48,41 +48,145 @@ pub type KaspaTxId = Bytes32;
 /// The block hash type. Same width as a txid but a different domain.
 pub type KaspaBlockHash = Bytes32;
 
+/// Maximum versioned script-public-key bytes accepted from a chain backend.
+///
+/// Toccata script public keys encode a `u16` version plus a script whose
+/// length is bounded by `u16::MAX`.
+pub const MAX_SCRIPT_PUBLIC_KEY_BYTES: usize = 2 + u16::MAX as usize;
+
+/// Bounded Kaspa script-public-key bytes as returned by chain backends.
+#[derive(Clone, Debug, PartialEq, Eq, Hash)]
+pub struct KaspaScriptPublicKey {
+    bytes: Vec<u8>,
+}
+
+impl KaspaScriptPublicKey {
+    pub fn new(bytes: Vec<u8>) -> Result<Self, KaspaNetworkError> {
+        let len = bytes.len();
+        if len > MAX_SCRIPT_PUBLIC_KEY_BYTES {
+            return Err(KaspaNetworkError::ScriptPublicKeyTooLong {
+                len,
+                max: MAX_SCRIPT_PUBLIC_KEY_BYTES,
+            });
+        }
+        Ok(Self { bytes })
+    }
+
+    pub fn as_bytes(&self) -> &[u8] {
+        &self.bytes
+    }
+
+    pub fn into_vec(self) -> Vec<u8> {
+        self.bytes
+    }
+
+    pub fn len(&self) -> usize {
+        self.bytes.len()
+    }
+
+    pub fn is_empty(&self) -> bool {
+        self.bytes.is_empty()
+    }
+}
+
 /// Network-wide tip pointer.
-#[derive(Clone, Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq, Eq, Hash)]
+#[non_exhaustive]
 pub struct KaspaTip {
     pub hash: KaspaBlockHash,
     pub blue_score: u64,
     pub daa_score: u64,
 }
 
+impl KaspaTip {
+    pub const fn new(hash: KaspaBlockHash, blue_score: u64, daa_score: u64) -> Self {
+        Self {
+            hash,
+            blue_score,
+            daa_score,
+        }
+    }
+}
+
 /// A summary of a Kaspa transaction. The full transaction body is **not** held
 /// here; callers fetch specific outputs via [`KaspaChainBackend::get_utxo`].
 ///
 /// `mass` is the total mass of the transaction (Kaspa consensus metric).
-#[derive(Clone, Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq, Eq, Hash)]
+#[non_exhaustive]
 pub struct KaspaTxSummary {
     pub txid: KaspaTxId,
     pub mass: u64,
     pub payload: Vec<u8>,
 }
 
+impl KaspaTxSummary {
+    pub fn new(txid: KaspaTxId, mass: u64, payload: Vec<u8>) -> Self {
+        Self {
+            txid,
+            mass,
+            payload,
+        }
+    }
+}
+
 /// A UTXO as known to the local node. Includes the spending transaction if the
 /// UTXO is already spent — the resolver uses this to detect spends and the
 /// corresponding receipt-bearing transactions.
-#[derive(Clone, Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq, Eq, Hash)]
+#[non_exhaustive]
 pub struct KaspaUtxo {
     pub outpoint: KaspaOutpoint,
     pub value: u64,
     /// Script public key bytes (Kaspa P2SH wrapper + redeem script).
-    pub script_public_key: Vec<u8>,
+    pub script_public_key: KaspaScriptPublicKey,
     /// Block DAA score at which this UTXO was confirmed. `None` for mempool.
     pub block_daa_score: Option<u64>,
     /// If the UTXO is spent, the spending txid and input index.
     pub spending: Option<SpendingInfo>,
 }
 
-#[derive(Clone, Debug, PartialEq, Eq)]
+impl KaspaUtxo {
+    pub fn new(
+        outpoint: KaspaOutpoint,
+        value: u64,
+        script_public_key: Vec<u8>,
+        block_daa_score: Option<u64>,
+        spending: Option<SpendingInfo>,
+    ) -> Result<Self, KaspaNetworkError> {
+        let utxo = Self {
+            outpoint,
+            value,
+            script_public_key: KaspaScriptPublicKey::new(script_public_key)?,
+            block_daa_score,
+            spending,
+        };
+        Ok(utxo)
+    }
+
+    pub fn from_script_public_key(
+        outpoint: KaspaOutpoint,
+        value: u64,
+        script_public_key: KaspaScriptPublicKey,
+        block_daa_score: Option<u64>,
+        spending: Option<SpendingInfo>,
+    ) -> Self {
+        Self {
+            outpoint,
+            value,
+            script_public_key,
+            block_daa_score,
+            spending,
+        }
+    }
+
+    pub fn validate_script_public_key(&self) -> Result<(), KaspaNetworkError> {
+        let _ = KaspaScriptPublicKey::new(self.script_public_key.as_bytes().to_vec())?;
+        Ok(())
+    }
+}
+
+#[derive(Clone, Debug, PartialEq, Eq, Hash)]
 pub struct SpendingInfo {
     pub txid: KaspaTxId,
     pub input_index: u32,
@@ -91,7 +195,7 @@ pub struct SpendingInfo {
 
 /// Typed errors. Every variant maps to a specific resolver classification
 /// (see [`crate::ResolverClassify`]).
-#[derive(Debug, Clone, PartialEq, Eq, Error)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash, Error)]
 pub enum KaspaNetworkError {
     #[error("kaspa node unreachable: {0}")]
     NodeUnavailable(String),
@@ -104,6 +208,8 @@ pub enum KaspaNetworkError {
     UnsupportedToccataFeature(String),
     #[error("malformed JSON-RPC response: {0}")]
     BadRpc(String),
+    #[error("script public key too long: len={len}, max={max}")]
+    ScriptPublicKeyTooLong { len: usize, max: usize },
     #[error("RPC method returned an error: code={code} {message}")]
     RpcError { code: i64, message: String },
     #[error("RPC timeout after {0} ms")]
@@ -140,14 +246,16 @@ impl KaspaNetworkError {
             KaspaNetworkError::Pruned => ResolverClassify::Pruned,
             KaspaNetworkError::ReorgRisk(_) => ResolverClassify::ReorgRisk,
             KaspaNetworkError::BudgetExceeded(_) => ResolverClassify::BudgetExceeded,
-            KaspaNetworkError::Invariant(_) => ResolverClassify::Invariant,
+            KaspaNetworkError::Invariant(_) | KaspaNetworkError::ScriptPublicKeyTooLong { .. } => {
+                ResolverClassify::Invariant
+            }
         }
     }
 }
 
 /// Coarse classification of [`KaspaNetworkError`]. Used by the resolver to
 /// decide whether to retry, wait, or fail-closed.
-#[derive(Copy, Clone, Debug, PartialEq, Eq)]
+#[derive(Copy, Clone, Debug, PartialEq, Eq, Hash)]
 pub enum ResolverClassify {
     NotFound,
     Unconfirmed,
@@ -165,6 +273,13 @@ pub enum ResolverClassify {
 /// The RGK Kaspa chain backend trait. Every operation the resolver/indexer
 /// needs lives here. All methods take `&self` — implementations are expected
 /// to be cheaply cloneable (they almost always wrap an `Arc`).
+///
+/// This trait is intentionally synchronous. Resolver and indexer callers use it
+/// as a fail-closed evidence boundary, not as a live event stream. Async
+/// transports such as wRPC should adapt internally by owning a runtime or by
+/// exposing transport-specific async helpers in addition to this trait. Do not
+/// block an async executor thread directly; wrap this trait behind
+/// `spawn_blocking` when calling it from async application code.
 pub trait KaspaChainBackend: Send + Sync {
     /// Returns the chain id the backend is currently bound to. Implementations
     /// must refuse to operate on a chain they don't recognise.
@@ -338,7 +453,11 @@ impl KaspaChainBackend for FixtureBackend {
 
     fn get_utxo(&self, outpoint: KaspaOutpoint) -> Result<Option<KaspaUtxo>, KaspaNetworkError> {
         self.check_failure()?;
-        Ok(self.locate_utxo(&outpoint))
+        let utxo = self.locate_utxo(&outpoint);
+        if let Some(utxo) = &utxo {
+            utxo.validate_script_public_key()?;
+        }
+        Ok(utxo)
     }
 
     fn get_spending_transaction(
@@ -581,13 +700,38 @@ mod tests {
             KaspaUtxo {
                 outpoint,
                 value: 1_000,
-                script_public_key: vec![0x76, 0xa9],
+                script_public_key: KaspaScriptPublicKey::new(vec![0x76, 0xa9]).unwrap(),
                 block_daa_score: Some(1),
                 spending: None,
             },
         );
         let got = b.get_utxo(outpoint).unwrap().unwrap();
         assert_eq!(got.value, 1_000);
+    }
+
+    #[test]
+    fn fixture_rejects_oversized_script_public_key() {
+        let mut b = FixtureBackend::new(KaspaChainId::KaspaLocalToccata);
+        let outpoint = KaspaOutpoint {
+            transaction_id: [9u8; 32],
+            index: 0,
+        };
+        b.add_utxo_at(
+            1,
+            KaspaUtxo {
+                outpoint,
+                value: 1_000,
+                script_public_key: KaspaScriptPublicKey {
+                    bytes: vec![0x51; MAX_SCRIPT_PUBLIC_KEY_BYTES + 1],
+                },
+                block_daa_score: Some(1),
+                spending: None,
+            },
+        );
+        assert!(matches!(
+            b.get_utxo(outpoint),
+            Err(KaspaNetworkError::ScriptPublicKeyTooLong { .. })
+        ));
     }
 
     #[test]
@@ -602,7 +746,7 @@ mod tests {
             KaspaUtxo {
                 outpoint,
                 value: 1_000,
-                script_public_key: vec![],
+                script_public_key: KaspaScriptPublicKey::new(vec![]).unwrap(),
                 block_daa_score: Some(1),
                 spending: None,
             },

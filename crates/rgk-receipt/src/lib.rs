@@ -33,7 +33,7 @@
 
 #![forbid(unsafe_code)]
 #![cfg_attr(not(feature = "std"), no_std)]
-#![allow(clippy::unwrap_used, clippy::expect_used)]
+#![cfg_attr(test, allow(clippy::unwrap_used, clippy::expect_used))]
 #![allow(dead_code, unused_imports, unused_variables)]
 #![allow(clippy::needless_borrows_for_generic_args, clippy::vec_init_then_push)]
 #![allow(
@@ -48,7 +48,6 @@ use alloc::format;
 use alloc::string::{String, ToString};
 use alloc::vec;
 use alloc::vec::Vec;
-use core::fmt;
 
 use rgk_core::DecodeError as CoreDecodeError;
 use rgk_core::{
@@ -57,11 +56,11 @@ use rgk_core::{
 };
 use thiserror::Error;
 
-pub use rgk_core::{ProofMode, ReceiptPolicy};
+pub use rgk_core::{Hex32, ProofMode, ReceiptPolicy, RgkAssetId};
 
 /// A typed error returned by every receipt operation. Every variant maps to a
 /// hard rejection — there is no `Ok(SoftInvalid)` variant by design.
-#[derive(Debug, Clone, PartialEq, Eq, Error)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash, Error)]
 pub enum ReceiptError {
     #[error(
         "chain id mismatch: receipt declares {receipt:?}, verifier configured for {verifier:?}"
@@ -82,7 +81,9 @@ pub enum ReceiptError {
         mode: ProofMode,
     },
     #[error("receipt decode failure: {0}")]
-    DecodeFailure(String),
+    DecodeFailure(#[from] CoreDecodeError),
+    #[error("receipt structural failure: {0}")]
+    Structural(String),
     #[error("receipt {0} was already consumed (replay detected)")]
     Replay(Hex32),
     #[error("receipt references unknown chain {0:?}")]
@@ -95,32 +96,10 @@ pub enum ReceiptError {
     MissingReplayNonce,
 }
 
-/// Newtype around a 32-byte array with a Display impl that renders as
-/// `0x` + lowercase hex. Used in [`ReceiptError`] so the thiserror derive
-/// can produce a human-readable `Display` without breaking on raw bytes.
-#[derive(Clone, Debug, PartialEq, Eq)]
-pub struct Hex32(pub Bytes32);
-
-impl core::fmt::Display for Hex32 {
-    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-        use rgk_core::to_hex;
-        f.write_str("0x")?;
-        f.write_str(&to_hex(&self.0))
-    }
-}
-
-impl From<Bytes32> for Hex32 {
-    fn from(b: Bytes32) -> Self {
-        Hex32(b)
-    }
-}
-
-/// Alias used throughout the crate to keep signatures short.
-pub type RgkAssetId = Bytes32;
-
 /// Input bundle for [`ReceiptBuilder::build`]. Mirrors the canonical receipt
 /// fields without copying the encoding layer; the builder encodes them.
-#[derive(Clone, Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq, Eq, Hash)]
+#[non_exhaustive]
 pub struct ReceiptInput {
     pub chain_id: KaspaChainId,
     pub covenant_id: KaspaCovenantId,
@@ -130,6 +109,54 @@ pub struct ReceiptInput {
     pub continuation_commitment: ContinuationCommitment,
     pub proof_mode: ProofMode,
     pub replay_nonce: Bytes32,
+}
+
+impl ReceiptInput {
+    pub fn new(
+        chain_id: KaspaChainId,
+        covenant_id: KaspaCovenantId,
+        old_state: RgkStateCommitment,
+        new_state: RgkStateCommitment,
+        transition_digest: TransitionDigest,
+        continuation_commitment: ContinuationCommitment,
+        proof_mode: ProofMode,
+        replay_nonce: Bytes32,
+    ) -> Result<Self, ReceiptError> {
+        let input = Self {
+            chain_id,
+            covenant_id,
+            old_state,
+            new_state,
+            transition_digest,
+            continuation_commitment,
+            proof_mode,
+            replay_nonce,
+        };
+        input.to_validated_receipt()?;
+        Ok(input)
+    }
+
+    fn to_validated_receipt(&self) -> Result<RgkReceipt, ReceiptError> {
+        if self.transition_digest == [0u8; 32] {
+            return Err(ReceiptError::MissingTransitionDigest);
+        }
+        if self.continuation_commitment == [0u8; 32] {
+            return Err(ReceiptError::MissingContinuationCommitment);
+        }
+        if self.replay_nonce == [0u8; 32] {
+            return Err(ReceiptError::MissingReplayNonce);
+        }
+        Ok(RgkReceipt::new(
+            self.chain_id,
+            self.covenant_id,
+            self.old_state.clone(),
+            self.new_state.clone(),
+            self.transition_digest,
+            self.continuation_commitment,
+            self.proof_mode,
+            self.replay_nonce,
+        )?)
+    }
 }
 
 /// Receipt builder. Encodes, computes the canonical id, and runs the local
@@ -146,29 +173,7 @@ impl ReceiptBuilder {
     /// Returns the receipt and its [`ReceiptId`]. The encoding is included for
     /// convenience (e.g. to embed in the covenant's payload).
     pub fn build(input: &ReceiptInput) -> Result<(RgkReceipt, ReceiptId, Vec<u8>), ReceiptError> {
-        if input.transition_digest == [0u8; 32] {
-            return Err(ReceiptError::MissingTransitionDigest);
-        }
-        if input.continuation_commitment == [0u8; 32] {
-            return Err(ReceiptError::MissingContinuationCommitment);
-        }
-        if input.replay_nonce == [0u8; 32] {
-            return Err(ReceiptError::MissingReplayNonce);
-        }
-        let receipt = RgkReceipt {
-            version: rgk_core::ENCODING_VERSION,
-            chain_id: input.chain_id,
-            covenant_id: input.covenant_id,
-            old_state: input.old_state.clone(),
-            new_state: input.new_state.clone(),
-            transition_digest: input.transition_digest,
-            continuation_commitment: input.continuation_commitment,
-            proof_mode: input.proof_mode,
-            replay_nonce: input.replay_nonce,
-        };
-        receipt
-            .validate_structure()
-            .map_err(|e| ReceiptError::DecodeFailure(e.to_string()))?;
+        let receipt = input.to_validated_receipt()?;
         let bytes = receipt.encode_canonical();
         let id = receipt_commitment(&receipt);
         Ok((receipt, id, bytes))
@@ -190,8 +195,7 @@ impl ReceiptVerifier {
         expected_old_state: &RgkStateCommitment,
         verifier_chain: KaspaChainId,
     ) -> Result<ReceiptId, ReceiptError> {
-        let receipt = RgkReceipt::decode_canonical(receipt_bytes)
-            .map_err(|e: CoreDecodeError| ReceiptError::DecodeFailure(e.to_string()))?;
+        let receipt = RgkReceipt::decode_canonical(receipt_bytes)?;
         Self::verify_local_structured(
             &receipt,
             expected_covenant_id,
@@ -283,7 +287,7 @@ fn hex_short(b: &Bytes32) -> String {
 /// A typed receipt-id tracker. The verifier uses this to enforce replay
 /// protection: a receipt id can only be accepted once per (covenant_id,
 /// transition_digest) pair.
-#[derive(Clone, Debug, Default, PartialEq, Eq)]
+#[derive(Clone, Debug, Default, PartialEq, Eq, Hash)]
 pub struct ReplaySet {
     seen: Vec<ReceiptId>,
 }
@@ -326,27 +330,24 @@ pub fn err_string(e: &ReceiptError) -> String {
 
 /// A typed `new_state` payload — convenience wrapper that prevents the caller
 /// from forgetting to set the chain / covenant id consistently.
-#[derive(Clone, Debug, PartialEq, Eq)]
-pub struct NewStateSpec<'a> {
+#[derive(Clone, Debug, PartialEq, Eq, Hash)]
+pub struct NewStateSpec {
     pub chain_id: KaspaChainId,
     pub covenant_id: KaspaCovenantId,
     pub asset_id: Bytes32,
     pub state_digest: Bytes32,
     pub receipt_policy: ReceiptPolicy,
-    /// Borrowed for API symmetry; never inspected by this builder.
-    pub _marker: core::marker::PhantomData<&'a ()>,
 }
 
-impl<'a> NewStateSpec<'a> {
-    pub fn into_commitment(&self) -> RgkStateCommitment {
-        RgkStateCommitment {
-            version: rgk_core::ENCODING_VERSION,
-            chain_id: self.chain_id,
-            covenant_id: self.covenant_id,
-            asset_id: self.asset_id,
-            state_digest: self.state_digest,
-            receipt_policy: self.receipt_policy,
-        }
+impl NewStateSpec {
+    pub fn into_commitment(&self) -> Result<RgkStateCommitment, ReceiptError> {
+        Ok(RgkStateCommitment::new(
+            self.chain_id,
+            self.covenant_id,
+            self.asset_id,
+            self.state_digest,
+            self.receipt_policy,
+        )?)
     }
 }
 
@@ -358,11 +359,6 @@ pub fn derive_replay_nonce(
     transition_digest: &TransitionDigest,
 ) -> Bytes32 {
     rgk_core::replay_nonce(prev_outpoint_payload, transition_digest)
-}
-
-#[doc(hidden)]
-pub mod __reexports {
-    pub use rgk_core;
 }
 
 /// Pretty-print a list of receipt errors seen during batch verification.
@@ -384,22 +380,13 @@ pub trait OldStateLookup {
     fn last_valid_old_state(&self, covenant_id: KaspaCovenantId) -> Option<RgkStateCommitment>;
 }
 
-impl fmt::Write for NewStateSpec<'_> {
-    fn write_str(&mut self, _s: &str) -> fmt::Result {
-        // Intentionally a no-op — `NewStateSpec` is a builder-style payload,
-        // not a textual sink. We implement `fmt::Write` so that downstream
-        // loggers can chain `.write_fmt!` against it for diagnostics.
-        Ok(())
-    }
-}
-
 // ---------------- tests ----------------
 
 #[cfg(test)]
 mod tests {
     use super::*;
     use proptest::prelude::*;
-    use rgk_core::{receipt_commitment, ENCODING_VERSION, KASPA_LOCAL_TOCCATA};
+    use rgk_core::{receipt_commitment, KASPA_LOCAL_TOCCATA};
 
     fn b32(s: &str) -> [u8; 32] {
         use rgk_core::from_hex;
@@ -407,18 +394,18 @@ mod tests {
     }
 
     fn sample_state(digest_suffix: u8, policy: ReceiptPolicy) -> RgkStateCommitment {
-        RgkStateCommitment {
-            version: ENCODING_VERSION,
-            chain_id: KASPA_LOCAL_TOCCATA,
-            covenant_id: b32("1111111111111111111111111111111111111111111111111111111111111111"),
-            asset_id: b32("2222222222222222222222222222222222222222222222222222222222222222"),
-            state_digest: {
+        RgkStateCommitment::new(
+            KASPA_LOCAL_TOCCATA,
+            b32("1111111111111111111111111111111111111111111111111111111111111111"),
+            b32("2222222222222222222222222222222222222222222222222222222222222222"),
+            {
                 let mut d = [0u8; 32];
                 d[31] = digest_suffix;
                 d
             },
-            receipt_policy: policy,
-        }
+            policy,
+        )
+        .expect("sample state commitment is valid")
     }
 
     fn sample_input(mode: ProofMode, policy: ReceiptPolicy) -> ReceiptInput {
@@ -452,6 +439,36 @@ mod tests {
         }
     }
 
+    #[test]
+    fn receipt_input_constructor_validates_structure() {
+        let valid = sample_input(ProofMode::VerifierReceipt, ReceiptPolicy::Any);
+        assert!(ReceiptInput::new(
+            valid.chain_id,
+            valid.covenant_id,
+            valid.old_state.clone(),
+            valid.new_state.clone(),
+            valid.transition_digest,
+            valid.continuation_commitment,
+            valid.proof_mode,
+            valid.replay_nonce,
+        )
+        .is_ok());
+
+        assert!(matches!(
+            ReceiptInput::new(
+                valid.chain_id,
+                valid.covenant_id,
+                valid.old_state,
+                valid.new_state,
+                [0u8; 32],
+                valid.continuation_commitment,
+                valid.proof_mode,
+                valid.replay_nonce,
+            ),
+            Err(ReceiptError::MissingTransitionDigest)
+        ));
+    }
+
     proptest! {
         #[test]
         fn receipt_round_trip_holds_for_random_admitted_fields(
@@ -466,28 +483,32 @@ mod tests {
             replay_nonce in any::<[u8; 32]>(),
         ) {
             prop_assume!(old_digest != new_digest);
+            prop_assume!(old_digest != [0u8; 32]);
+            prop_assume!(new_digest != [0u8; 32]);
+            prop_assume!(covenant_id != [0u8; 32]);
+            prop_assume!(asset_id != [0u8; 32]);
             prop_assume!(transition_digest != [0u8; 32]);
             prop_assume!(continuation_commitment != [0u8; 32]);
             prop_assume!(replay_nonce != [0u8; 32]);
 
             let chain_id = chain_from_index(chain_index);
             let (policy, proof_mode) = admitted_policy_mode(pair_index);
-            let old_state = RgkStateCommitment {
-                version: ENCODING_VERSION,
+            let old_state = RgkStateCommitment::new(
                 chain_id,
                 covenant_id,
                 asset_id,
-                state_digest: old_digest,
-                receipt_policy: policy,
-            };
-            let new_state = RgkStateCommitment {
-                version: ENCODING_VERSION,
+                old_digest,
+                policy,
+            )
+            .expect("old property state commitment is valid");
+            let new_state = RgkStateCommitment::new(
                 chain_id,
                 covenant_id,
                 asset_id,
-                state_digest: new_digest,
-                receipt_policy: policy,
-            };
+                new_digest,
+                policy,
+            )
+            .expect("new property state commitment is valid");
             let input = ReceiptInput {
                 chain_id,
                 covenant_id,

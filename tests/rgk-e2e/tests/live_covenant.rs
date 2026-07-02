@@ -617,31 +617,33 @@ fn sha256_digest(parts: &[&[u8]]) -> [u8; 32] {
 #[cfg(feature = "real-zk")]
 fn same_shape_zk_setup(chain_id: KaspaChainId) -> Groth16Setup {
     let covenant_id = [0x91; 32];
-    let receipt = RgkReceipt {
-        version: rgk_core::ENCODING_VERSION,
+    let old_state = RgkStateCommitment::new(
         chain_id,
         covenant_id,
-        old_state: RgkStateCommitment {
-            version: rgk_core::ENCODING_VERSION,
-            chain_id,
-            covenant_id,
-            asset_id: [0x92; 32],
-            state_digest: [0x01; 32],
-            receipt_policy: ReceiptPolicy::ZkOrVerifier,
-        },
-        new_state: RgkStateCommitment {
-            version: rgk_core::ENCODING_VERSION,
-            chain_id,
-            covenant_id,
-            asset_id: [0x92; 32],
-            state_digest: [0x02; 32],
-            receipt_policy: ReceiptPolicy::ZkOrVerifier,
-        },
-        transition_digest: [0x93; 32],
-        continuation_commitment: [0x95; 32],
-        proof_mode: ProofMode::ZkReceipt,
-        replay_nonce: [0x94; 32],
-    };
+        [0x92; 32],
+        [0x01; 32],
+        ReceiptPolicy::ZkOrVerifier,
+    )
+    .expect("old same-shape state commitment is valid");
+    let new_state = RgkStateCommitment::new(
+        chain_id,
+        covenant_id,
+        [0x92; 32],
+        [0x02; 32],
+        ReceiptPolicy::ZkOrVerifier,
+    )
+    .expect("new same-shape state commitment is valid");
+    let receipt = RgkReceipt::new(
+        chain_id,
+        covenant_id,
+        old_state,
+        new_state,
+        [0x93; 32],
+        [0x95; 32],
+        ProofMode::ZkReceipt,
+        [0x94; 32],
+    )
+    .expect("same-shape receipt is valid");
     let receipt_id = receipt_commitment(&receipt);
     let circuit = ReceiptCircuit::from_receipt(&receipt, receipt_id);
     real_zk::setup(&circuit).expect("same-shape Groth16 setup")
@@ -898,16 +900,17 @@ async fn live_toccata_full_covenant_lifecycle() {
         real_zk::serialize_verifying_key_for_precompile(&zk_setup.vk).expect("serialize ZK VK");
     let lineage_seed = outpoint_to_bytes(&funding_outpoint).encode_canonical();
     let lineage_id = compute_lineage_id(&lineage_seed, &asset_id);
-    let initial_covenant_state = CovenantState {
-        version: rgk_core::ENCODING_VERSION,
-        chain_id: config.chain_id,
+    let initial_covenant_state = CovenantState::new(
+        rgk_core::ENCODING_VERSION,
+        config.chain_id,
         lineage_id,
         asset_id,
-        current_state_digest: initial_state_digest,
-        receipt_policy: live_receipt_policy,
-        genesis_proof_mode: live_proof_mode,
-        replay_marker: [0u8; 32],
-    };
+        initial_state_digest,
+        live_receipt_policy,
+        live_proof_mode,
+        [0u8; 32],
+    )
+    .expect("initial covenant state");
     let covenant_spec = CovenantSpec {
         chain_id: config.chain_id,
         lineage_id,
@@ -984,7 +987,7 @@ async fn live_toccata_full_covenant_lifecycle() {
     signed_tx
         .inputs
         .iter_mut()
-        .for_each(|input| input.mass = ComputeBudget(per_input_compute_budget).into());
+        .for_each(|input| input.compute_commit = ComputeBudget(per_input_compute_budget).into());
     eprintln!(
         "live: signed covenant tx, txid = {:02x?}",
         signed_tx.id().as_bytes()
@@ -1142,7 +1145,7 @@ async fn live_toccata_full_covenant_lifecycle() {
         1_000_000,
     )
     .expect("native RGK asset state digest");
-    let native_asset_state_digest = native_asset_report.state_digest.0;
+    let native_asset_state_digest = native_asset_report.state_digest.to_bytes();
     eprintln!(
         "live: native RGK asset state digest = 0x{} (allocations={} daa={} confirmations=1 privacy_policy={:?} lane_id=0x{} policy_commitment=0x{} metadata_commitment=0x{} owner_commitment=0x{})",
         to_hex(&native_asset_state_digest),
@@ -1150,45 +1153,46 @@ async fn live_toccata_full_covenant_lifecycle() {
         covenant_block_daa,
         native_asset_report.privacy_policy,
         to_hex(&native_asset_report.lane_id),
-        to_hex(&native_asset_report.policy_commitment.0),
-        to_hex(&native_asset_report.metadata_commitment.0),
-        to_hex(&native_asset_report.owner_commitment.0)
+        to_hex(native_asset_report.policy_commitment.as_bytes()),
+        to_hex(native_asset_report.metadata_commitment.as_bytes()),
+        to_hex(native_asset_report.owner_commitment.as_bytes())
     );
 
     // ----- Step 10: Spend the P2SH covenant output through the RGK redeem script.
     let continuation_output_value = covenant_output_value
         .checked_sub(transition_fee)
         .expect("covenant value > transition fee");
-    let advanced_covenant_state = CovenantState {
-        version: rgk_core::ENCODING_VERSION,
-        chain_id: config.chain_id,
+    let advanced_covenant_state = CovenantState::new(
+        rgk_core::ENCODING_VERSION,
+        config.chain_id,
         lineage_id,
         asset_id,
-        current_state_digest: native_asset_state_digest,
-        receipt_policy: live_receipt_policy,
-        genesis_proof_mode: live_proof_mode,
-        replay_marker: sha256_digest(&[
+        native_asset_state_digest,
+        live_receipt_policy,
+        live_proof_mode,
+        sha256_digest(&[
             b"rgk:live-covenant-script-spend",
             &initial_state_digest,
             &native_asset_state_digest,
         ]),
-    };
-    let old_state = RgkStateCommitment {
-        version: rgk_core::ENCODING_VERSION,
-        chain_id: config.chain_id,
-        covenant_id: covenant_id_bytes,
+    )
+    .expect("advanced covenant state");
+    let old_state = RgkStateCommitment::new(
+        config.chain_id,
+        covenant_id_bytes,
         asset_id,
-        state_digest: initial_state_digest,
-        receipt_policy: live_receipt_policy,
-    };
-    let new_state = RgkStateCommitment {
-        version: rgk_core::ENCODING_VERSION,
-        chain_id: config.chain_id,
-        covenant_id: covenant_id_bytes,
+        initial_state_digest,
+        live_receipt_policy,
+    )
+    .expect("old live state commitment is valid");
+    let new_state = RgkStateCommitment::new(
+        config.chain_id,
+        covenant_id_bytes,
         asset_id,
-        state_digest: native_asset_state_digest,
-        receipt_policy: live_receipt_policy,
-    };
+        native_asset_state_digest,
+        live_receipt_policy,
+    )
+    .expect("new live state commitment is valid");
     assert_eq!(new_state.state_digest, native_asset_state_digest);
     let spent_outpoint_payload = outpoint_to_bytes(&covenant_outpoint).encode_canonical();
     let transition_digest = sha256_digest(&[
@@ -1209,16 +1213,17 @@ async fn live_toccata_full_covenant_lifecycle() {
     )
     .expect("native RGK phase-1 continuation commitment");
     let receipt_replay_nonce = replay_nonce(&spent_outpoint_payload, &transition_digest);
-    let receipt_input = ReceiptInput {
-        chain_id: config.chain_id,
-        covenant_id: covenant_id_bytes,
-        old_state: old_state.clone(),
-        new_state: new_state.clone(),
+    let receipt_input = ReceiptInput::new(
+        config.chain_id,
+        covenant_id_bytes,
+        old_state.clone(),
+        new_state.clone(),
         transition_digest,
-        continuation_commitment: continuation_phase1.commitment.0,
-        proof_mode: live_proof_mode,
-        replay_nonce: receipt_replay_nonce,
-    };
+        continuation_phase1.commitment.to_bytes(),
+        live_proof_mode,
+        receipt_replay_nonce,
+    )
+    .expect("live receipt input");
     let (receipt, receipt_id, receipt_bytes) =
         ReceiptBuilder::build(&receipt_input).expect("live receipt build");
     #[cfg(feature = "real-zk")]
@@ -1409,42 +1414,42 @@ async fn live_toccata_full_covenant_lifecycle() {
     );
     eprintln!(
         "live: native RGK transition digest = 0x{} (old_state=0x{} new_state=0x{} witness_txid=0x{} spent_allocations={} new_allocations={} privacy_policy={:?} lane_id=0x{} policy_commitment=0x{} metadata_commitment=0x{} previous_owner_commitment=0x{} new_owner_commitment=0x{} ownership_authorization_commitment=0x{})",
-        to_hex(&native_transition_report.transition_digest.0),
-        to_hex(&native_transition_report.previous_state_digest.0),
-        to_hex(&native_transition_report.new_state_digest.0),
+        to_hex(native_transition_report.transition_digest.as_bytes()),
+        to_hex(native_transition_report.previous_state_digest.as_bytes()),
+        to_hex(native_transition_report.new_state_digest.as_bytes()),
         to_hex(&continuation_txid.as_bytes()),
         native_transition_report.spent_allocation_count,
         native_transition_report.new_allocation_count,
         native_transition_report.privacy_policy,
         to_hex(&native_transition_report.lane_id),
-        to_hex(&native_transition_report.policy_commitment.0),
-        to_hex(&native_transition_report.metadata_commitment.0),
-        to_hex(&native_transition_report.previous_owner_commitment.0),
-        to_hex(&native_transition_report.new_owner_commitment.0),
+        to_hex(native_transition_report.policy_commitment.as_bytes()),
+        to_hex(native_transition_report.metadata_commitment.as_bytes()),
+        to_hex(native_transition_report.previous_owner_commitment.as_bytes()),
+        to_hex(native_transition_report.new_owner_commitment.as_bytes()),
         to_hex(&native_transition_report.ownership_authorization_commitment)
     );
-    let final_native_state = RgkStateCommitment {
-        version: rgk_core::ENCODING_VERSION,
-        chain_id: config.chain_id,
-        covenant_id: covenant_id_bytes,
+    let final_native_state = RgkStateCommitment::new(
+        config.chain_id,
+        covenant_id_bytes,
         asset_id,
-        state_digest: native_transition_report.new_state_digest.0,
-        receipt_policy: live_receipt_policy,
-    };
+        native_transition_report.new_state_digest.to_bytes(),
+        live_receipt_policy,
+    )
+    .expect("final native state commitment is valid");
     let semantic_transition_statement =
         SemanticTransitionStatement::from_reports(&native_transition_report, &continuation_phase1)
             .expect("semantic native RGK transition statement");
     assert_eq!(
         semantic_transition_statement.continuation_commitment,
-        native_transition_report.continuation_commitment.0
+        native_transition_report.continuation_commitment.to_bytes()
     );
     assert_eq!(
         semantic_transition_statement.continuation_shape_root,
-        native_transition_report.continuation_shape_root.0
+        native_transition_report.continuation_shape_root.to_bytes()
     );
     assert_eq!(
         semantic_transition_statement.transition_digest,
-        native_transition_report.transition_digest.0
+        native_transition_report.transition_digest.to_bytes()
     );
     let semantic_public_inputs = semantic_transition_statement.public_inputs();
     assert_eq!(
@@ -2013,22 +2018,26 @@ async fn live_toccata_full_covenant_lifecycle() {
                 block_hash: advanced_dag.sink.as_bytes(),
                 daa_score: advanced_dag.virtual_daa_score,
             };
-            backend.record_spend(
-                outpoint_to_bytes(&funding_outpoint),
-                SpendingInfo {
-                    txid: covenant_id_hash_to_bytes(covenant_txid),
-                    input_index: 0,
-                    block_daa_score: Some(covenant_block_daa),
-                },
-            );
-            backend.record_spend(
-                spent_outpoint_bytes,
-                SpendingInfo {
-                    txid: covenant_id_hash_to_bytes(continuation_txid),
-                    input_index: 0,
-                    block_daa_score: Some(continuation_block_daa),
-                },
-            );
+            backend
+                .record_spend(
+                    outpoint_to_bytes(&funding_outpoint),
+                    SpendingInfo {
+                        txid: covenant_id_hash_to_bytes(covenant_txid),
+                        input_index: 0,
+                        block_daa_score: Some(covenant_block_daa),
+                    },
+                )
+                .expect("record funding spend");
+            backend
+                .record_spend(
+                    spent_outpoint_bytes,
+                    SpendingInfo {
+                        txid: covenant_id_hash_to_bytes(continuation_txid),
+                        input_index: 0,
+                        block_daa_score: Some(continuation_block_daa),
+                    },
+                )
+                .expect("record covenant spend");
             eprintln!(
                 "live: public staging spend evidence recorded directly funding_spend_txid=0x{} covenant_spend_txid=0x{} cursor_daa={} observed_spends=2",
                 to_hex(&covenant_id_hash_to_bytes(covenant_txid)),
@@ -2080,22 +2089,26 @@ async fn live_toccata_full_covenant_lifecycle() {
                 block_hash: advanced_dag.sink.as_bytes(),
                 daa_score: advanced_dag.virtual_daa_score,
             };
-            backend.record_spend(
-                outpoint_to_bytes(&funding_outpoint),
-                SpendingInfo {
-                    txid: covenant_id_hash_to_bytes(covenant_txid),
-                    input_index: 0,
-                    block_daa_score: Some(covenant_block_daa),
-                },
-            );
-            backend.record_spend(
-                spent_outpoint_bytes,
-                SpendingInfo {
-                    txid: covenant_id_hash_to_bytes(continuation_txid),
-                    input_index: 0,
-                    block_daa_score: Some(continuation_block_daa),
-                },
-            );
+            backend
+                .record_spend(
+                    outpoint_to_bytes(&funding_outpoint),
+                    SpendingInfo {
+                        txid: covenant_id_hash_to_bytes(covenant_txid),
+                        input_index: 0,
+                        block_daa_score: Some(covenant_block_daa),
+                    },
+                )
+                .expect("record funding spend");
+            backend
+                .record_spend(
+                    spent_outpoint_bytes,
+                    SpendingInfo {
+                        txid: covenant_id_hash_to_bytes(continuation_txid),
+                        input_index: 0,
+                        block_daa_score: Some(continuation_block_daa),
+                    },
+                )
+                .expect("record covenant spend");
 
             let mut cursor_indexer = SledIndexer::open_path(&persistent_indexer_path)
                 .expect("reopen cursor store for public staging cursor advance");
@@ -2143,6 +2156,7 @@ async fn live_toccata_full_covenant_lifecycle() {
     );
     let observed_spend = backend
         .observed_spend(spent_outpoint_bytes)
+        .expect("read observed spend cache")
         .expect("virtual-chain scan should observe the spent covenant outpoint");
     assert_eq!(
         observed_spend.txid,
@@ -2189,9 +2203,9 @@ async fn live_toccata_full_covenant_lifecycle() {
             final_native_state.clone(),
             continuation_block_daa,
             ContinuationProof {
-                commitment: native_transition_report.continuation_commitment.0,
-                shape_root: native_transition_report.continuation_shape_root.0,
-                transition_digest: native_transition_report.transition_digest.0,
+                commitment: native_transition_report.continuation_commitment.to_bytes(),
+                shape_root: native_transition_report.continuation_shape_root.to_bytes(),
+                transition_digest: native_transition_report.transition_digest.to_bytes(),
             },
         )
         .expect("indexer.apply_spend");
@@ -2220,22 +2234,22 @@ async fn live_toccata_full_covenant_lifecycle() {
     let live_view_key = [0x41; 32];
     let live_scan_tag = RgkScanTag::derive(live_view_key, native_transition_report.lane_id, 0);
     indexer
-        .register_lane(IndexedLane {
-            chain_id: config.chain_id,
-            covenant_id: covenant_id_bytes,
+        .register_lane(IndexedLane::new(
+            config.chain_id,
+            covenant_id_bytes,
             asset_id,
-            lane_id: native_transition_report.lane_id,
-            epoch: 0,
-            scan_tag: Some(live_scan_tag.0),
-            public_lineage: false,
-            state_digest: final_native_state.state_digest,
-            last_update_daa_score: continuation_block_daa,
-        })
+            native_transition_report.lane_id,
+            0,
+            Some(live_scan_tag.to_bytes()),
+            false,
+            final_native_state.state_digest,
+            continuation_block_daa,
+        ))
         .expect("indexer.register_lane");
     eprintln!(
         "live: registered private lane for view-key discovery (lane_id=0x{} scan_tag=0x{} privacy_policy={:?})",
         to_hex(&native_transition_report.lane_id),
-        to_hex(&live_scan_tag.0),
+        to_hex(live_scan_tag.as_bytes()),
         native_transition_report.privacy_policy
     );
 
@@ -2245,11 +2259,11 @@ async fn live_toccata_full_covenant_lifecycle() {
             view_key: live_view_key,
             asset_id,
         };
-        let lane_discovery_statement = real_zk::LaneDiscoveryStatement {
-            lane_id: native_transition_report.lane_id,
-            scan_tag: live_scan_tag.0,
-            epoch: 0,
-        };
+        let lane_discovery_statement = real_zk::LaneDiscoveryStatement::new(
+            native_transition_report.lane_id,
+            live_scan_tag.to_bytes(),
+            0,
+        );
         assert!(
             lane_discovery_statement.matches_witness(&lane_discovery_witness),
             "live lane-discovery statement must match native view-key derivation"
@@ -2287,7 +2301,7 @@ async fn live_toccata_full_covenant_lifecycle() {
             lane_discovery_stack.verifying_key.len(),
             lane_discovery_stack.proof.len(),
             to_hex(&native_transition_report.lane_id),
-            to_hex(&live_scan_tag.0)
+            to_hex(live_scan_tag.as_bytes())
         );
 
         let lane_graph_statement = real_zk::LaneGraphDiscoveryStatement::<2>::from_private(
@@ -2300,7 +2314,8 @@ async fn live_toccata_full_covenant_lifecycle() {
             "live lane-graph proof must include the registered current lane"
         );
         assert_eq!(
-            lane_graph_statement.nodes[0].scan_tag, live_scan_tag.0,
+            lane_graph_statement.nodes[0].scan_tag,
+            live_scan_tag.to_bytes(),
             "live lane-graph proof must include the registered current scan tag"
         );
         assert!(
@@ -2364,7 +2379,8 @@ async fn live_toccata_full_covenant_lifecycle() {
             "live lane-graph segment chain must start from the registered current lane"
         );
         assert_eq!(
-            first_segment_statement.nodes[0].scan_tag, live_scan_tag.0,
+            first_segment_statement.nodes[0].scan_tag,
+            live_scan_tag.to_bytes(),
             "live lane-graph segment chain must start from the registered scan tag"
         );
         assert!(
@@ -2434,7 +2450,7 @@ async fn live_toccata_full_covenant_lifecycle() {
 
     // ----- Step 13: Run the resolver and assert NativeTransitionedValid.
     {
-        let mut resolver = RgkResolver::new(&backend, &mut indexer, config.chain_id);
+        let mut resolver = RgkResolver::new(&backend, &indexer, config.chain_id);
         resolver.reorg_safety_depth = 1; // local live harness doesn't mine 10 blocks per test
         let state = resolver.resolve_by_covenant(covenant_id_bytes);
         eprintln!("live: resolver state = {state:?}");
@@ -2469,7 +2485,7 @@ async fn live_toccata_full_covenant_lifecycle() {
         match lane_state {
             LaneResolverState::Resolved { lane, state } => {
                 assert_eq!(lane.lane_id, native_transition_report.lane_id);
-                assert_eq!(lane.scan_tag, Some(live_scan_tag.0));
+                assert_eq!(lane.scan_tag, Some(live_scan_tag.to_bytes()));
                 assert_eq!(
                     lane.state_digest, final_native_state.state_digest,
                     "lane resolver must expose the phase-2 native state digest"
@@ -2481,7 +2497,7 @@ async fn live_toccata_full_covenant_lifecycle() {
                 eprintln!(
                     "live: view-key lane resolver classified as NativeTransitionedValid (lane_id=0x{} scan_tag=0x{})",
                     to_hex(&lane.lane_id),
-                    to_hex(&live_scan_tag.0)
+                    to_hex(live_scan_tag.as_bytes())
                 );
             }
             other => panic!(
@@ -2502,33 +2518,33 @@ async fn live_toccata_full_covenant_lifecycle() {
         let _ = std::fs::remove_dir_all(&migration_indexer_path);
         let migration_previous_policy = ReceiptPolicy::VerifierOnly;
         let migration_new_policy = ReceiptPolicy::ZkOrVerifier;
-        let migration_previous_state = RgkStateCommitment {
-            version: rgk_core::ENCODING_VERSION,
-            chain_id: config.chain_id,
-            covenant_id: covenant_id_bytes,
+        let migration_previous_state = RgkStateCommitment::new(
+            config.chain_id,
+            covenant_id_bytes,
             asset_id,
-            state_digest: initial_state_digest,
-            receipt_policy: migration_previous_policy,
-        };
-        let migration_final_state = RgkStateCommitment {
-            version: rgk_core::ENCODING_VERSION,
-            chain_id: config.chain_id,
-            covenant_id: covenant_id_bytes,
+            initial_state_digest,
+            migration_previous_policy,
+        )
+        .expect("migration previous state commitment is valid");
+        let migration_final_state = RgkStateCommitment::new(
+            config.chain_id,
+            covenant_id_bytes,
             asset_id,
-            state_digest: final_native_state.state_digest,
-            receipt_policy: migration_new_policy,
-        };
+            final_native_state.state_digest,
+            migration_new_policy,
+        )
+        .expect("migration final state commitment is valid");
         let migration_authorization_commitment = sha256_digest(&[
             b"rgk:live-policy-migration-auth",
             &covenant_id_bytes,
-            &native_transition_report.transition_digest.0,
+            native_transition_report.transition_digest.as_bytes(),
         ]);
         let policy_migration = PolicyMigrationInput {
             previous_policy: migration_previous_policy,
             new_policy: migration_new_policy,
             previous_state_digest: migration_previous_state.state_digest,
             new_state_digest: migration_final_state.state_digest,
-            transition_digest: native_transition_report.transition_digest.0,
+            transition_digest: native_transition_report.transition_digest.to_bytes(),
             authorization_commitment: migration_authorization_commitment,
         }
         .build();
@@ -2554,16 +2570,16 @@ async fn live_toccata_full_covenant_lifecycle() {
                     migration_final_state.clone(),
                     continuation_block_daa,
                     ContinuationProof {
-                        commitment: native_transition_report.continuation_commitment.0,
-                        shape_root: native_transition_report.continuation_shape_root.0,
-                        transition_digest: native_transition_report.transition_digest.0,
+                        commitment: native_transition_report.continuation_commitment.to_bytes(),
+                        shape_root: native_transition_report.continuation_shape_root.to_bytes(),
+                        transition_digest: native_transition_report.transition_digest.to_bytes(),
                     },
                     policy_migration,
                 )
                 .expect("apply live policy migration spend");
             migration_indexer.flush().expect("flush migration indexer");
         }
-        let mut migration_indexer =
+        let migration_indexer =
             SledIndexer::open_path(&migration_indexer_path).expect("reopen live migration indexer");
         let stored_migration = migration_indexer
             .lookup(covenant_id_bytes)
@@ -2576,7 +2592,7 @@ async fn live_toccata_full_covenant_lifecycle() {
         );
         {
             let mut migration_resolver =
-                RgkResolver::new(&backend, &mut migration_indexer, config.chain_id);
+                RgkResolver::new(&backend, &migration_indexer, config.chain_id);
             migration_resolver.reorg_safety_depth = 1;
             let migration_state = migration_resolver.resolve_by_covenant(covenant_id_bytes);
             match migration_state {

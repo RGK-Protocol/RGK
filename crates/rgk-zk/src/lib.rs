@@ -32,7 +32,7 @@
 
 #![forbid(unsafe_code)]
 #![cfg_attr(not(feature = "std"), no_std)]
-#![allow(clippy::unwrap_used, clippy::expect_used)]
+#![cfg_attr(test, allow(clippy::unwrap_used, clippy::expect_used))]
 #![allow(dead_code, unused_imports, unused_variables)]
 #![allow(clippy::needless_borrows_for_generic_args, clippy::vec_init_then_push)]
 #![allow(
@@ -58,7 +58,7 @@ use thiserror::Error;
 
 /// ZK tag byte, matching `kaspa_txscript::zk_precompiles::tags::ZkTag` in the
 /// rusty-kaspa toccata branch (commit `0ae28f9`).
-#[derive(Copy, Clone, Debug, PartialEq, Eq)]
+#[derive(Copy, Clone, Debug, PartialEq, Eq, Hash)]
 #[repr(u8)]
 pub enum ZkTag {
     /// `0x20` — Groth16 (BN254) — used by many production verifier stacks.
@@ -83,7 +83,7 @@ impl ZkTag {
 }
 
 /// Errors produced by the ZK-receipt verifier.
-#[derive(Debug, Clone, PartialEq, Eq, Error)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash, Error)]
 pub enum ZkError {
     #[error("zk proof missing (must be non-empty)")]
     MissingProof,
@@ -145,7 +145,7 @@ pub const R0_SUCCINCT_MAX_SEAL_BYTES: usize = 1_000_000;
 /// This type does not generate or verify RISC0 proofs. It is a typed transport
 /// boundary for receipt material produced elsewhere, with the same syntactic
 /// constraints that the upstream precompile expects before integrity checking.
-#[derive(Clone, Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq, Eq, Hash)]
 pub struct R0SuccinctPrecompileStack {
     pub claim: Bytes32,
     pub control_index: [u8; R0_SUCCINCT_CONTROL_INDEX_BYTES],
@@ -155,7 +155,7 @@ pub struct R0SuccinctPrecompileStack {
     pub image_id: Bytes32,
     pub control_id: Bytes32,
     pub hashfn: u8,
-    pub tag: [u8; 1],
+    pub tag: u8,
 }
 
 impl R0SuccinctPrecompileStack {
@@ -179,7 +179,7 @@ impl R0SuccinctPrecompileStack {
             image_id,
             control_id,
             hashfn,
-            tag: [ZkTag::R0Succinct.as_byte()],
+            tag: ZkTag::R0Succinct.as_byte(),
         })
     }
 
@@ -193,7 +193,7 @@ impl R0SuccinctPrecompileStack {
             &self.image_id,
             &self.control_id,
             core::slice::from_ref(&self.hashfn),
-            &self.tag,
+            core::slice::from_ref(&self.tag),
         ]
     }
 
@@ -258,7 +258,8 @@ fn validate_r0_succinct_variable_fields(
 /// Total: 7 * 32 + 8 = 232 bytes.
 ///
 /// Private inputs (witness) — not encoded here; produced by the prover.
-#[derive(Clone, Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq, Eq, Hash)]
+#[non_exhaustive]
 pub struct ZkStatement {
     pub old_state_digest: Bytes32,
     pub new_state_digest: Bytes32,
@@ -356,7 +357,8 @@ impl ZkStatement {
 /// 21. `burn_authorization_commitment` (32 bytes, zero for no-burn)
 ///
 /// Total: 8 + 14 * 32 + 7 * 8 = 512 bytes.
-#[derive(Clone, Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq, Eq, Hash)]
+#[non_exhaustive]
 pub struct SemanticTransitionStatement {
     pub chain_id: KaspaChainId,
     pub schema_id: Bytes32,
@@ -384,6 +386,59 @@ pub struct SemanticTransitionStatement {
 
 impl SemanticTransitionStatement {
     pub const PUBLIC_INPUT_LEN: usize = 512;
+
+    #[allow(clippy::too_many_arguments)]
+    pub fn new(
+        chain_id: KaspaChainId,
+        schema_id: Bytes32,
+        asset_id: Bytes32,
+        previous_state_digest: Bytes32,
+        new_state_digest: Bytes32,
+        transition_digest: Bytes32,
+        continuation_commitment: Bytes32,
+        continuation_shape_root: Bytes32,
+        lane_id: Bytes32,
+        privacy_policy: LanePrivacyPolicy,
+        policy_commitment: Bytes32,
+        metadata_commitment: Bytes32,
+        previous_owner_commitment: Bytes32,
+        new_owner_commitment: Bytes32,
+        ownership_authorization_commitment: Bytes32,
+        total_supply: u64,
+        spent_allocation_count: u64,
+        new_allocation_count: u64,
+        spent_supply: u64,
+        new_supply: u64,
+        burned_supply: u64,
+        burn_authorization_commitment: Bytes32,
+    ) -> Result<Self, ZkError> {
+        let statement = Self {
+            chain_id,
+            schema_id,
+            asset_id,
+            previous_state_digest,
+            new_state_digest,
+            transition_digest,
+            continuation_commitment,
+            continuation_shape_root,
+            lane_id,
+            privacy_policy,
+            policy_commitment,
+            metadata_commitment,
+            previous_owner_commitment,
+            new_owner_commitment,
+            ownership_authorization_commitment,
+            total_supply,
+            spent_allocation_count,
+            new_allocation_count,
+            spent_supply,
+            new_supply,
+            burned_supply,
+            burn_authorization_commitment,
+        };
+        statement.validate()?;
+        Ok(statement)
+    }
 
     pub fn from_reports(
         transition: &RgkTransitionReport,
@@ -473,17 +528,17 @@ impl SemanticTransitionStatement {
             chain_id: transition.chain,
             schema_id: transition.schema_id,
             asset_id: transition.asset_id,
-            previous_state_digest: transition.previous_state_digest.0,
-            new_state_digest: transition.new_state_digest.0,
-            transition_digest: transition.transition_digest.0,
-            continuation_commitment: continuation.commitment.0,
-            continuation_shape_root: continuation.shape_root.0,
+            previous_state_digest: transition.previous_state_digest.to_bytes(),
+            new_state_digest: transition.new_state_digest.to_bytes(),
+            transition_digest: transition.transition_digest.to_bytes(),
+            continuation_commitment: continuation.commitment.to_bytes(),
+            continuation_shape_root: continuation.shape_root.to_bytes(),
             lane_id: transition.lane_id,
             privacy_policy: transition.privacy_policy,
-            policy_commitment: transition.policy_commitment.0,
-            metadata_commitment: transition.metadata_commitment.0,
-            previous_owner_commitment: transition.previous_owner_commitment.0,
-            new_owner_commitment: transition.new_owner_commitment.0,
+            policy_commitment: transition.policy_commitment.to_bytes(),
+            metadata_commitment: transition.metadata_commitment.to_bytes(),
+            previous_owner_commitment: transition.previous_owner_commitment.to_bytes(),
+            new_owner_commitment: transition.new_owner_commitment.to_bytes(),
             ownership_authorization_commitment: transition.ownership_authorization_commitment,
             total_supply: transition.total_supply,
             spent_allocation_count,
@@ -643,7 +698,7 @@ fn reject_zero_semantic(bytes: &Bytes32, field: &'static str) -> Result<(), ZkEr
 /// unsupported proof systems cannot be misrepresented as active support. This
 /// wrapper is not the complete Groth16 `OpZkPrecompile` stack. The
 /// `max_proof_size` DoS budget lives here.
-#[derive(Clone, Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq, Eq, Hash)]
 pub struct ZkProof {
     pub tag: ZkTag,
     pub proof_bytes: Vec<u8>,
@@ -682,7 +737,7 @@ impl ZkProof {
 
 /// A `ZkReceipt` = (statement, proof). Mirrors the `RgkReceipt` shape and is
 /// verifiable independently of any Kaspa-side script engine.
-#[derive(Clone, Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq, Eq, Hash)]
 pub struct ZkReceipt {
     pub statement: ZkStatement,
     pub proof: ZkProof,
@@ -743,80 +798,80 @@ mod tests {
         RgkContinuationShapeRoot, RgkMetadataCommitment, RgkOwnerCommitment, RgkPolicyCommitment,
         RgkStateDigest, RgkTransitionDigest, RgkTransitionReport, RGK_FUNGIBLE_ASSET_SCHEMA_ID,
     };
-    use rgk_core::{receipt_commitment, ENCODING_VERSION, KASPA_LOCAL_TOCCATA};
+    use rgk_core::{receipt_commitment, KASPA_LOCAL_TOCCATA};
 
     fn b32(s: &str) -> [u8; 32] {
         rgk_core::from_hex::<32>(s).expect("hex")
     }
 
     fn sample_receipt() -> RgkReceipt {
-        RgkReceipt {
-            version: ENCODING_VERSION,
-            chain_id: KASPA_LOCAL_TOCCATA,
-            covenant_id: b32("1111111111111111111111111111111111111111111111111111111111111111"),
-            old_state: RgkStateCommitment {
-                version: ENCODING_VERSION,
-                chain_id: KASPA_LOCAL_TOCCATA,
-                covenant_id: b32(
-                    "1111111111111111111111111111111111111111111111111111111111111111",
-                ),
-                asset_id: b32("2222222222222222222222222222222222222222222222222222222222222222"),
-                state_digest: b32(
-                    "0100000000000000000000000000000000000000000000000000000000000000",
-                ),
-                receipt_policy: rgk_core::ReceiptPolicy::ZkOrVerifier,
-            },
-            new_state: RgkStateCommitment {
-                version: ENCODING_VERSION,
-                chain_id: KASPA_LOCAL_TOCCATA,
-                covenant_id: b32(
-                    "1111111111111111111111111111111111111111111111111111111111111111",
-                ),
-                asset_id: b32("2222222222222222222222222222222222222222222222222222222222222222"),
-                state_digest: b32(
-                    "0200000000000000000000000000000000000000000000000000000000000000",
-                ),
-                receipt_policy: rgk_core::ReceiptPolicy::ZkOrVerifier,
-            },
-            transition_digest: b32(
-                "3333333333333333333333333333333333333333333333333333333333333333",
-            ),
-            continuation_commitment: b32(
-                "5555555555555555555555555555555555555555555555555555555555555555",
-            ),
-            proof_mode: ProofMode::ZkReceipt,
-            replay_nonce: b32("4444444444444444444444444444444444444444444444444444444444444444"),
-        }
+        let covenant_id = b32("1111111111111111111111111111111111111111111111111111111111111111");
+        let asset_id = b32("2222222222222222222222222222222222222222222222222222222222222222");
+        let old_state = RgkStateCommitment::new(
+            KASPA_LOCAL_TOCCATA,
+            covenant_id,
+            asset_id,
+            b32("0100000000000000000000000000000000000000000000000000000000000000"),
+            rgk_core::ReceiptPolicy::ZkOrVerifier,
+        )
+        .expect("old sample state commitment is valid");
+        let new_state = RgkStateCommitment::new(
+            KASPA_LOCAL_TOCCATA,
+            covenant_id,
+            asset_id,
+            b32("0200000000000000000000000000000000000000000000000000000000000000"),
+            rgk_core::ReceiptPolicy::ZkOrVerifier,
+        )
+        .expect("new sample state commitment is valid");
+        RgkReceipt::new(
+            KASPA_LOCAL_TOCCATA,
+            covenant_id,
+            old_state,
+            new_state,
+            b32("3333333333333333333333333333333333333333333333333333333333333333"),
+            b32("5555555555555555555555555555555555555555555555555555555555555555"),
+            ProofMode::ZkReceipt,
+            b32("4444444444444444444444444444444444444444444444444444444444444444"),
+        )
+        .expect("sample receipt is valid")
     }
 
     fn sample_semantic_reports() -> (RgkTransitionReport, RgkContinuationReport) {
         let schema_id = RGK_FUNGIBLE_ASSET_SCHEMA_ID;
         let asset_id = b32("2222222222222222222222222222222222222222222222222222222222222222");
-        let previous_state_digest = RgkStateDigest(b32(
+        let previous_state_digest = RgkStateDigest::from_bytes(b32(
             "0100000000000000000000000000000000000000000000000000000000000000",
-        ));
-        let new_state_digest = RgkStateDigest(b32(
+        ))
+        .expect("fixture previous state digest is non-zero");
+        let new_state_digest = RgkStateDigest::from_bytes(b32(
             "0200000000000000000000000000000000000000000000000000000000000000",
-        ));
-        let transition_digest = RgkTransitionDigest(b32(
+        ))
+        .expect("fixture new state digest is non-zero");
+        let transition_digest = RgkTransitionDigest::from_bytes(b32(
             "3333333333333333333333333333333333333333333333333333333333333333",
-        ));
-        let continuation_commitment = RgkContinuationCommitment(b32(
+        ))
+        .expect("fixture transition digest is non-zero");
+        let continuation_commitment = RgkContinuationCommitment::from_bytes(b32(
             "5555555555555555555555555555555555555555555555555555555555555555",
-        ));
-        let shape_root = RgkContinuationShapeRoot(b32(
+        ))
+        .expect("fixture continuation commitment is non-zero");
+        let shape_root = RgkContinuationShapeRoot::from_bytes(b32(
             "6666666666666666666666666666666666666666666666666666666666666666",
-        ));
+        ))
+        .expect("fixture continuation shape root is non-zero");
         let lane_id = b32("7777777777777777777777777777777777777777777777777777777777777777");
-        let policy_commitment = RgkPolicyCommitment(b32(
+        let policy_commitment = RgkPolicyCommitment::from_bytes(b32(
             "8888888888888888888888888888888888888888888888888888888888888888",
-        ));
-        let metadata_commitment = RgkMetadataCommitment(b32(
+        ))
+        .expect("fixture policy commitment is non-zero");
+        let metadata_commitment = RgkMetadataCommitment::from_bytes(b32(
             "9999999999999999999999999999999999999999999999999999999999999999",
-        ));
-        let owner_commitment = RgkOwnerCommitment(b32(
+        ))
+        .expect("fixture metadata commitment is non-zero");
+        let owner_commitment = RgkOwnerCommitment::from_bytes(b32(
             "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
-        ));
+        ))
+        .expect("fixture owner commitment is non-zero");
         let transition = RgkTransitionReport {
             chain: KASPA_LOCAL_TOCCATA,
             schema_id,
@@ -899,6 +954,7 @@ mod tests {
         assert_eq!(pushes[6], &[0x66; 32]);
         assert_eq!(pushes[7], &[R0_SUCCINCT_HASH_FN_POSEIDON2]);
         assert_eq!(pushes[8], &[ZkTag::R0Succinct.as_byte()]);
+        assert_eq!(stack.tag, ZkTag::R0Succinct.as_byte());
         assert_eq!(stack.control_digest_count(), 2);
     }
 
@@ -1090,9 +1146,10 @@ mod tests {
     #[test]
     fn semantic_transition_statement_rejects_report_mismatch() {
         let (transition, mut continuation) = sample_semantic_reports();
-        continuation.previous_state_digest = RgkStateDigest(b32(
+        continuation.previous_state_digest = RgkStateDigest::from_bytes(b32(
             "9999999999999999999999999999999999999999999999999999999999999999",
-        ));
+        ))
+        .expect("fixture previous state digest is non-zero");
         assert!(matches!(
             SemanticTransitionStatement::from_reports(&transition, &continuation),
             Err(ZkError::SemanticTransitionMismatch("previous_state_digest"))

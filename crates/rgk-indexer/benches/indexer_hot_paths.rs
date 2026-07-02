@@ -36,14 +36,14 @@ fn state(covenant: KaspaCovenantId, digest: u64) -> RgkStateCommitment {
     asset_id[24..32].copy_from_slice(&42u64.to_be_bytes());
     let mut state_digest = [0u8; 32];
     state_digest[24..32].copy_from_slice(&digest.to_be_bytes());
-    RgkStateCommitment {
-        version: rgk_core::ENCODING_VERSION,
-        chain_id: KASPA_LOCAL_TOCCATA,
-        covenant_id: covenant,
+    RgkStateCommitment::new(
+        KASPA_LOCAL_TOCCATA,
+        covenant,
         asset_id,
         state_digest,
-        receipt_policy: rgk_core::ReceiptPolicy::Any,
-    }
+        rgk_core::ReceiptPolicy::Any,
+    )
+    .expect("benchmark state commitment is valid")
 }
 
 fn seeded_indexer(covenants: u64) -> InMemoryIndexer {

@@ -10,7 +10,7 @@
 
 #![forbid(unsafe_code)]
 #![cfg_attr(not(feature = "std"), no_std)]
-#![allow(clippy::unwrap_used, clippy::expect_used)]
+#![cfg_attr(test, allow(clippy::unwrap_used, clippy::expect_used))]
 
 extern crate alloc;
 
@@ -23,10 +23,12 @@ use rgk_indexer::{
     DEFAULT_SCAN_CURSOR,
 };
 use rgk_kaspa::KaspaChainBackend;
+#[cfg(test)]
+use rgk_kaspa::KaspaScriptPublicKey;
 use thiserror::Error;
 
 /// A scanner batch returned by a chain backend.
-#[derive(Clone, Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq, Eq, Hash)]
 pub struct ScanBatch {
     pub removed_chain_block_hashes: Vec<Bytes32>,
     pub added_chain_block_hashes: Vec<Bytes32>,
@@ -56,7 +58,7 @@ pub trait ScanBackend {
     ) -> Result<ScanBatch, SyncError>;
 }
 
-#[derive(Clone, Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq, Eq, Hash)]
 pub struct ScanServiceConfig {
     pub cursor_name: String,
     pub chain_id: KaspaChainId,
@@ -73,7 +75,7 @@ impl ScanServiceConfig {
     }
 }
 
-#[derive(Clone, Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq, Eq, Hash)]
 pub struct ScanTick {
     pub initialised_cursor: bool,
     pub start_cursor: ScanCursor,
@@ -82,7 +84,7 @@ pub struct ScanTick {
     pub observed_spends: usize,
 }
 
-#[derive(Clone, Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq, Eq, Hash)]
 pub struct ScanRunSummary {
     pub ticks: u64,
     pub initialised_cursor: bool,
@@ -91,27 +93,23 @@ pub struct ScanRunSummary {
     pub end_cursor: Option<ScanCursor>,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Error)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash, Error)]
 pub enum SyncError {
     #[error("scan cursor is for {actual:?}, expected {expected:?}")]
     CursorChainMismatch {
         expected: KaspaChainId,
         actual: KaspaChainId,
     },
-    #[error("scan reorg detected: {removed_count} removed chain block(s)")]
-    Reorg { removed_count: usize },
+    #[error("scan reorg detected: {} removed chain block(s)", removed_chain_block_hashes.len())]
+    Reorg {
+        removed_chain_block_hashes: Vec<Bytes32>,
+    },
     #[error("scan batch added blocks but did not report a DAA score")]
     MissingAddedDaaScore,
     #[error("indexer cursor storage error: {0}")]
-    Indexer(String),
+    Indexer(#[from] IndexerError),
     #[error("chain scan error: {0}")]
     Chain(String),
-}
-
-impl From<IndexerError> for SyncError {
-    fn from(value: IndexerError) -> Self {
-        SyncError::Indexer(value.to_string())
-    }
 }
 
 /// Restart-safe scanner driver.
@@ -159,7 +157,7 @@ impl<'a, B: ScanBackend, C: ScanCursorStore> ScanService<'a, B, C> {
             .scan_from_cursor(&start_cursor, self.config.min_confirmation_count)?;
         if !batch.removed_chain_block_hashes.is_empty() {
             return Err(SyncError::Reorg {
-                removed_count: batch.removed_chain_block_hashes.len(),
+                removed_chain_block_hashes: batch.removed_chain_block_hashes,
             });
         }
 
@@ -466,7 +464,12 @@ mod tests {
         );
 
         let err = service.tick().expect_err("reorg expected");
-        assert!(matches!(err, SyncError::Reorg { removed_count: 1 }));
+        assert!(matches!(
+            err,
+            SyncError::Reorg {
+                removed_chain_block_hashes
+            } if removed_chain_block_hashes == vec![[9u8; 32]]
+        ));
         assert_eq!(
             indexer
                 .load_scan_cursor(DEFAULT_SCAN_CURSOR)
@@ -539,19 +542,15 @@ mod tests {
         let mut backend = FixtureBackend::new(KASPA_LOCAL_TOCCATA);
         backend.add_utxo_at(
             10,
-            KaspaUtxo {
-                outpoint: spent,
-                value: 1_000,
-                script_public_key: Vec::new(),
-                block_daa_score: Some(10),
-                spending: None,
-            },
+            KaspaUtxo::from_script_public_key(
+                spent,
+                1_000,
+                KaspaScriptPublicKey::new(Vec::new()).unwrap(),
+                Some(10),
+                None,
+            ),
         );
-        backend.submit(KaspaTxSummary {
-            txid,
-            mass: 42,
-            payload: Vec::new(),
-        });
+        backend.submit(KaspaTxSummary::new(txid, 42, Vec::new()));
         backend.spend_at(spent, 11, txid, 0);
 
         let source = KaspaRebuildSource::new(&backend);

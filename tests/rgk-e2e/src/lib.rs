@@ -43,7 +43,9 @@ use rgk_asset::native::{
     RgkContinuationShapeRoot, RgkCovenantAnchor, RgkIssueReport, RgkMetadataCommitment,
     RgkOwnerCommitment, RgkProductionZkTransferPlan, RgkProofPolicy, RgkTransitionReport,
 };
-use rgk_asset::{domain_hash_domain, RgkScanTag, RgkStateDigest, RGK_FUNGIBLE_ASSET_SCHEMA_ID};
+use rgk_asset::{
+    internal::asset_domain_hash, RgkScanTag, RgkStateDigest, RGK_FUNGIBLE_ASSET_SCHEMA_ID,
+};
 use rgk_core::{
     Bytes32, KaspaChainId, KaspaCovenantId, KaspaOutpoint, PolicyMigrationInput, ProofMode,
     ReceiptPolicy, RgkReceipt, RgkStateCommitment, KASPA_LOCAL_TOCCATA,
@@ -54,7 +56,9 @@ use rgk_covenant::{
 #[cfg(feature = "persistent-indexer")]
 use rgk_indexer::SledIndexer;
 use rgk_indexer::{ContinuationProof, InMemoryIndexer, IndexedLane, Indexer};
-use rgk_kaspa::{FixtureBackend, KaspaChainBackend, KaspaTxSummary, KaspaUtxo};
+use rgk_kaspa::{
+    FixtureBackend, KaspaChainBackend, KaspaScriptPublicKey, KaspaTxSummary, KaspaUtxo,
+};
 use rgk_receipt::{ReceiptBuilder, ReceiptInput, ReceiptVerifier};
 use rgk_resolver::{LaneResolverState, ResolverState, RgkResolver};
 use rgk_tx::spk_from_redeem_script;
@@ -114,7 +118,7 @@ fn deterministic_role_keypair(
         payload.extend_from_slice(role.as_bytes());
         payload.push(0);
         payload.push(nonce);
-        let secret_bytes = domain_hash_domain("rgk:e2e:testnet-staging-wallet-sk:v1", &payload);
+        let secret_bytes = asset_domain_hash("rgk:e2e:testnet-staging-wallet-sk:v1", &payload);
         if let Ok(sk) = secp256k1::SecretKey::from_slice(&secret_bytes) {
             let keypair = secp256k1::Keypair::from_secret_key(&secp, &sk);
             let address = kaspa_addresses::Address::new(
@@ -168,7 +172,7 @@ impl TestnetStagingWalletSet {
                     deterministic_role_keypair(kaspa_addresses::Prefix::Testnet, network, role);
                 let secret_bytes = keypair.secret_key().secret_bytes();
                 let x_only_public_key = keypair.x_only_public_key().0.serialize();
-                let secret_fingerprint = domain_hash_domain(
+                let secret_fingerprint = asset_domain_hash(
                     "rgk:e2e:testnet-staging-wallet-secret-fingerprint:v1",
                     &secret_bytes,
                 );
@@ -210,7 +214,7 @@ impl TestnetStagingWalletSet {
             payload.extend_from_slice(&wallet.required_min_value_real_zk.to_le_bytes());
             payload.extend_from_slice(&wallet.required_min_value_verifier_only.to_le_bytes());
         }
-        let wallet_set_id = domain_hash_domain("rgk:e2e:testnet-staging-wallet-set:v1", &payload);
+        let wallet_set_id = asset_domain_hash("rgk:e2e:testnet-staging-wallet-set:v1", &payload);
 
         Ok(Self {
             network: network.to_string(),
@@ -310,7 +314,7 @@ impl TestnetStagingPreflight {
         payload.push(1);
         payload.push(0);
         payload.extend_from_slice(b"live_toccata_full_covenant_lifecycle");
-        let preflight_id = domain_hash_domain("rgk:e2e:testnet-staging-preflight:v1", &payload);
+        let preflight_id = asset_domain_hash("rgk:e2e:testnet-staging-preflight:v1", &payload);
         Ok(Self {
             network: network.to_string(),
             chain_id: "KaspaTestnet",
@@ -509,7 +513,7 @@ pub fn run_e2e_fixture(backend: &mut FixtureBackend) -> Result<E2eSummary, Strin
         1,
         1_000_000,
     )?;
-    let initial_state_digest = initial_native_report.state_digest.0;
+    let initial_state_digest = initial_native_report.state_digest.to_bytes();
     let state = CovenantState::genesis(
         chain,
         asset_id,
@@ -534,24 +538,19 @@ pub fn run_e2e_fixture(backend: &mut FixtureBackend) -> Result<E2eSummary, Strin
     let open_outpoint = genesis_covenant_outpoint;
     backend.add_utxo_at(
         1,
-        KaspaUtxo {
-            outpoint: open_outpoint,
-            value: initial_value,
-            script_public_key: spk.clone(),
-            block_daa_score: Some(1),
-            spending: None,
-        },
+        KaspaUtxo::new(open_outpoint, initial_value, spk.clone(), Some(1), None)
+            .map_err(|e| format!("open utxo: {e}"))?,
     );
 
     let mut idx = InMemoryIndexer::new();
-    let initial_rgk_state = RgkStateCommitment {
-        version: rgk_core::ENCODING_VERSION,
-        chain_id: chain,
+    let initial_rgk_state = RgkStateCommitment::new(
+        chain,
         covenant_id,
         asset_id,
-        state_digest: initial_state_digest,
-        receipt_policy: ReceiptPolicy::Any,
-    };
+        initial_state_digest,
+        ReceiptPolicy::Any,
+    )
+    .map_err(|e| format!("initial state commitment: {e}"))?;
     idx.open(
         chain,
         covenant_id,
@@ -588,26 +587,27 @@ pub fn run_e2e_fixture(backend: &mut FixtureBackend) -> Result<E2eSummary, Strin
         [0x99u8; 32],
         1_000_000,
     )?;
-    let new_state_digest = native_transition_report.new_state_digest.0;
+    let new_state_digest = native_transition_report.new_state_digest.to_bytes();
 
-    let new_rgk_state = RgkStateCommitment {
-        version: rgk_core::ENCODING_VERSION,
-        chain_id: chain,
+    let new_rgk_state = RgkStateCommitment::new(
+        chain,
         covenant_id,
         asset_id,
-        state_digest: new_state_digest,
-        receipt_policy: ReceiptPolicy::Any,
-    };
-    let receipt_input = ReceiptInput {
-        chain_id: chain,
+        new_state_digest,
+        ReceiptPolicy::Any,
+    )
+    .map_err(|e| format!("new state commitment: {e}"))?;
+    let receipt_input = ReceiptInput::new(
+        chain,
         covenant_id,
-        old_state: initial_rgk_state.clone(),
-        new_state: new_rgk_state.clone(),
-        transition_digest: native_transition_report.transition_digest.0,
-        continuation_commitment: native_transition_report.continuation_commitment.0,
-        proof_mode: ProofMode::VerifierReceipt,
-        replay_nonce: sha256_digest(b"rgk:replay-nonce-v1"),
-    };
+        initial_rgk_state.clone(),
+        new_rgk_state.clone(),
+        native_transition_report.transition_digest.to_bytes(),
+        native_transition_report.continuation_commitment.to_bytes(),
+        ProofMode::VerifierReceipt,
+        sha256_digest(b"rgk:replay-nonce-v1"),
+    )
+    .map_err(|e| format!("ReceiptInput: {e:?}"))?;
     let (receipt, receipt_id, receipt_bytes) =
         ReceiptBuilder::build(&receipt_input).map_err(|e| format!("ReceiptBuilder: {e:?}"))?;
     let semantic_statement =
@@ -646,21 +646,12 @@ pub fn run_e2e_fixture(backend: &mut FixtureBackend) -> Result<E2eSummary, Strin
     };
     let _tx_bytes = tx.encode_canonical();
     let spend_txid = new_outpoint.transaction_id;
-    backend.submit(KaspaTxSummary {
-        txid: spend_txid,
-        mass: 1,
-        payload: tx.payload.clone(),
-    });
+    backend.submit(KaspaTxSummary::new(spend_txid, 1, tx.payload.clone()));
     backend.spend_at(open_outpoint, 2, spend_txid, 0);
     backend.add_utxo_at(
         2,
-        KaspaUtxo {
-            outpoint: new_outpoint,
-            value: new_value,
-            script_public_key: new_spk.clone(),
-            block_daa_score: Some(2),
-            spending: None,
-        },
+        KaspaUtxo::new(new_outpoint, new_value, new_spk.clone(), Some(2), None)
+            .map_err(|e| format!("new utxo: {e}"))?,
     );
 
     idx.apply_spend_with_continuation(
@@ -671,9 +662,9 @@ pub fn run_e2e_fixture(backend: &mut FixtureBackend) -> Result<E2eSummary, Strin
         new_rgk_state.clone(),
         2,
         ContinuationProof {
-            commitment: native_transition_report.continuation_commitment.0,
-            shape_root: native_transition_report.continuation_shape_root.0,
-            transition_digest: native_transition_report.transition_digest.0,
+            commitment: native_transition_report.continuation_commitment.to_bytes(),
+            shape_root: native_transition_report.continuation_shape_root.to_bytes(),
+            transition_digest: native_transition_report.transition_digest.to_bytes(),
         },
     )
     .map_err(|e| format!("apply_spend: {e}"))?;
@@ -685,25 +676,21 @@ pub fn run_e2e_fixture(backend: &mut FixtureBackend) -> Result<E2eSummary, Strin
         native_transition_report.lane_id,
         fixture_epoch,
     );
-    idx.register_lane(IndexedLane {
-        chain_id: chain,
+    idx.register_lane(IndexedLane::new(
+        chain,
         covenant_id,
         asset_id,
-        lane_id: native_transition_report.lane_id,
-        epoch: fixture_epoch,
-        scan_tag: Some(lane_scan_tag.0),
-        public_lineage: false,
-        state_digest: new_state_digest,
-        last_update_daa_score: 2,
-    })
+        native_transition_report.lane_id,
+        fixture_epoch,
+        Some(lane_scan_tag.to_bytes()),
+        false,
+        new_state_digest,
+        2,
+    ))
     .map_err(|e| format!("register_lane: {e}"))?;
 
-    backend.set_tip(rgk_kaspa::KaspaTip {
-        hash: [9u8; 32],
-        blue_score: 100,
-        daa_score: 100,
-    });
-    let mut resolver = RgkResolver::new(backend, &mut idx, chain);
+    backend.set_tip(rgk_kaspa::KaspaTip::new([9u8; 32], 100, 100));
+    let mut resolver = RgkResolver::new(backend, &idx, chain);
     resolver.reorg_safety_depth = 1;
     let res = resolver.resolve_by_covenant(covenant_id);
     let lane_res = resolver.resolve_by_view_key(fixture_view_key, asset_id, fixture_epoch);
@@ -752,22 +739,17 @@ pub fn run_policy_migration_recovery_fixture() -> Result<PolicyMigrationRecovery
     let previous_policy = ReceiptPolicy::VerifierOnly;
     let new_policy = ReceiptPolicy::ZkOrVerifier;
 
-    let previous_state = RgkStateCommitment {
-        version: rgk_core::ENCODING_VERSION,
-        chain_id: chain,
+    let previous_state = RgkStateCommitment::new(
+        chain,
         covenant_id,
         asset_id,
-        state_digest: previous_state_digest,
-        receipt_policy: previous_policy,
-    };
-    let new_state = RgkStateCommitment {
-        version: rgk_core::ENCODING_VERSION,
-        chain_id: chain,
-        covenant_id,
-        asset_id,
-        state_digest: new_state_digest,
-        receipt_policy: new_policy,
-    };
+        previous_state_digest,
+        previous_policy,
+    )
+    .map_err(|e| format!("previous migration state commitment: {e}"))?;
+    let new_state =
+        RgkStateCommitment::new(chain, covenant_id, asset_id, new_state_digest, new_policy)
+            .map_err(|e| format!("new migration state commitment: {e}"))?;
     let continuation = ContinuationProof {
         commitment: [0x44u8; 32],
         shape_root: [0x45u8; 32],
@@ -819,37 +801,34 @@ pub fn run_policy_migration_recovery_fixture() -> Result<PolicyMigrationRecovery
     let mut backend = FixtureBackend::new(chain);
     backend.add_utxo_at(
         1,
-        KaspaUtxo {
-            outpoint: spent_outpoint,
-            value: 1_000_000,
-            script_public_key: vec![0x51],
-            block_daa_score: Some(1),
-            spending: None,
-        },
+        KaspaUtxo::from_script_public_key(
+            spent_outpoint,
+            1_000_000,
+            KaspaScriptPublicKey::new(vec![0x51])
+                .map_err(|e| format!("spent migration spk: {e}"))?,
+            Some(1),
+            None,
+        ),
     );
-    backend.submit(KaspaTxSummary {
-        txid: new_outpoint.transaction_id,
-        mass: 1,
-        payload: Vec::new(),
-    });
+    backend.submit(KaspaTxSummary::new(
+        new_outpoint.transaction_id,
+        1,
+        Vec::new(),
+    ));
     backend.spend_at(spent_outpoint, 2, new_outpoint.transaction_id, 0);
     backend.add_utxo_at(
         2,
-        KaspaUtxo {
-            outpoint: new_outpoint,
-            value: 999_000,
-            script_public_key: vec![0x51],
-            block_daa_score: Some(2),
-            spending: None,
-        },
+        KaspaUtxo::from_script_public_key(
+            new_outpoint,
+            999_000,
+            KaspaScriptPublicKey::new(vec![0x51]).map_err(|e| format!("new migration spk: {e}"))?,
+            Some(2),
+            None,
+        ),
     );
-    backend.set_tip(rgk_kaspa::KaspaTip {
-        hash: [0x47u8; 32],
-        blue_score: 20,
-        daa_score: 20,
-    });
+    backend.set_tip(rgk_kaspa::KaspaTip::new([0x47u8; 32], 20, 20));
 
-    let mut reopened =
+    let reopened =
         SledIndexer::open_path(&path).map_err(|e| format!("reopen sled indexer: {e}"))?;
     let recovered = reopened
         .lookup(covenant_id)
@@ -862,7 +841,7 @@ pub fn run_policy_migration_recovery_fixture() -> Result<PolicyMigrationRecovery
         return Err("stored policy migration proof changed across reopen".into());
     }
 
-    let mut resolver = RgkResolver::new(&backend, &mut reopened, chain);
+    let mut resolver = RgkResolver::new(&backend, &reopened, chain);
     resolver.reorg_safety_depth = 1;
     let state = resolver.resolve_by_covenant(covenant_id);
     if !matches!(state, ResolverState::NativeTransitionedValid { .. }) {
@@ -1302,7 +1281,7 @@ pub fn native_asset_allocation(
             confirmation_depth,
         },
         amount,
-        encrypted_note_commitment: domain_hash_domain("rgk:e2e:encrypted-note:v1", &note_payload),
+        encrypted_note_commitment: asset_domain_hash("rgk:e2e:encrypted-note:v1", &note_payload),
     }
 }
 
@@ -1317,7 +1296,7 @@ pub fn native_continuation_note_commitment(
     note_payload.extend_from_slice(&covenant_id);
     note_payload.extend_from_slice(&output_index.to_le_bytes());
     note_payload.extend_from_slice(&amount.to_le_bytes());
-    domain_hash_domain("rgk:e2e:continuation-note:v1", &note_payload)
+    asset_domain_hash("rgk:e2e:continuation-note:v1", &note_payload)
 }
 
 fn fixture_lane_id(asset_id: Bytes32) -> BlindedLaneId {
@@ -1325,11 +1304,13 @@ fn fixture_lane_id(asset_id: Bytes32) -> BlindedLaneId {
 }
 
 fn fixture_metadata_commitment(asset_id: Bytes32) -> RgkMetadataCommitment {
-    RgkMetadataCommitment(domain_hash_domain("rgk:e2e:metadata:v1", &asset_id))
+    RgkMetadataCommitment::from_bytes(asset_domain_hash("rgk:e2e:metadata:v1", &asset_id))
+        .expect("fixture metadata commitment is non-zero")
 }
 
 fn fixture_owner_commitment(asset_id: Bytes32) -> RgkOwnerCommitment {
-    RgkOwnerCommitment(domain_hash_domain("rgk:e2e:owner:v1", &asset_id))
+    RgkOwnerCommitment::from_bytes(asset_domain_hash("rgk:e2e:owner:v1", &asset_id))
+        .expect("fixture owner commitment is non-zero")
 }
 
 fn fixture_proof_policy() -> RgkProofPolicy {

@@ -15,7 +15,7 @@
 //! fully classified outcome — see SECURITY.md.
 
 #![forbid(unsafe_code)]
-#![allow(clippy::unwrap_used, clippy::expect_used)]
+#![cfg_attr(test, allow(clippy::unwrap_used, clippy::expect_used))]
 #![allow(dead_code, unused_imports, unused_variables)]
 #![allow(clippy::needless_borrows_for_generic_args, clippy::vec_init_then_push)]
 #![allow(
@@ -31,7 +31,7 @@ use rgk_core::{
 };
 use rgk_covenant::CovenantError;
 use rgk_indexer::{AllocationAuditCertificateRecord, IndexedLane, Indexer};
-use rgk_kaspa::{KaspaChainBackend, KaspaNetworkError, ResolverClassify};
+use rgk_kaspa::{KaspaChainBackend, KaspaNetworkError, KaspaScriptPublicKey, ResolverClassify};
 use rgk_receipt::{ReceiptError, ReceiptVerifier};
 use thiserror::Error;
 
@@ -39,7 +39,7 @@ pub use rgk_core::{ProofMode, ReceiptPolicy};
 
 /// The resolver output state. Every variant maps to a specific user-visible
 /// outcome; no `SoftInvalid` or `OptimisticValid` states exist by design.
-#[derive(Clone, Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq, Eq, Hash)]
 pub enum ResolverState {
     /// The covenant exists and is open (not yet spent). The state is the
     /// genesis state recorded at indexer open time.
@@ -107,7 +107,24 @@ pub enum ResolverState {
     },
 }
 
-#[derive(Clone, Debug, PartialEq, Eq)]
+impl ResolverState {
+    pub fn covenant(&self) -> KaspaCovenantId {
+        match self {
+            Self::Open { covenant, .. }
+            | Self::NativeTransitionedValid { covenant, .. }
+            | Self::NativeTransitionedInvalid { covenant, .. }
+            | Self::Unconfirmed { covenant, .. }
+            | Self::ReorgRisk { covenant, .. }
+            | Self::CompetingBranch { covenant, .. }
+            | Self::PolicyMigrationRequired { covenant, .. }
+            | Self::ReplayRejected { covenant, .. }
+            | Self::Unknown { covenant }
+            | Self::NodeDown { covenant, .. } => *covenant,
+        }
+    }
+}
+
+#[derive(Clone, Debug, PartialEq, Eq, Hash)]
 pub enum LaneResolverState {
     Resolved {
         lane: IndexedLane,
@@ -121,7 +138,7 @@ pub enum LaneResolverState {
     },
 }
 
-#[derive(Clone, Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq, Eq, Hash)]
 pub enum TransitionResolverState {
     Resolved {
         transition_digest: Bytes32,
@@ -136,35 +153,23 @@ pub enum TransitionResolverState {
 
 /// Resolver-level errors that bubble up when even the resolver state enum
 /// cannot be produced. The enum above is the success / typed-rejection path.
-#[derive(Debug, Clone, PartialEq, Eq, Error)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash, Error)]
 pub enum ResolverError {
     #[error("resolver budget exceeded: {0}")]
     BudgetExceeded(String),
     #[error("indexer error: {0}")]
-    Indexer(String),
+    Indexer(#[from] rgk_indexer::IndexerError),
     #[error("covenant error: {0}")]
-    Covenant(String),
+    Covenant(#[from] CovenantError),
     #[error("internal invariant violated: {0}")]
     Invariant(String),
-}
-
-impl From<rgk_indexer::IndexerError> for ResolverError {
-    fn from(e: rgk_indexer::IndexerError) -> Self {
-        ResolverError::Indexer(e.to_string())
-    }
-}
-
-impl From<CovenantError> for ResolverError {
-    fn from(e: CovenantError) -> Self {
-        ResolverError::Covenant(e.to_string())
-    }
 }
 
 /// The RGK resolver. Plug together a backend and an indexer and you have an
 /// end-to-end native state resolver.
 pub struct RgkResolver<'a, B: KaspaChainBackend, I: Indexer> {
     pub backend: &'a B,
-    pub indexer: &'a mut I,
+    pub indexer: &'a I,
     pub verifier_chain: KaspaChainId,
     /// How many blocks of reorg risk the resolver tolerates. Anything above
     /// this depth returns `ReorgRisk`. Default: 10.
@@ -172,7 +177,7 @@ pub struct RgkResolver<'a, B: KaspaChainBackend, I: Indexer> {
 }
 
 impl<'a, B: KaspaChainBackend, I: Indexer> RgkResolver<'a, B, I> {
-    pub fn new(backend: &'a B, indexer: &'a mut I, verifier_chain: KaspaChainId) -> Self {
+    pub fn new(backend: &'a B, indexer: &'a I, verifier_chain: KaspaChainId) -> Self {
         Self {
             backend,
             indexer,
@@ -183,7 +188,7 @@ impl<'a, B: KaspaChainBackend, I: Indexer> RgkResolver<'a, B, I> {
 
     /// Resolve the state of a covenant by `covenant_id`. Pulls the open
     /// outpoint from the indexer, queries the backend, verifies receipts.
-    pub fn resolve_by_covenant(&mut self, covenant: KaspaCovenantId) -> ResolverState {
+    pub fn resolve_by_covenant(&self, covenant: KaspaCovenantId) -> ResolverState {
         // Backend sanity: must be the configured chain.
         match self.backend.network_id() {
             Ok(net) if net == self.verifier_chain => {}
@@ -284,7 +289,7 @@ impl<'a, B: KaspaChainBackend, I: Indexer> RgkResolver<'a, B, I> {
                 {
                     return ResolverState::NativeTransitionedInvalid {
                         covenant,
-                        reason: ReceiptError::DecodeFailure(
+                        reason: ReceiptError::Structural(
                             "policy migration proof supplied for unchanged policy".into(),
                         ),
                     };
@@ -357,7 +362,7 @@ impl<'a, B: KaspaChainBackend, I: Indexer> RgkResolver<'a, B, I> {
                 None => {
                     return ResolverState::NativeTransitionedInvalid {
                         covenant,
-                        reason: ReceiptError::DecodeFailure("no receipt in spend history".into()),
+                        reason: ReceiptError::Structural("no receipt in spend history".into()),
                     };
                 }
             };
@@ -366,7 +371,7 @@ impl<'a, B: KaspaChainBackend, I: Indexer> RgkResolver<'a, B, I> {
                 None => {
                     return ResolverState::NativeTransitionedInvalid {
                         covenant,
-                        reason: ReceiptError::DecodeFailure("no new outpoint after spend".into()),
+                        reason: ReceiptError::Structural("no new outpoint after spend".into()),
                     };
                 }
             };
@@ -391,7 +396,7 @@ impl<'a, B: KaspaChainBackend, I: Indexer> RgkResolver<'a, B, I> {
 
     /// Resolve by RGK asset id: scans the indexer for matching covenant states
     /// and returns the first non-Unknown state.
-    pub fn resolve_by_asset(&mut self, asset_id: RgkAssetId) -> ResolverState {
+    pub fn resolve_by_asset(&self, asset_id: RgkAssetId) -> ResolverState {
         for covenant in self.indexer.list() {
             if let Some(s) = self.indexer.latest_state(covenant) {
                 if s.asset_id == asset_id {
@@ -404,7 +409,7 @@ impl<'a, B: KaspaChainBackend, I: Indexer> RgkResolver<'a, B, I> {
         }
     }
 
-    pub fn resolve_lane(&mut self, lane_id: Bytes32) -> LaneResolverState {
+    pub fn resolve_lane(&self, lane_id: Bytes32) -> LaneResolverState {
         match self.indexer.lane_by_id(&lane_id) {
             Some(lane) => self.resolve_indexed_lane(lane),
             None => LaneResolverState::UnknownLane { lane_id },
@@ -412,7 +417,7 @@ impl<'a, B: KaspaChainBackend, I: Indexer> RgkResolver<'a, B, I> {
     }
 
     pub fn resolve_by_view_key(
-        &mut self,
+        &self,
         view_key: Bytes32,
         asset_id: RgkAssetId,
         epoch: u64,
@@ -425,22 +430,25 @@ impl<'a, B: KaspaChainBackend, I: Indexer> RgkResolver<'a, B, I> {
             return LaneResolverState::UnknownLane { lane_id };
         }
         let expected_scan_tag = RgkScanTag::derive(view_key, lane_id, epoch);
-        if lane.scan_tag.is_some_and(|tag| tag != expected_scan_tag.0) {
+        if lane
+            .scan_tag
+            .is_some_and(|tag| tag != expected_scan_tag.to_bytes())
+        {
             return LaneResolverState::UnknownLane { lane_id };
         }
         self.resolve_indexed_lane(lane)
     }
 
-    pub fn resolve_by_scan_tag(&mut self, scan_tag: RgkScanTag) -> LaneResolverState {
-        match self.indexer.lane_by_scan_tag(&scan_tag.0) {
+    pub fn resolve_by_scan_tag(&self, scan_tag: RgkScanTag) -> LaneResolverState {
+        match self.indexer.lane_by_scan_tag(scan_tag.as_bytes()) {
             Some(lane) => self.resolve_indexed_lane(lane),
             None => LaneResolverState::UnknownScanTag {
-                scan_tag: scan_tag.0,
+                scan_tag: scan_tag.to_bytes(),
             },
         }
     }
 
-    pub fn resolve_public_lineage(&mut self, asset_id: RgkAssetId) -> Vec<LaneResolverState> {
+    pub fn resolve_public_lineage(&self, asset_id: RgkAssetId) -> Vec<LaneResolverState> {
         self.indexer
             .public_lanes(&asset_id)
             .into_iter()
@@ -448,7 +456,7 @@ impl<'a, B: KaspaChainBackend, I: Indexer> RgkResolver<'a, B, I> {
             .collect()
     }
 
-    pub fn resolve_transition(&mut self, transition_digest: Bytes32) -> TransitionResolverState {
+    pub fn resolve_transition(&self, transition_digest: Bytes32) -> TransitionResolverState {
         for covenant in self.indexer.list() {
             let Some(entry) = self.indexer.lookup(covenant) else {
                 continue;
@@ -472,7 +480,7 @@ impl<'a, B: KaspaChainBackend, I: Indexer> RgkResolver<'a, B, I> {
         TransitionResolverState::UnknownTransition { transition_digest }
     }
 
-    fn resolve_indexed_lane(&mut self, lane: IndexedLane) -> LaneResolverState {
+    fn resolve_indexed_lane(&self, lane: IndexedLane) -> LaneResolverState {
         let state = self.resolve_by_covenant(lane.covenant_id);
         LaneResolverState::Resolved {
             lane,
@@ -490,9 +498,9 @@ impl<'a, B: KaspaChainBackend, I: Indexer> RgkResolver<'a, B, I> {
         let expected_old = self
             .indexer
             .latest_state(covenant)
-            .ok_or_else(|| ReceiptError::DecodeFailure("covenant not indexed".into()))?;
-        let receipt = RgkReceipt::decode_canonical(receipt_bytes)
-            .map_err(|e: rgk_core::DecodeError| ReceiptError::DecodeFailure(e.to_string()))?;
+            .ok_or_else(|| ReceiptError::Structural("covenant not indexed".into()))?;
+        let receipt =
+            RgkReceipt::decode_canonical(receipt_bytes).map_err(ReceiptError::DecodeFailure)?;
         let receipt_id = receipt_commitment(&receipt);
         if self.indexer.has_replay(covenant, &receipt_id) {
             return Err(ReceiptError::Replay(receipt_id.into()));
@@ -512,25 +520,25 @@ fn validate_indexed_continuation(
     observed_spending_txid: Bytes32,
 ) -> Result<(), ReceiptError> {
     let proof = spend.continuation.as_ref().ok_or_else(|| {
-        ReceiptError::DecodeFailure("missing continuation proof in spend history".into())
+        ReceiptError::Structural("missing continuation proof in spend history".into())
     })?;
     if proof.commitment == [0u8; 32] {
-        return Err(ReceiptError::DecodeFailure(
+        return Err(ReceiptError::Structural(
             "missing phase-1 continuation commitment".into(),
         ));
     }
     if proof.shape_root == [0u8; 32] {
-        return Err(ReceiptError::DecodeFailure(
+        return Err(ReceiptError::Structural(
             "missing continuation shape root".into(),
         ));
     }
     if proof.transition_digest == [0u8; 32] {
-        return Err(ReceiptError::DecodeFailure(
+        return Err(ReceiptError::Structural(
             "missing phase-2 transition digest".into(),
         ));
     }
     if spend.created.transaction_id != observed_spending_txid {
-        return Err(ReceiptError::DecodeFailure(format!(
+        return Err(ReceiptError::Structural(format!(
             "continuation outpoint txid does not match observed spend txid: created 0x{}, observed 0x{}",
             rgk_core::to_hex(&spend.created.transaction_id),
             rgk_core::to_hex(&observed_spending_txid)
@@ -544,45 +552,45 @@ fn validate_indexed_policy_migration(
     latest_state: &RgkStateCommitment,
 ) -> Result<(), ReceiptError> {
     let proof = spend.policy_migration.as_ref().ok_or_else(|| {
-        ReceiptError::DecodeFailure("missing policy migration proof in spend history".into())
+        ReceiptError::Structural("missing policy migration proof in spend history".into())
     })?;
     let continuation = spend.continuation.as_ref().ok_or_else(|| {
-        ReceiptError::DecodeFailure("policy migration proof requires continuation proof".into())
+        ReceiptError::Structural("policy migration proof requires continuation proof".into())
     })?;
     if proof.previous_policy != spend.previous_receipt_policy {
-        return Err(ReceiptError::DecodeFailure(
+        return Err(ReceiptError::Structural(
             "policy migration previous policy does not match spend history".into(),
         ));
     }
     if proof.new_policy != spend.new_receipt_policy {
-        return Err(ReceiptError::DecodeFailure(
+        return Err(ReceiptError::Structural(
             "policy migration new policy does not match spend history".into(),
         ));
     }
     if proof.new_policy != latest_state.receipt_policy {
-        return Err(ReceiptError::DecodeFailure(
+        return Err(ReceiptError::Structural(
             "policy migration new policy does not match latest state".into(),
         ));
     }
     if proof.previous_state_digest != spend.new_state_digest {
-        return Err(ReceiptError::DecodeFailure(
+        return Err(ReceiptError::Structural(
             "policy migration previous state digest does not match spend history".into(),
         ));
     }
     if proof.new_state_digest != spend.resulting_state_digest
         || proof.new_state_digest != latest_state.state_digest
     {
-        return Err(ReceiptError::DecodeFailure(
+        return Err(ReceiptError::Structural(
             "policy migration new state digest does not match latest state".into(),
         ));
     }
     if proof.transition_digest != continuation.transition_digest {
-        return Err(ReceiptError::DecodeFailure(
+        return Err(ReceiptError::Structural(
             "policy migration transition digest does not match continuation proof".into(),
         ));
     }
     if proof.authorization_commitment == [0u8; 32] {
-        return Err(ReceiptError::DecodeFailure(
+        return Err(ReceiptError::Structural(
             "policy migration authorisation commitment missing".into(),
         ));
     }
@@ -595,7 +603,7 @@ fn validate_indexed_policy_migration(
         proof.authorization_commitment,
     );
     if proof.migration_commitment != expected {
-        return Err(ReceiptError::DecodeFailure(
+        return Err(ReceiptError::Structural(
             "policy migration commitment does not match proof fields".into(),
         ));
     }
@@ -607,7 +615,7 @@ fn validate_indexed_policy_migration(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use rgk_core::{from_hex, ENCODING_VERSION, KASPA_LOCAL_TOCCATA};
+    use rgk_core::{from_hex, KASPA_LOCAL_TOCCATA};
     use rgk_indexer::{
         AllocationAuditCertificateRecord, AllocationAuditCertificateStore, ContinuationProof,
         InMemoryIndexer, PolicyMigrationProof,
@@ -624,18 +632,18 @@ mod tests {
         digest: u8,
         asset_id: Bytes32,
     ) -> RgkStateCommitment {
-        RgkStateCommitment {
-            version: ENCODING_VERSION,
-            chain_id: KASPA_LOCAL_TOCCATA,
-            covenant_id: covenant,
+        RgkStateCommitment::new(
+            KASPA_LOCAL_TOCCATA,
+            covenant,
             asset_id,
-            state_digest: {
+            {
                 let mut d = [0u8; 32];
                 d[31] = digest;
                 d
             },
-            receipt_policy: ReceiptPolicy::Any,
-        }
+            ReceiptPolicy::Any,
+        )
+        .expect("sample resolver state commitment is valid")
     }
 
     fn lane_record(
@@ -648,21 +656,21 @@ mod tests {
         digest: u8,
         daa_score: u64,
     ) -> IndexedLane {
-        IndexedLane {
-            chain_id: KASPA_LOCAL_TOCCATA,
-            covenant_id: covenant,
+        IndexedLane::new(
+            KASPA_LOCAL_TOCCATA,
+            covenant,
             asset_id,
             lane_id,
             epoch,
             scan_tag,
             public_lineage,
-            state_digest: {
+            {
                 let mut d = [0u8; 32];
                 d[31] = digest;
                 d
             },
-            last_update_daa_score: daa_score,
-        }
+            daa_score,
+        )
     }
 
     fn migration_proof(
@@ -702,11 +710,27 @@ mod tests {
             .expect("valid allocation audit certificate envelope")
     }
 
+    fn empty_spk() -> KaspaScriptPublicKey {
+        KaspaScriptPublicKey::new(vec![]).unwrap()
+    }
+
+    fn test_utxo(outpoint: KaspaOutpoint, value: u64, daa_score: u64) -> KaspaUtxo {
+        KaspaUtxo::from_script_public_key(outpoint, value, empty_spk(), Some(daa_score), None)
+    }
+
+    fn test_summary(txid: Bytes32) -> rgk_kaspa::KaspaTxSummary {
+        rgk_kaspa::KaspaTxSummary::new(txid, 1, vec![])
+    }
+
+    fn test_tip(hash: Bytes32, blue_score: u64, daa_score: u64) -> rgk_kaspa::KaspaTip {
+        rgk_kaspa::KaspaTip::new(hash, blue_score, daa_score)
+    }
+
     #[test]
     fn unknown_when_not_indexed() {
         let backend = FixtureBackend::new(KASPA_LOCAL_TOCCATA);
-        let mut idx = InMemoryIndexer::new();
-        let mut r = RgkResolver::new(&backend, &mut idx, KASPA_LOCAL_TOCCATA);
+        let idx = InMemoryIndexer::new();
+        let r = RgkResolver::new(&backend, &idx, KASPA_LOCAL_TOCCATA);
         let st = r.resolve_by_covenant(b32(
             "1111111111111111111111111111111111111111111111111111111111111111",
         ));
@@ -736,17 +760,8 @@ mod tests {
             10,
         )
         .unwrap();
-        backend.add_utxo_at(
-            10,
-            KaspaUtxo {
-                outpoint: open,
-                value: 1000,
-                script_public_key: vec![],
-                block_daa_score: Some(10),
-                spending: None,
-            },
-        );
-        let mut r = RgkResolver::new(&backend, &mut idx, KASPA_LOCAL_TOCCATA);
+        backend.add_utxo_at(10, test_utxo(open, 1000, 10));
+        let r = RgkResolver::new(&backend, &idx, KASPA_LOCAL_TOCCATA);
         let st = r.resolve_by_covenant(cov);
         match st {
             ResolverState::Open {
@@ -783,18 +798,9 @@ mod tests {
         .unwrap();
         idx.register_lane(lane_record(cov, asset_id, lane_id, 7, None, false, 1, 10))
             .unwrap();
-        backend.add_utxo_at(
-            10,
-            KaspaUtxo {
-                outpoint: open,
-                value: 1000,
-                script_public_key: vec![],
-                block_daa_score: Some(10),
-                spending: None,
-            },
-        );
+        backend.add_utxo_at(10, test_utxo(open, 1000, 10));
 
-        let mut r = RgkResolver::new(&backend, &mut idx, KASPA_LOCAL_TOCCATA);
+        let r = RgkResolver::new(&backend, &idx, KASPA_LOCAL_TOCCATA);
         let st = r.resolve_lane(lane_id);
         assert!(matches!(
             st,
@@ -834,24 +840,15 @@ mod tests {
             asset_id,
             lane_id,
             epoch,
-            Some(scan_tag.0),
+            Some(scan_tag.to_bytes()),
             false,
             1,
             10,
         ))
         .unwrap();
-        backend.add_utxo_at(
-            10,
-            KaspaUtxo {
-                outpoint: open,
-                value: 1000,
-                script_public_key: vec![],
-                block_daa_score: Some(10),
-                spending: None,
-            },
-        );
+        backend.add_utxo_at(10, test_utxo(open, 1000, 10));
 
-        let mut r = RgkResolver::new(&backend, &mut idx, KASPA_LOCAL_TOCCATA);
+        let r = RgkResolver::new(&backend, &idx, KASPA_LOCAL_TOCCATA);
         assert!(matches!(
             r.resolve_by_view_key(view_key, asset_id, epoch),
             LaneResolverState::Resolved { .. }
@@ -865,7 +862,7 @@ mod tests {
             LaneResolverState::Resolved { .. }
         ));
         assert!(matches!(
-            r.resolve_by_scan_tag(RgkScanTag([0x99; 32])),
+            r.resolve_by_scan_tag(RgkScanTag::from_bytes([0x99; 32]).unwrap()),
             LaneResolverState::UnknownScanTag { .. }
         ));
     }
@@ -907,7 +904,7 @@ mod tests {
             .unwrap();
         }
 
-        let mut r = RgkResolver::new(&backend, &mut idx, KASPA_LOCAL_TOCCATA);
+        let r = RgkResolver::new(&backend, &idx, KASPA_LOCAL_TOCCATA);
         let public = r.resolve_public_lineage(asset_id);
         assert_eq!(public.len(), 1);
         assert!(matches!(
@@ -964,34 +961,12 @@ mod tests {
         )
         .unwrap();
 
-        backend.add_utxo_at(
-            10,
-            KaspaUtxo {
-                outpoint: open,
-                value: 1000,
-                script_public_key: vec![],
-                block_daa_score: Some(10),
-                spending: None,
-            },
-        );
+        backend.add_utxo_at(10, test_utxo(open, 1000, 10));
         backend.spend_at(open, 11, spend_tx, 0);
-        backend.submit(rgk_kaspa::KaspaTxSummary {
-            txid: spend_tx,
-            mass: 1,
-            payload: vec![],
-        });
-        backend.add_utxo_at(
-            11,
-            KaspaUtxo {
-                outpoint: next,
-                value: 900,
-                script_public_key: vec![],
-                block_daa_score: Some(11),
-                spending: None,
-            },
-        );
+        backend.submit(test_summary(spend_tx));
+        backend.add_utxo_at(11, test_utxo(next, 900, 11));
 
-        let mut r = RgkResolver::new(&backend, &mut idx, KASPA_LOCAL_TOCCATA);
+        let mut r = RgkResolver::new(&backend, &idx, KASPA_LOCAL_TOCCATA);
         r.reorg_safety_depth = 1;
         let st = r.resolve_by_covenant(cov);
         match st {
@@ -1064,30 +1039,17 @@ mod tests {
         )
         .unwrap();
 
-        backend.add_utxo_at(
-            10,
-            KaspaUtxo {
-                outpoint: open,
-                value: 1000,
-                script_public_key: vec![],
-                block_daa_score: Some(10),
-                spending: None,
-            },
-        );
+        backend.add_utxo_at(10, test_utxo(open, 1000, 10));
         backend.spend_at(open, 11, spend_tx, 0);
-        backend.submit(rgk_kaspa::KaspaTxSummary {
-            txid: spend_tx,
-            mass: 1,
-            payload: vec![],
-        });
+        backend.submit(test_summary(spend_tx));
 
-        let mut r = RgkResolver::new(&backend, &mut idx, KASPA_LOCAL_TOCCATA);
+        let mut r = RgkResolver::new(&backend, &idx, KASPA_LOCAL_TOCCATA);
         r.reorg_safety_depth = 1;
         let st = r.resolve_by_covenant(cov);
         assert!(matches!(
             st,
             ResolverState::NativeTransitionedInvalid { reason, .. }
-                if matches!(reason, ReceiptError::DecodeFailure(_))
+                if matches!(reason, ReceiptError::Structural(_))
         ));
     }
 
@@ -1131,24 +1093,11 @@ mod tests {
         )
         .unwrap();
 
-        backend.add_utxo_at(
-            10,
-            KaspaUtxo {
-                outpoint: open,
-                value: 1000,
-                script_public_key: vec![],
-                block_daa_score: Some(10),
-                spending: None,
-            },
-        );
+        backend.add_utxo_at(10, test_utxo(open, 1000, 10));
         backend.spend_at(open, 11, spend_tx, 0);
-        backend.submit(rgk_kaspa::KaspaTxSummary {
-            txid: spend_tx,
-            mass: 1,
-            payload: vec![],
-        });
+        backend.submit(test_summary(spend_tx));
 
-        let mut r = RgkResolver::new(&backend, &mut idx, KASPA_LOCAL_TOCCATA);
+        let mut r = RgkResolver::new(&backend, &idx, KASPA_LOCAL_TOCCATA);
         r.reorg_safety_depth = 1;
         let st = r.resolve_by_covenant(cov);
         assert!(matches!(
@@ -1203,24 +1152,11 @@ mod tests {
         )
         .unwrap();
 
-        backend.add_utxo_at(
-            10,
-            KaspaUtxo {
-                outpoint: open,
-                value: 1000,
-                script_public_key: vec![],
-                block_daa_score: Some(10),
-                spending: None,
-            },
-        );
+        backend.add_utxo_at(10, test_utxo(open, 1000, 10));
         backend.spend_at(open, 12, observed_spend_tx, 0);
-        backend.submit(rgk_kaspa::KaspaTxSummary {
-            txid: observed_spend_tx,
-            mass: 1,
-            payload: vec![],
-        });
+        backend.submit(test_summary(observed_spend_tx));
 
-        let mut r = RgkResolver::new(&backend, &mut idx, KASPA_LOCAL_TOCCATA);
+        let mut r = RgkResolver::new(&backend, &idx, KASPA_LOCAL_TOCCATA);
         r.reorg_safety_depth = 1;
         let st = r.resolve_by_covenant(cov);
         assert!(matches!(
@@ -1281,24 +1217,11 @@ mod tests {
         )
         .unwrap();
 
-        backend.add_utxo_at(
-            10,
-            KaspaUtxo {
-                outpoint: open,
-                value: 1000,
-                script_public_key: vec![],
-                block_daa_score: Some(10),
-                spending: None,
-            },
-        );
+        backend.add_utxo_at(10, test_utxo(open, 1000, 10));
         backend.spend_at(open, 11, spend_tx, 0);
-        backend.submit(rgk_kaspa::KaspaTxSummary {
-            txid: spend_tx,
-            mass: 1,
-            payload: vec![],
-        });
+        backend.submit(test_summary(spend_tx));
 
-        let mut r = RgkResolver::new(&backend, &mut idx, KASPA_LOCAL_TOCCATA);
+        let mut r = RgkResolver::new(&backend, &idx, KASPA_LOCAL_TOCCATA);
         r.reorg_safety_depth = 1;
         let st = r.resolve_by_covenant(cov);
         assert!(matches!(
@@ -1357,26 +1280,14 @@ mod tests {
         )
         .unwrap();
 
-        backend.add_utxo_at(
-            10,
-            KaspaUtxo {
-                outpoint: open,
-                value: 1000,
-                script_public_key: vec![],
-                block_daa_score: Some(10),
-                spending: None,
-            },
-        );
+        backend.add_utxo_at(10, test_utxo(open, 1000, 10));
         backend.spend_at(open, 11, spend_tx, 0);
-        backend.submit(rgk_kaspa::KaspaTxSummary {
-            txid: spend_tx,
-            mass: 1,
-            payload: vec![],
-        });
+        backend.submit(test_summary(spend_tx));
 
-        let mut r = RgkResolver::new(&backend, &mut idx, KASPA_LOCAL_TOCCATA);
+        let mut r = RgkResolver::new(&backend, &idx, KASPA_LOCAL_TOCCATA);
         r.reorg_safety_depth = 1;
         let st = r.resolve_by_covenant(cov);
+        assert_eq!(st.covenant(), cov);
         assert!(matches!(
             st,
             ResolverState::NativeTransitionedValid {
@@ -1390,8 +1301,8 @@ mod tests {
     fn node_down_propagates() {
         let backend = FixtureBackend::new(KASPA_LOCAL_TOCCATA)
             .with_failure(KaspaNetworkError::NodeUnavailable("test".into()));
-        let mut idx = InMemoryIndexer::new();
-        let mut r = RgkResolver::new(&backend, &mut idx, KASPA_LOCAL_TOCCATA);
+        let idx = InMemoryIndexer::new();
+        let r = RgkResolver::new(&backend, &idx, KASPA_LOCAL_TOCCATA);
         let st = r.resolve_by_covenant(b32(
             "1111111111111111111111111111111111111111111111111111111111111111",
         ));
@@ -1422,29 +1333,12 @@ mod tests {
             10,
         )
         .unwrap();
-        backend.add_utxo_at(
-            10,
-            KaspaUtxo {
-                outpoint: open,
-                value: 1000,
-                script_public_key: vec![],
-                block_daa_score: Some(10),
-                spending: None,
-            },
-        );
+        backend.add_utxo_at(10, test_utxo(open, 1000, 10));
         let spend_tx = [2u8; 32];
-        backend.submit(rgk_kaspa::KaspaTxSummary {
-            txid: spend_tx,
-            mass: 1,
-            payload: vec![],
-        });
+        backend.submit(test_summary(spend_tx));
         backend.spend_at(open, 11, spend_tx, 0);
-        backend.set_tip(rgk_kaspa::KaspaTip {
-            hash: [9u8; 32],
-            blue_score: 100,
-            daa_score: 100,
-        });
-        let mut r = RgkResolver::new(&backend, &mut idx, KASPA_LOCAL_TOCCATA);
+        backend.set_tip(test_tip([9u8; 32], 100, 100));
+        let r = RgkResolver::new(&backend, &idx, KASPA_LOCAL_TOCCATA);
         let st = r.resolve_by_covenant(cov);
         assert!(matches!(st, ResolverState::ReorgRisk { .. }));
     }
@@ -1467,7 +1361,7 @@ mod tests {
             10,
         )
         .unwrap();
-        let r = RgkResolver::new(&backend, &mut idx, KASPA_LOCAL_TOCCATA);
+        let r = RgkResolver::new(&backend, &idx, KASPA_LOCAL_TOCCATA);
         let bogus = vec![0u8; 200];
         let err = r.verify_receipt_against_indexer(cov, &bogus).unwrap_err();
         assert!(matches!(err, ReceiptError::DecodeFailure(_)));
@@ -1490,16 +1384,17 @@ mod tests {
         };
         let old_state = sample_state(cov, 1, asset);
         let new_state = sample_state(cov, 2, asset);
-        let input = ReceiptInput {
-            chain_id: KASPA_LOCAL_TOCCATA,
-            covenant_id: cov,
-            old_state: old_state.clone(),
-            new_state: new_state.clone(),
-            transition_digest: [0x44; 32],
-            continuation_commitment: [0x55; 32],
-            proof_mode: ProofMode::VerifierReceipt,
-            replay_nonce: [0x66; 32],
-        };
+        let input = ReceiptInput::new(
+            KASPA_LOCAL_TOCCATA,
+            cov,
+            old_state.clone(),
+            new_state.clone(),
+            [0x44; 32],
+            [0x55; 32],
+            ProofMode::VerifierReceipt,
+            [0x66; 32],
+        )
+        .unwrap();
         let (_receipt, receipt_id, receipt_bytes) = ReceiptBuilder::build(&input).unwrap();
 
         idx.open(KASPA_LOCAL_TOCCATA, cov, lin, old_state, open, 10)
@@ -1507,7 +1402,7 @@ mod tests {
         idx.apply_spend(cov, receipt_id, open, next, new_state, 11)
             .unwrap();
 
-        let r = RgkResolver::new(&backend, &mut idx, KASPA_LOCAL_TOCCATA);
+        let r = RgkResolver::new(&backend, &idx, KASPA_LOCAL_TOCCATA);
         let err = r
             .verify_receipt_against_indexer(cov, &receipt_bytes)
             .unwrap_err();

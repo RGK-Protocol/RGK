@@ -64,9 +64,9 @@ use rgk_asset::{
     allocation_transcript_amount_commitment, derive_blinded_lane_id,
     derive_private_lane_graph_root, extend_allocation_transcript_root,
     extend_private_lane_graph_root, RgkAllocation, RgkAllocationProofShape,
-    RgkAllocationTranscriptSide, RgkLaneGraphNode, RgkScanTag,
-    RGK_PRODUCTION_ZK_ALLOCATION_MAX_NEW, RGK_PRODUCTION_ZK_ALLOCATION_MAX_SPENT,
-    RGK_PRODUCTION_ZK_ALLOCATION_SHAPES, RGK_PRODUCTION_ZK_ALLOCATION_SHAPE_LABELS,
+    RgkAllocationTranscriptSide, RgkLaneGraphNode, RgkScanTag, RGK_ALLOCATION_STRATEGY_ZK_MAX_NEW,
+    RGK_ALLOCATION_STRATEGY_ZK_MAX_SPENT, RGK_ALLOCATION_STRATEGY_ZK_SHAPES,
+    RGK_ALLOCATION_STRATEGY_ZK_SHAPE_LABELS,
 };
 use rgk_core::{
     Bytes32, Canonical, DecodeError, KaspaChainId, KaspaOutpoint, ProofMode, Reader, ReceiptPolicy,
@@ -198,6 +198,7 @@ pub struct SemanticTransitionCircuit {
 /// * `derive_blinded_lane_id(view_key, asset_id, epoch) == lane_id`
 /// * `RgkScanTag::derive(view_key, lane_id, epoch) == scan_tag`
 #[derive(Clone, Debug, PartialEq, Eq)]
+#[non_exhaustive]
 pub struct LaneDiscoveryStatement {
     pub lane_id: Bytes32,
     pub scan_tag: Bytes32,
@@ -207,14 +208,18 @@ pub struct LaneDiscoveryStatement {
 impl LaneDiscoveryStatement {
     pub const PUBLIC_INPUT_LEN: usize = 72;
 
-    pub fn from_private(view_key: Bytes32, asset_id: Bytes32, epoch: u64) -> Self {
-        let lane_id = derive_blinded_lane_id(view_key, asset_id, epoch);
-        let scan_tag = RgkScanTag::derive(view_key, lane_id, epoch).0;
+    pub const fn new(lane_id: Bytes32, scan_tag: Bytes32, epoch: u64) -> Self {
         Self {
             lane_id,
             scan_tag,
             epoch,
         }
+    }
+
+    pub fn from_private(view_key: Bytes32, asset_id: Bytes32, epoch: u64) -> Self {
+        let lane_id = derive_blinded_lane_id(view_key, asset_id, epoch);
+        let scan_tag = RgkScanTag::derive(view_key, lane_id, epoch).to_bytes();
+        Self::new(lane_id, scan_tag, epoch)
     }
 
     pub fn public_inputs(&self) -> Vec<u8> {
@@ -278,6 +283,7 @@ impl LaneDiscoveryCircuit {
 /// that every public lane node is derived from the same hidden pair and that the
 /// graph root commits to the exact ordered public node set.
 #[derive(Clone, Debug, PartialEq, Eq)]
+#[non_exhaustive]
 pub struct LaneGraphDiscoveryStatement<const LANES: usize> {
     pub graph_root: Bytes32,
     pub nodes: [LaneDiscoveryStatement; LANES],
@@ -322,7 +328,7 @@ impl<const LANES: usize> LaneGraphDiscoveryStatement<LANES> {
     fn native_nodes_from(nodes: &[LaneDiscoveryStatement; LANES]) -> [RgkLaneGraphNode; LANES] {
         core::array::from_fn(|index| RgkLaneGraphNode {
             lane_id: nodes[index].lane_id,
-            scan_tag: RgkScanTag(nodes[index].scan_tag),
+            scan_tag: RgkScanTag::from_bytes_unchecked(nodes[index].scan_tag),
             epoch: nodes[index].epoch,
         })
     }
@@ -369,6 +375,7 @@ impl<const LANES: usize> LaneGraphDiscoveryCircuit<LANES> {
 /// A verifier can accept an arbitrary-size graph by checking a contiguous chain
 /// of these segment proofs from the empty root to the advertised final root.
 #[derive(Clone, Debug, PartialEq, Eq)]
+#[non_exhaustive]
 pub struct LaneGraphSegmentStatement<const LANES: usize> {
     pub previous_root: Bytes32,
     pub next_root: Bytes32,
@@ -426,7 +433,7 @@ impl<const LANES: usize> LaneGraphSegmentStatement<LANES> {
     fn native_nodes_from(nodes: &[LaneDiscoveryStatement; LANES]) -> [RgkLaneGraphNode; LANES] {
         core::array::from_fn(|index| RgkLaneGraphNode {
             lane_id: nodes[index].lane_id,
-            scan_tag: RgkScanTag(nodes[index].scan_tag),
+            scan_tag: RgkScanTag::from_bytes_unchecked(nodes[index].scan_tag),
             epoch: nodes[index].epoch,
         })
     }
@@ -784,6 +791,7 @@ impl<const SPENT: usize, const NEW: usize> FixedAllocationVectorCircuit<SPENT, N
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
+#[non_exhaustive]
 pub struct AllocationTranscriptSegmentStatement<const ALLOCS: usize> {
     pub previous_root: Bytes32,
     pub next_root: Bytes32,
@@ -1010,6 +1018,7 @@ impl<const ALLOCS: usize> AllocationTranscriptSegmentCircuit<ALLOCS> {
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
+#[non_exhaustive]
 pub struct AllocationConservationSegmentStatement<const ALLOCS: usize> {
     pub transcript: AllocationTranscriptSegmentStatement<ALLOCS>,
     pub previous_total_commitment: Bytes32,
@@ -1145,6 +1154,7 @@ impl<const ALLOCS: usize> AllocationConservationSegmentCircuit<ALLOCS> {
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
+#[non_exhaustive]
 pub struct AllocationConservationFinalStatement {
     pub spent_total_count: u64,
     pub new_total_count: u64,
@@ -1273,6 +1283,7 @@ impl AllocationConservationFinalCircuit {
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
+#[non_exhaustive]
 pub struct AllocationExclusionSegmentPairStatement<const SPENT: usize, const NEW: usize> {
     pub spent_previous_root: Bytes32,
     pub spent_next_root: Bytes32,
@@ -1464,6 +1475,7 @@ pub struct AllocationAuditBundle<'a, const SPENT: usize, const NEW: usize> {
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
+#[non_exhaustive]
 pub struct AllocationAuditBundleReport {
     pub chain_id: KaspaChainId,
     pub spent_segments: usize,
@@ -2385,7 +2397,7 @@ fn allocation_audit_certificate_id(
     proofs: &[AllocationAuditProofEntry],
 ) -> Result<Bytes32, String> {
     let payload = allocation_audit_certificate_body(report, proofs)?;
-    Ok(rgk_asset::domain_hash_domain(
+    Ok(rgk_asset::internal::asset_domain_hash(
         "rgk:zk:allocation-audit-certificate:v1",
         &payload,
     ))
@@ -2688,10 +2700,10 @@ pub enum ProductionAllocationProofStrategy {
     BoundedSupportedShapes,
 }
 
-pub const PRODUCTION_ALLOCATION_PROOF_STRATEGY: ProductionAllocationProofStrategy =
+pub const DEFAULT_ALLOCATION_PROOF_STRATEGY: ProductionAllocationProofStrategy =
     ProductionAllocationProofStrategy::BoundedSupportedShapes;
-pub const PRODUCTION_ALLOCATION_MAX_SPENT: usize = RGK_PRODUCTION_ZK_ALLOCATION_MAX_SPENT;
-pub const PRODUCTION_ALLOCATION_MAX_NEW: usize = RGK_PRODUCTION_ZK_ALLOCATION_MAX_NEW;
+pub const DEFAULT_ALLOCATION_MAX_SPENT: usize = RGK_ALLOCATION_STRATEGY_ZK_MAX_SPENT;
+pub const DEFAULT_ALLOCATION_MAX_NEW: usize = RGK_ALLOCATION_STRATEGY_ZK_MAX_NEW;
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub struct ProductionAllocationProofPlan {
@@ -2708,13 +2720,13 @@ impl ProductionAllocationProofStrategy {
 
     pub const fn max_spent_count(self) -> usize {
         match self {
-            Self::BoundedSupportedShapes => PRODUCTION_ALLOCATION_MAX_SPENT,
+            Self::BoundedSupportedShapes => DEFAULT_ALLOCATION_MAX_SPENT,
         }
     }
 
     pub const fn max_new_count(self) -> usize {
         match self {
-            Self::BoundedSupportedShapes => PRODUCTION_ALLOCATION_MAX_NEW,
+            Self::BoundedSupportedShapes => DEFAULT_ALLOCATION_MAX_NEW,
         }
     }
 
@@ -2749,7 +2761,7 @@ impl ProductionAllocationProofStrategy {
 
 impl Default for ProductionAllocationProofStrategy {
     fn default() -> Self {
-        PRODUCTION_ALLOCATION_PROOF_STRATEGY
+        DEFAULT_ALLOCATION_PROOF_STRATEGY
     }
 }
 
@@ -2819,20 +2831,20 @@ impl AllocationCircuitShape {
     }
 
     pub fn require_counts(spent_count: usize, new_count: usize) -> Result<Self, String> {
-        PRODUCTION_ALLOCATION_PROOF_STRATEGY
+        DEFAULT_ALLOCATION_PROOF_STRATEGY
             .plan_counts(spent_count, new_count)
             .map(|plan| plan.shape)
     }
 
     pub fn require_statement(statement: &SemanticTransitionStatement) -> Result<Self, String> {
-        PRODUCTION_ALLOCATION_PROOF_STRATEGY
+        DEFAULT_ALLOCATION_PROOF_STRATEGY
             .plan_statement(statement)
             .map(|plan| plan.shape)
     }
 }
 
 fn supported_allocation_shape_labels() -> String {
-    RGK_PRODUCTION_ZK_ALLOCATION_SHAPE_LABELS.to_string()
+    RGK_ALLOCATION_STRATEGY_ZK_SHAPE_LABELS.to_string()
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -3594,7 +3606,7 @@ pub fn allocation_conservation_total_commitment(
     payload.extend_from_slice(&total_count.to_le_bytes());
     payload.extend_from_slice(&running_total.to_le_bytes());
     payload.extend_from_slice(&blinding);
-    rgk_asset::domain_hash_domain("rgk:asset:allocation-conservation-total:v1", &payload)
+    rgk_asset::internal::asset_domain_hash("rgk:asset:allocation-conservation-total:v1", &payload)
 }
 
 fn allocation_witness_amount<const ALLOCS: usize>(allocations: &[Vec<u8>; ALLOCS]) -> Option<u64> {
@@ -3943,7 +3955,10 @@ fn allocation_transcript_segment_root_from_witness<const ALLOCS: usize>(
     for allocation in allocations {
         payload.extend_from_slice(allocation);
     }
-    rgk_asset::domain_hash_domain("rgk:asset:allocation-transcript-segment-root:v1", &payload)
+    rgk_asset::internal::asset_domain_hash(
+        "rgk:asset:allocation-transcript-segment-root:v1",
+        &payload,
+    )
 }
 
 fn enforce_allocation_transition(
@@ -5484,15 +5499,12 @@ pub fn supported_allocation_groth16_precompile_stack(
 /// This is useful for plumbing through the opaque `ZkProof` wrapper, but it
 /// is **not** the complete Toccata Groth16 stack. Use
 /// [`groth16_precompile_stack`] when executing `OpZkPrecompile`.
-pub fn encode_for_precompile(proof: &Proof<Bn254>) -> Vec<u8> {
+pub fn encode_for_precompile(proof: &Proof<Bn254>) -> Result<Vec<u8>, String> {
     let mut out = Vec::with_capacity(1 + proof.serialized_size(Compress::Yes));
     out.push(ZK_TAG_GROTH16);
-    let mut bytes = Vec::with_capacity(proof.serialized_size(Compress::Yes));
-    proof
-        .serialize_compressed(&mut bytes)
-        .expect("serialize proof");
+    let bytes = serialize_proof_for_precompile(proof)?;
     out.extend_from_slice(&bytes);
-    out
+    Ok(out)
 }
 
 /// Public inputs as `Vec<Fr>` (8-byte LE chunks). This is the full 232-byte
@@ -5583,58 +5595,61 @@ mod tests {
     use rgk_core::{KaspaOutpoint, KASPA_LOCAL_TOCCATA};
 
     fn sample_receipt() -> RgkReceipt {
-        RgkReceipt {
-            version: rgk_core::ENCODING_VERSION,
-            chain_id: KASPA_LOCAL_TOCCATA,
-            covenant_id: [0x11u8; 32],
-            old_state: RgkStateCommitment {
-                version: rgk_core::ENCODING_VERSION,
-                chain_id: KASPA_LOCAL_TOCCATA,
-                covenant_id: [0x11u8; 32],
-                asset_id: [0x22u8; 32],
-                state_digest: [0x01u8; 32],
-                receipt_policy: ReceiptPolicy::ZkOrVerifier,
-            },
-            new_state: RgkStateCommitment {
-                version: rgk_core::ENCODING_VERSION,
-                chain_id: KASPA_LOCAL_TOCCATA,
-                covenant_id: [0x11u8; 32],
-                asset_id: [0x22u8; 32],
-                state_digest: [0x02u8; 32],
-                receipt_policy: ReceiptPolicy::ZkOrVerifier,
-            },
-            transition_digest: [0x33u8; 32],
-            continuation_commitment: [0x55u8; 32],
-            proof_mode: ProofMode::ZkReceipt,
-            replay_nonce: [0x44u8; 32],
-        }
+        let old_state = RgkStateCommitment::new(
+            KASPA_LOCAL_TOCCATA,
+            [0x11u8; 32],
+            [0x22u8; 32],
+            [0x01u8; 32],
+            ReceiptPolicy::ZkOrVerifier,
+        )
+        .expect("old sample state commitment is valid");
+        let new_state = RgkStateCommitment::new(
+            KASPA_LOCAL_TOCCATA,
+            [0x11u8; 32],
+            [0x22u8; 32],
+            [0x02u8; 32],
+            ReceiptPolicy::ZkOrVerifier,
+        )
+        .expect("new sample state commitment is valid");
+        RgkReceipt::new(
+            KASPA_LOCAL_TOCCATA,
+            [0x11u8; 32],
+            old_state,
+            new_state,
+            [0x33u8; 32],
+            [0x55u8; 32],
+            ProofMode::ZkReceipt,
+            [0x44u8; 32],
+        )
+        .expect("sample receipt is valid")
     }
 
     fn sample_semantic_statement() -> SemanticTransitionStatement {
-        SemanticTransitionStatement {
-            chain_id: KASPA_LOCAL_TOCCATA,
-            schema_id: *b"rgk:asset:schema:v1_____________",
-            asset_id: [0x22u8; 32],
-            previous_state_digest: [0x01u8; 32],
-            new_state_digest: [0x02u8; 32],
-            transition_digest: [0x33u8; 32],
-            continuation_commitment: [0x55u8; 32],
-            continuation_shape_root: [0x66u8; 32],
-            lane_id: [0x77u8; 32],
-            privacy_policy: LanePrivacyPolicy::PrivateLane,
-            policy_commitment: [0x88u8; 32],
-            metadata_commitment: [0x99u8; 32],
-            previous_owner_commitment: [0xaau8; 32],
-            new_owner_commitment: [0xaau8; 32],
-            ownership_authorization_commitment: [0; 32],
-            total_supply: 1_000_000,
-            spent_allocation_count: 1,
-            new_allocation_count: 1,
-            spent_supply: 1_000_000,
-            new_supply: 1_000_000,
-            burned_supply: 0,
-            burn_authorization_commitment: [0; 32],
-        }
+        SemanticTransitionStatement::new(
+            KASPA_LOCAL_TOCCATA,
+            *b"rgk:asset:schema:v1_____________",
+            [0x22u8; 32],
+            [0x01u8; 32],
+            [0x02u8; 32],
+            [0x33u8; 32],
+            [0x55u8; 32],
+            [0x66u8; 32],
+            [0x77u8; 32],
+            LanePrivacyPolicy::PrivateLane,
+            [0x88u8; 32],
+            [0x99u8; 32],
+            [0xaau8; 32],
+            [0xaau8; 32],
+            [0; 32],
+            1_000_000,
+            1,
+            1,
+            1_000_000,
+            1_000_000,
+            0,
+            [0; 32],
+        )
+        .expect("semantic statement")
     }
 
     fn sample_lane_discovery() -> (LaneDiscoveryStatement, LaneDiscoveryWitness) {
@@ -6302,11 +6317,12 @@ mod tests {
     }
 
     fn metadata_commitment() -> RgkMetadataCommitment {
-        RgkMetadataCommitment([0x99u8; 32])
+        RgkMetadataCommitment::from_bytes([0x99u8; 32])
+            .expect("fixture metadata commitment is non-zero")
     }
 
     fn owner_commitment() -> RgkOwnerCommitment {
-        RgkOwnerCommitment([0xaau8; 32])
+        RgkOwnerCommitment::from_bytes([0xaau8; 32]).expect("fixture owner commitment is non-zero")
     }
 
     fn allocation(
@@ -7003,7 +7019,7 @@ mod tests {
         );
         assert_eq!(
             SUPPORTED_ALLOCATION_CIRCUIT_SHAPES.map(AllocationCircuitShape::native_shape),
-            RGK_PRODUCTION_ZK_ALLOCATION_SHAPES
+            RGK_ALLOCATION_STRATEGY_ZK_SHAPES
         );
         assert_eq!(
             AllocationCircuitShape::from_counts(1, 0),
@@ -7034,7 +7050,7 @@ mod tests {
 
     #[test]
     fn production_allocation_strategy_is_bounded_and_fail_closed() {
-        let strategy = PRODUCTION_ALLOCATION_PROOF_STRATEGY;
+        let strategy = DEFAULT_ALLOCATION_PROOF_STRATEGY;
         assert_eq!(strategy.label(), "bounded-supported-shapes");
         assert_eq!(strategy.max_spent_count(), 4);
         assert_eq!(strategy.max_new_count(), 4);
@@ -7185,7 +7201,7 @@ mod tests {
         let ok = verify(&vk, &public_fr, &proof).expect("verify");
         assert!(ok, "Groth16 verification must accept a valid proof");
 
-        let encoded = encode_for_precompile(&proof);
+        let encoded = encode_for_precompile(&proof).expect("encode proof for precompile");
         assert_eq!(encoded[0], ZK_TAG_GROTH16);
         assert!(
             encoded.len() > 1,
@@ -7353,7 +7369,7 @@ mod tests {
         );
         assert_eq!(
             statement.scan_tag,
-            RgkScanTag::derive(witness.view_key, statement.lane_id, statement.epoch).0
+            RgkScanTag::derive(witness.view_key, statement.lane_id, statement.epoch).to_bytes()
         );
     }
 
@@ -7452,7 +7468,7 @@ mod tests {
         assert_ne!(statement.nodes[0].lane_id, statement.nodes[1].lane_id);
         assert_eq!(
             statement.nodes[1].scan_tag,
-            RgkScanTag::derive(witness.view_key, statement.nodes[1].lane_id, 8).0
+            RgkScanTag::derive(witness.view_key, statement.nodes[1].lane_id, 8).to_bytes()
         );
     }
 
@@ -7565,7 +7581,7 @@ mod tests {
         assert_ne!(statement.previous_root, statement.next_root);
         assert_eq!(
             statement.nodes[0].scan_tag,
-            RgkScanTag::derive(witness.view_key, statement.nodes[0].lane_id, 7).0
+            RgkScanTag::derive(witness.view_key, statement.nodes[0].lane_id, 7).to_bytes()
         );
     }
 

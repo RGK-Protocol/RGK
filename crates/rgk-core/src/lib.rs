@@ -33,7 +33,7 @@
 
 #![forbid(unsafe_code)]
 #![cfg_attr(not(feature = "std"), no_std)]
-#![allow(clippy::unwrap_used, clippy::expect_used)]
+#![cfg_attr(test, allow(clippy::unwrap_used, clippy::expect_used))]
 #![allow(dead_code, unused_imports, unused_variables)]
 #![allow(clippy::unnecessary_map_or)]
 
@@ -49,11 +49,11 @@ mod policy;
 mod tests;
 mod types;
 
-pub use bytes::{from_hex, to_hex, Bytes20, Bytes32, Bytes64};
+pub use bytes::{from_hex, to_hex, Bytes20, Bytes32, Bytes64, Hex32};
 pub use chain::{KaspaChainId, KASPA_LOCAL_TOCCATA};
 pub use commit::{
-    build_policy_migration_proof, domain_hash, lineage_id, policy_migration_commitment,
-    receipt_commitment, replay_nonce, state_commitment, DomainTag,
+    build_policy_migration_proof, domain_hash, domain_hash_str, lineage_id,
+    policy_migration_commitment, receipt_commitment, replay_nonce, state_commitment, DomainTag,
 };
 pub use encoding::{Canonical, Reader, Writer, ENCODING_VERSION, MAX_BLOB_BYTES};
 pub use error::{DecodeError, EncodeError};

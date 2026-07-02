@@ -10,7 +10,7 @@ use kaspa_consensus_core::{
     },
 };
 #[cfg(feature = "real-zk")]
-use kaspa_consensus_core::{mass::ComputeBudget, tx::TxInputMass};
+use kaspa_consensus_core::{mass::ComputeBudget, tx::ComputeCommit};
 use kaspa_hashes::Hash;
 #[cfg(feature = "real-zk")]
 use kaspa_txscript::script_builder::ScriptBuilder;
@@ -46,46 +46,49 @@ fn covenant_hash(spec: &CovenantSpec) -> Hash {
 }
 
 fn transition_payload(spec: &CovenantSpec) -> Vec<u8> {
-    CovenantState {
-        version: rgk_core::ENCODING_VERSION,
-        chain_id: spec.chain_id,
-        lineage_id: spec.lineage_id,
-        asset_id: spec.asset_id,
-        current_state_digest: [0x44; 32],
-        receipt_policy: spec.receipt_policy,
-        genesis_proof_mode: spec.genesis_proof_mode,
-        replay_marker: [0x55; 32],
-    }
+    CovenantState::new(
+        rgk_core::ENCODING_VERSION,
+        spec.chain_id,
+        spec.lineage_id,
+        spec.asset_id,
+        [0x44; 32],
+        spec.receipt_policy,
+        spec.genesis_proof_mode,
+        [0x55; 32],
+    )
+    .expect("transition covenant state")
     .encode_payload()
 }
 
 #[cfg(feature = "real-zk")]
 fn zk_receipt_for_spec(spec: &CovenantSpec, covenant_id: [u8; 32]) -> RgkReceipt {
-    RgkReceipt {
-        version: rgk_core::ENCODING_VERSION,
-        chain_id: spec.chain_id,
+    let old_state = RgkStateCommitment::new(
+        spec.chain_id,
         covenant_id,
-        old_state: RgkStateCommitment {
-            version: rgk_core::ENCODING_VERSION,
-            chain_id: spec.chain_id,
-            covenant_id,
-            asset_id: spec.asset_id,
-            state_digest: spec.initial_state_digest,
-            receipt_policy: spec.receipt_policy,
-        },
-        new_state: RgkStateCommitment {
-            version: rgk_core::ENCODING_VERSION,
-            chain_id: spec.chain_id,
-            covenant_id,
-            asset_id: spec.asset_id,
-            state_digest: [0x44; 32],
-            receipt_policy: spec.receipt_policy,
-        },
-        transition_digest: [0x66; 32],
-        continuation_commitment: [0x88; 32],
-        proof_mode: spec.genesis_proof_mode,
-        replay_nonce: [0x77; 32],
-    }
+        spec.asset_id,
+        spec.initial_state_digest,
+        spec.receipt_policy,
+    )
+    .expect("old fixture state commitment is valid");
+    let new_state = RgkStateCommitment::new(
+        spec.chain_id,
+        covenant_id,
+        spec.asset_id,
+        [0x44; 32],
+        spec.receipt_policy,
+    )
+    .expect("new fixture state commitment is valid");
+    RgkReceipt::new(
+        spec.chain_id,
+        covenant_id,
+        old_state,
+        new_state,
+        [0x66; 32],
+        [0x88; 32],
+        spec.genesis_proof_mode,
+        [0x77; 32],
+    )
+    .expect("fixture receipt is valid")
 }
 
 #[cfg(feature = "real-zk")]
@@ -294,7 +297,7 @@ fn run_zk_redeem_script(
     let sig_cache = Cache::new(10_000);
     let reused_values = SigHashReusedValuesUnsync::new();
     let ctx = EngineCtx::new(&sig_cache).with_reused(&reused_values);
-    let limit = tx.inputs[0].mass.allowed_script_units();
+    let limit = tx.inputs[0].compute_commit.allowed_script_units();
     let mut vm = TxScriptEngine::from_transaction_input_with_script_units_limit(
         &populated,
         &tx.inputs[0],
@@ -489,7 +492,7 @@ fn covenant_spec_script_with_groth16_precompile_executes_in_upstream_vm() {
     let used = run_zk_redeem_script(&spec, output, transition_payload(&spec))
         .expect("VM accepts RGK covenant script prefixed by Groth16 precompile");
     eprintln!("[zk-covenant-vm] used_script_units={used}");
-    let allowed = TxInputMass::from(ComputeBudget(2_500))
+    let allowed = ComputeCommit::from(ComputeBudget(2_500))
         .allowed_script_units()
         .0;
     assert!(used < allowed);

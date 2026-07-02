@@ -42,6 +42,10 @@ pub enum DomainTag {
     ReplayNonce,
     /// `rgk:policy-migration` — explicit native receipt-policy migration proof.
     PolicyMigration,
+    /// `rgk:advanced-covenant-policy:v1` — advanced covenant policy shape.
+    AdvancedCovenantPolicy,
+    /// `rgk:advanced-covenant-execution:v1` — advanced covenant execution evidence.
+    AdvancedCovenantExecution,
 }
 
 impl DomainTag {
@@ -52,13 +56,24 @@ impl DomainTag {
             DomainTag::Lineage => "rgk:lineage",
             DomainTag::ReplayNonce => "rgk:replay-nonce",
             DomainTag::PolicyMigration => "rgk:policy-migration",
+            DomainTag::AdvancedCovenantPolicy => "rgk:advanced-covenant-policy:v1",
+            DomainTag::AdvancedCovenantExecution => "rgk:advanced-covenant-execution:v1",
         }
     }
 }
 
 /// Compute a tagged SHA-256 over `payload`.
 pub fn domain_hash(tag: DomainTag, payload: &[u8]) -> Bytes32 {
-    let tag_bytes = tag.ascii().as_bytes();
+    domain_hash_str(tag.ascii(), payload)
+}
+
+/// Compute a tagged SHA-256 over `payload` using an explicit ASCII domain.
+///
+/// Prefer [`domain_hash`] for core protocol domains with stable enum variants.
+/// This helper exists for higher-level crates such as `rgk-asset` that have a
+/// larger set of grammar-specific domain strings.
+pub fn domain_hash_str(domain: &str, payload: &[u8]) -> Bytes32 {
+    let tag_bytes = domain.as_bytes();
     let mut hasher = Sha256::new();
     hasher.update((tag_bytes.len() as u32).to_le_bytes());
     hasher.update(tag_bytes);

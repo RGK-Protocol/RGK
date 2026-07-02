@@ -31,7 +31,7 @@
 
 #![forbid(unsafe_code)]
 #![cfg_attr(not(feature = "std"), no_std)]
-#![allow(clippy::unwrap_used, clippy::expect_used)]
+#![cfg_attr(test, allow(clippy::unwrap_used, clippy::expect_used))]
 #![allow(dead_code, unused_imports, unused_variables)]
 #![allow(clippy::needless_borrows_for_generic_args, clippy::vec_init_then_push)]
 #![allow(
@@ -55,12 +55,13 @@ use rgk_core::{
 use thiserror::Error;
 
 pub use rgk_core::{
-    build_policy_migration_proof, policy_migration_commitment, PolicyMigrationInput,
+    build_policy_migration_proof, policy_migration_commitment, Hex32, PolicyMigrationInput,
     PolicyMigrationProof,
 };
 
 /// A single indexed covenant entry.
-#[derive(Clone, Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq, Eq, Hash)]
+#[non_exhaustive]
 pub struct IndexedCovenant {
     pub covenant_id: KaspaCovenantId,
     pub lineage_id: Bytes32,
@@ -82,7 +83,8 @@ pub struct IndexedCovenant {
 ///
 /// This is intentionally not consensus state. It lets the resolver answer
 /// lane-native queries without exposing unrelated private-lane graph data.
-#[derive(Clone, Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq, Eq, Hash)]
+#[non_exhaustive]
 pub struct IndexedLane {
     pub chain_id: KaspaChainId,
     pub covenant_id: KaspaCovenantId,
@@ -95,7 +97,33 @@ pub struct IndexedLane {
     pub last_update_daa_score: u64,
 }
 
-#[derive(Clone, Debug, PartialEq, Eq)]
+impl IndexedLane {
+    pub fn new(
+        chain_id: KaspaChainId,
+        covenant_id: KaspaCovenantId,
+        asset_id: Bytes32,
+        lane_id: Bytes32,
+        epoch: u64,
+        scan_tag: Option<Bytes32>,
+        public_lineage: bool,
+        state_digest: Bytes32,
+        last_update_daa_score: u64,
+    ) -> Self {
+        Self {
+            chain_id,
+            covenant_id,
+            asset_id,
+            lane_id,
+            epoch,
+            scan_tag,
+            public_lineage,
+            state_digest,
+            last_update_daa_score,
+        }
+    }
+}
+
+#[derive(Clone, Debug, PartialEq, Eq, Hash)]
 pub struct SpendEntry {
     pub daa_score: u64,
     pub spent: KaspaOutpoint,
@@ -110,7 +138,7 @@ pub struct SpendEntry {
     pub allocation_audit_certificate: Option<AllocationAuditCertificateRecord>,
 }
 
-#[derive(Copy, Clone, Debug, PartialEq, Eq)]
+#[derive(Copy, Clone, Debug, PartialEq, Eq, Hash)]
 pub struct ContinuationProof {
     pub commitment: Bytes32,
     pub shape_root: Bytes32,
@@ -127,7 +155,7 @@ const ALLOCATION_AUDIT_CERTIFICATE_MAGIC: &[u8; 8] = b"rgk:aac1";
 /// depending on `rgk-zk`. Callers must verify/decode the certificate before
 /// recording it here; the indexer enforces only the bounded transport envelope
 /// and the embedded certificate id.
-#[derive(Clone, PartialEq, Eq)]
+#[derive(Clone, PartialEq, Eq, Hash)]
 pub struct AllocationAuditCertificateRecord {
     pub certificate_id: Bytes32,
     pub canonical_bytes: Vec<u8>,
@@ -164,7 +192,7 @@ impl AllocationAuditCertificateRecord {
 pub const DEFAULT_SCAN_CURSOR: &str = "rgk.default";
 
 /// Durable position for a live-chain scanner.
-#[derive(Clone, Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq, Eq, Hash)]
 pub struct ScanCursor {
     pub chain_id: KaspaChainId,
     pub block_hash: Bytes32,
@@ -176,7 +204,7 @@ pub struct ScanCursor {
 /// This is intentionally explicit. The indexer cannot infer RGK state from a
 /// bare Kaspa outpoint; callers must supply the last trusted checkpoint and
 /// the verified RGK transitions they expect to replay.
-#[derive(Clone, Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq, Eq, Hash)]
 pub struct RebuildCheckpoint {
     pub chain_id: KaspaChainId,
     pub covenant_id: KaspaCovenantId,
@@ -187,7 +215,7 @@ pub struct RebuildCheckpoint {
 }
 
 /// One expected spend to replay during a rebuild.
-#[derive(Clone, Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq, Eq, Hash)]
 pub struct RebuildSpend {
     pub receipt_id: ReceiptId,
     pub spent_outpoint: KaspaOutpoint,
@@ -198,14 +226,14 @@ pub struct RebuildSpend {
 }
 
 /// Rebuild plan for one covenant lineage.
-#[derive(Clone, Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq, Eq, Hash)]
 pub struct RebuildPlan {
     pub checkpoint: RebuildCheckpoint,
     pub spends: Vec<RebuildSpend>,
 }
 
 /// Chain evidence for one replayed spend.
-#[derive(Clone, Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq, Eq, Hash)]
 pub struct RebuildSpendEvidence {
     pub spending_txid: Bytes32,
     pub block_daa_score: Option<u64>,
@@ -225,7 +253,7 @@ pub trait RebuildSource {
     ) -> Result<Option<RebuildSpendEvidence>, IndexerError>;
 }
 
-#[derive(Clone, Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq, Eq, Hash)]
 pub struct RebuildSummary {
     pub opened: bool,
     pub applied_spends: usize,
@@ -235,29 +263,31 @@ pub struct RebuildSummary {
 }
 
 impl IndexedCovenant {
-    fn empty(covenant_id: KaspaCovenantId, chain_id: KaspaChainId, lineage_id: Bytes32) -> Self {
+    fn opened(
+        covenant_id: KaspaCovenantId,
+        chain_id: KaspaChainId,
+        lineage_id: Bytes32,
+        latest_state: RgkStateCommitment,
+        open_outpoint: KaspaOutpoint,
+        last_update_daa_score: u64,
+    ) -> Self {
+        debug_assert_eq!(latest_state.chain_id, chain_id);
+        debug_assert_eq!(latest_state.covenant_id, covenant_id);
         Self {
             covenant_id,
             lineage_id,
             chain_id,
-            open_outpoint: None,
-            latest_state: RgkStateCommitment {
-                version: rgk_core::ENCODING_VERSION,
-                chain_id,
-                covenant_id,
-                asset_id: [0u8; 32],
-                state_digest: [0u8; 32],
-                receipt_policy: rgk_core::ReceiptPolicy::Any,
-            },
+            open_outpoint: Some(open_outpoint),
+            latest_state,
             accepted_receipts: Vec::new(),
             spend_history: Vec::new(),
-            last_update_daa_score: 0,
+            last_update_daa_score,
         }
     }
 }
 
 /// Errors produced by the indexer.
-#[derive(Debug, Clone, PartialEq, Eq, Error)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash, Error)]
 pub enum IndexerError {
     #[error("covenant not indexed: {0}")]
     NotIndexed(Hex32),
@@ -310,21 +340,6 @@ pub enum IndexerError {
     Invariant(String),
     #[error("storage I/O failure: {0}")]
     Storage(String),
-}
-
-#[derive(Clone, Debug, PartialEq, Eq)]
-pub struct Hex32(pub Bytes32);
-impl core::fmt::Display for Hex32 {
-    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-        use rgk_core::to_hex;
-        f.write_str("0x")?;
-        f.write_str(&to_hex(&self.0))
-    }
-}
-impl From<Bytes32> for Hex32 {
-    fn from(b: Bytes32) -> Self {
-        Hex32(b)
-    }
 }
 
 /// Indexer trait. Stable contract; backed by [`InMemoryIndexer`] by default.
@@ -385,6 +400,11 @@ pub trait Indexer {
 /// The scanner itself lives outside this crate because it owns chain I/O. This
 /// trait is deliberately small: persist the last fully-applied cursor only
 /// after the caller has durably recorded the corresponding indexer effects.
+///
+/// Writes require `&mut self` by design. A scan cursor is a commit point, so
+/// sharing a cursor store between concurrent scanners must be expressed by an
+/// explicit locking/transactional wrapper rather than by hiding mutation inside
+/// this trait.
 pub trait ScanCursorStore {
     fn load_scan_cursor(&self, name: &str) -> Result<Option<ScanCursor>, IndexerError>;
     fn store_scan_cursor(&mut self, name: &str, cursor: ScanCursor) -> Result<(), IndexerError>;
@@ -929,10 +949,8 @@ impl Indexer for InMemoryIndexer {
                 requested: covenant.into(),
             });
         }
-        let mut entry = IndexedCovenant::empty(covenant, chain, lineage);
-        entry.open_outpoint = Some(open_outpoint);
-        entry.latest_state = initial;
-        entry.last_update_daa_score = daa_score;
+        let entry =
+            IndexedCovenant::opened(covenant, chain, lineage, initial, open_outpoint, daa_score);
         self.map.insert(covenant, entry);
         Ok(())
     }
@@ -1029,7 +1047,9 @@ impl Indexer for InMemoryIndexer {
         }
         // Pop the last `n` spend entries. Reverse the state.
         for _ in 0..n {
-            let last = entry.spend_history.pop().expect("non-empty");
+            let last = entry.spend_history.pop().ok_or_else(|| {
+                IndexerError::Invariant("rollback spend history shorter than checked depth".into())
+            })?;
             entry.open_outpoint = Some(last.spent);
             entry.latest_state.state_digest = last.new_state_digest;
             entry.latest_state.receipt_policy = last.previous_receipt_policy;
@@ -1190,8 +1210,9 @@ impl SledIndexer {
     }
 
     fn store_entry(&self, entry: &IndexedCovenant) -> Result<(), IndexerError> {
+        let bytes = encode_indexed_covenant(entry)?;
         self.covenants
-            .insert(entry.covenant_id, encode_indexed_covenant(entry))
+            .insert(entry.covenant_id, bytes)
             .map_err(storage_err)?;
         self.covenants.flush().map_err(storage_err)?;
         Ok(())
@@ -1297,10 +1318,8 @@ impl Indexer for SledIndexer {
                 requested: covenant.into(),
             });
         }
-        let mut entry = IndexedCovenant::empty(covenant, chain, lineage);
-        entry.open_outpoint = Some(open_outpoint);
-        entry.latest_state = initial;
-        entry.last_update_daa_score = daa_score;
+        let entry =
+            IndexedCovenant::opened(covenant, chain, lineage, initial, open_outpoint, daa_score);
         self.store_entry(&entry)
     }
 
@@ -1394,7 +1413,9 @@ impl Indexer for SledIndexer {
             });
         }
         for _ in 0..n {
-            let last = entry.spend_history.pop().expect("non-empty");
+            let last = entry.spend_history.pop().ok_or_else(|| {
+                IndexerError::Invariant("rollback spend history shorter than checked depth".into())
+            })?;
             entry.open_outpoint = Some(last.spent);
             entry.latest_state.state_digest = last.new_state_digest;
             entry.latest_state.receipt_policy = last.previous_receipt_policy;
@@ -1508,7 +1529,7 @@ fn decode_err(e: rgk_core::DecodeError) -> IndexerError {
 }
 
 #[cfg(feature = "persistent")]
-fn encode_indexed_covenant(entry: &IndexedCovenant) -> Vec<u8> {
+fn encode_indexed_covenant(entry: &IndexedCovenant) -> Result<Vec<u8>, IndexerError> {
     let mut w = Writer::new();
     w.write_bytes(INDEXED_COVENANT_MAGIC);
     w.write_bytes32(&entry.covenant_id);
@@ -1551,14 +1572,13 @@ fn encode_indexed_covenant(entry: &IndexedCovenant) -> Vec<u8> {
         }
         w.write_bool(spend.allocation_audit_certificate.is_some());
         if let Some(certificate) = &spend.allocation_audit_certificate {
-            validate_allocation_audit_certificate_record(certificate)
-                .expect("invalid allocation-audit certificate record in indexed covenant");
+            validate_allocation_audit_certificate_record(certificate)?;
             w.write_bytes32(&certificate.certificate_id);
             w.write_blob(&certificate.canonical_bytes);
         }
     }
     w.write_u64(entry.last_update_daa_score);
-    w.into_vec()
+    Ok(w.into_vec())
 }
 
 #[cfg(feature = "persistent")]
@@ -1797,7 +1817,7 @@ fn decode_scan_cursor(buf: &[u8]) -> Result<ScanCursor, IndexerError> {
 mod tests {
     use super::*;
     use proptest::prelude::*;
-    use rgk_core::{ReceiptPolicy, ENCODING_VERSION, KASPA_LOCAL_TOCCATA};
+    use rgk_core::{ReceiptPolicy, KASPA_LOCAL_TOCCATA};
 
     #[derive(Default)]
     struct FixtureRebuildSource {
@@ -1838,18 +1858,18 @@ mod tests {
     }
 
     fn state(covenant: KaspaCovenantId, digest: u8) -> RgkStateCommitment {
-        RgkStateCommitment {
-            version: ENCODING_VERSION,
-            chain_id: KASPA_LOCAL_TOCCATA,
-            covenant_id: covenant,
-            asset_id: b32("2222222222222222222222222222222222222222222222222222222222222222"),
-            state_digest: {
+        RgkStateCommitment::new(
+            KASPA_LOCAL_TOCCATA,
+            covenant,
+            b32("2222222222222222222222222222222222222222222222222222222222222222"),
+            {
                 let mut d = [0u8; 32];
                 d[31] = digest;
                 d
             },
-            receipt_policy: rgk_core::ReceiptPolicy::Any,
-        }
+            rgk_core::ReceiptPolicy::Any,
+        )
+        .expect("test state commitment is valid")
     }
 
     fn state_with_policy(

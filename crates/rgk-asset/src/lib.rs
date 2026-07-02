@@ -9,12 +9,10 @@
 
 #![forbid(unsafe_code)]
 #![cfg_attr(not(feature = "std"), no_std)]
-#![allow(clippy::unwrap_used, clippy::expect_used)]
+#![cfg_attr(test, allow(clippy::unwrap_used, clippy::expect_used))]
 #![allow(clippy::needless_borrows_for_generic_args)]
 
 extern crate alloc;
-
-use rgk_core::Bytes32;
 
 pub mod native;
 
@@ -38,43 +36,79 @@ pub use native::{
     RgkProductionAllocationStrategyCommitment, RgkProductionAllocationStrategyPlan,
     RgkProductionAllocationStrategyRecord, RgkProductionZkTransferPlan, RgkProofPolicy,
     RgkReceiptCommitment, RgkScanTag, RgkSchemaId, RgkStateDigest, RgkTransition,
-    RgkTransitionDigest, RgkTransitionReport, RGK_PRODUCTION_ALLOCATION_STRATEGY_RECORD_TAG,
-    RGK_PRODUCTION_ZK_ALLOCATION_MAX_NEW, RGK_PRODUCTION_ZK_ALLOCATION_MAX_SPENT,
-    RGK_PRODUCTION_ZK_ALLOCATION_SHAPES, RGK_PRODUCTION_ZK_ALLOCATION_SHAPE_LABELS,
+    RgkTransitionDigest, RgkTransitionReport, RGK_ALLOCATION_STRATEGY_RECORD_TAG,
+    RGK_ALLOCATION_STRATEGY_ZK_MAX_NEW, RGK_ALLOCATION_STRATEGY_ZK_MAX_SPENT,
+    RGK_ALLOCATION_STRATEGY_ZK_SHAPES, RGK_ALLOCATION_STRATEGY_ZK_SHAPE_LABELS,
     RGK_SEGMENTED_ALLOCATION_AUDIT_SEGMENT_CAPACITY,
 };
+pub use rgk_core::Hex32;
 
-#[derive(Clone, Debug, PartialEq, Eq)]
-pub struct Hex32(pub Bytes32);
-
-impl core::fmt::Display for Hex32 {
-    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-        use rgk_core::to_hex;
-        f.write_str("0x")?;
-        f.write_str(&to_hex(&self.0))
-    }
+/// Commitment and digest marker types used by the native asset grammar.
+pub mod commitments {
+    pub use crate::native::{
+        RgkContinuationCommitment, RgkContinuationShapeRoot, RgkMetadataCommitment, RgkNullifier,
+        RgkOwnerCommitment, RgkPolicyCommitment, RgkReceiptCommitment, RgkScanTag, RgkStateDigest,
+        RgkTransitionDigest,
+    };
 }
 
-impl From<Bytes32> for Hex32 {
-    fn from(b: Bytes32) -> Self {
-        Hex32(b)
+/// Lane privacy, discovery, and private-lane graph helpers.
+pub mod lanes {
+    pub use crate::native::{
+        derive_blinded_lane_id, derive_private_lane_graph_root, discover_lane,
+        extend_private_lane_graph_root, private_lane_graph_empty_root, BlindedLaneId,
+        LanePrivacyPolicy, RgkLane, RgkLaneGraphNode, RgkLaneState, RgkLaneStateInput,
+        RgkPrivacyPolicy,
+    };
+}
+
+/// Native fungible-asset issue, transition, continuation, and burn types.
+pub mod fungible {
+    pub use crate::native::{
+        RgkAllocation, RgkAssetId, RgkAssetIdDerivation, RgkAssetIssue, RgkBurnProof,
+        RgkContinuationAllocationShape, RgkContinuationPlan, RgkContinuationReport,
+        RgkCovenantAnchor, RgkFinalizedContinuation, RgkIssueReport, RgkOwnerDescriptor,
+        RgkProofPolicy, RgkSchemaId, RgkTransition, RgkTransitionReport,
+    };
+}
+
+/// NFT collection, mint, transfer, burn, and marketplace-sale types.
+pub mod nft {
+    pub use crate::native::{
+        RgkCollectionId, RgkNftBurnContinuationReport, RgkNftBurnReport,
+        RgkNftCollectionIdDerivation, RgkNftCollectionPolicy, RgkNftMarketplaceSaleCommitment,
+        RgkNftMarketplaceSaleReport, RgkNftMarketplaceSaleTerms, RgkNftMintReport,
+        RgkNftPolicyCommitment, RgkNftTemplateCommitment, RgkNftTokenCommitment, RgkNftTokenId,
+        RgkNftTokenSpec, RgkNftTransferReport,
+    };
+}
+
+/// Allocation transcript and allocation-strategy ZK helper types.
+pub mod allocation_strategy {
+    pub use crate::native::{
+        allocation_transcript_amount_commitment, allocation_transcript_empty_root,
+        extend_allocation_transcript_root, RgkAllocationProofShape, RgkAllocationTranscriptSide,
+        RgkFinalizedProductionAllocationStrategyTransfer, RgkFinalizedProductionZkTransfer,
+        RgkProductionAllocationStrategy, RgkProductionAllocationStrategyCommitment,
+        RgkProductionAllocationStrategyPlan, RgkProductionAllocationStrategyRecord,
+        RgkProductionZkTransferPlan, RGK_ALLOCATION_STRATEGY_RECORD_TAG,
+        RGK_ALLOCATION_STRATEGY_ZK_MAX_NEW, RGK_ALLOCATION_STRATEGY_ZK_MAX_SPENT,
+        RGK_ALLOCATION_STRATEGY_ZK_SHAPES, RGK_ALLOCATION_STRATEGY_ZK_SHAPE_LABELS,
+        RGK_SEGMENTED_ALLOCATION_AUDIT_SEGMENT_CAPACITY,
+    };
+}
+
+#[doc(hidden)]
+pub mod internal {
+    use rgk_core::Bytes32;
+
+    /// Compute an RGK asset-domain SHA-256 hash from a string domain.
+    pub fn asset_domain_hash(domain: &str, payload: &[u8]) -> Bytes32 {
+        rgk_core::domain_hash_str(domain, payload)
     }
 }
 
 pub const RGK_FUNGIBLE_ASSET_SCHEMA_ID: RgkSchemaId = *b"rgk:asset:schema:v1_____________";
-
-/// Compute a tagged SHA-256 hash with a domain string.
-pub fn domain_hash_domain(domain: &str, payload: &[u8]) -> Bytes32 {
-    use sha2::{Digest, Sha256};
-    let mut hasher = Sha256::new();
-    hasher.update((domain.len() as u32).to_le_bytes());
-    hasher.update(domain.as_bytes());
-    hasher.update(payload);
-    let out = hasher.finalize();
-    let mut out32 = [0u8; 32];
-    out32.copy_from_slice(&out);
-    out32
-}
 
 #[cfg(test)]
 mod tests {

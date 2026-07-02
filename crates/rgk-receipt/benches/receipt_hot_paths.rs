@@ -1,7 +1,7 @@
 use std::hint::black_box;
 
 use criterion::{criterion_group, criterion_main, Criterion};
-use rgk_core::{RgkStateCommitment, ENCODING_VERSION, KASPA_LOCAL_TOCCATA};
+use rgk_core::{RgkStateCommitment, KASPA_LOCAL_TOCCATA};
 use rgk_receipt::{ProofMode, ReceiptBuilder, ReceiptInput, ReceiptPolicy, ReceiptVerifier};
 
 fn bytes32(byte: u8) -> [u8; 32] {
@@ -9,27 +9,28 @@ fn bytes32(byte: u8) -> [u8; 32] {
 }
 
 fn state(digest_byte: u8, policy: ReceiptPolicy) -> RgkStateCommitment {
-    RgkStateCommitment {
-        version: ENCODING_VERSION,
-        chain_id: KASPA_LOCAL_TOCCATA,
-        covenant_id: bytes32(0x11),
-        asset_id: bytes32(0x22),
-        state_digest: bytes32(digest_byte),
-        receipt_policy: policy,
-    }
+    RgkStateCommitment::new(
+        KASPA_LOCAL_TOCCATA,
+        bytes32(0x11),
+        bytes32(0x22),
+        bytes32(digest_byte),
+        policy,
+    )
+    .expect("benchmark state commitment is valid")
 }
 
 fn input() -> ReceiptInput {
-    ReceiptInput {
-        chain_id: KASPA_LOCAL_TOCCATA,
-        covenant_id: bytes32(0x11),
-        old_state: state(0x01, ReceiptPolicy::Any),
-        new_state: state(0x02, ReceiptPolicy::Any),
-        transition_digest: bytes32(0x33),
-        continuation_commitment: bytes32(0x55),
-        proof_mode: ProofMode::VerifierReceipt,
-        replay_nonce: bytes32(0x44),
-    }
+    ReceiptInput::new(
+        KASPA_LOCAL_TOCCATA,
+        bytes32(0x11),
+        state(0x01, ReceiptPolicy::Any),
+        state(0x02, ReceiptPolicy::Any),
+        bytes32(0x33),
+        bytes32(0x55),
+        ProofMode::VerifierReceipt,
+        bytes32(0x44),
+    )
+    .expect("receipt input")
 }
 
 fn bench_receipt_build(c: &mut Criterion) {

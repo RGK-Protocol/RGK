@@ -33,58 +33,61 @@ use rgk_zk::real_zk::{
 use rgk_zk::{R0SuccinctPrecompileStack, SemanticTransitionStatement};
 
 fn sample_receipt() -> RgkReceipt {
-    RgkReceipt {
-        version: rgk_core::ENCODING_VERSION,
-        chain_id: KASPA_LOCAL_TOCCATA,
-        covenant_id: [0x11; 32],
-        old_state: RgkStateCommitment {
-            version: rgk_core::ENCODING_VERSION,
-            chain_id: KASPA_LOCAL_TOCCATA,
-            covenant_id: [0x11; 32],
-            asset_id: [0x22; 32],
-            state_digest: [0x01; 32],
-            receipt_policy: ReceiptPolicy::ZkOrVerifier,
-        },
-        new_state: RgkStateCommitment {
-            version: rgk_core::ENCODING_VERSION,
-            chain_id: KASPA_LOCAL_TOCCATA,
-            covenant_id: [0x11; 32],
-            asset_id: [0x22; 32],
-            state_digest: [0x02; 32],
-            receipt_policy: ReceiptPolicy::ZkOrVerifier,
-        },
-        transition_digest: [0x33; 32],
-        continuation_commitment: [0x55; 32],
-        proof_mode: ProofMode::ZkReceipt,
-        replay_nonce: [0x44; 32],
-    }
+    let old_state = RgkStateCommitment::new(
+        KASPA_LOCAL_TOCCATA,
+        [0x11; 32],
+        [0x22; 32],
+        [0x01; 32],
+        ReceiptPolicy::ZkOrVerifier,
+    )
+    .expect("old sample state commitment is valid");
+    let new_state = RgkStateCommitment::new(
+        KASPA_LOCAL_TOCCATA,
+        [0x11; 32],
+        [0x22; 32],
+        [0x02; 32],
+        ReceiptPolicy::ZkOrVerifier,
+    )
+    .expect("new sample state commitment is valid");
+    RgkReceipt::new(
+        KASPA_LOCAL_TOCCATA,
+        [0x11; 32],
+        old_state,
+        new_state,
+        [0x33; 32],
+        [0x55; 32],
+        ProofMode::ZkReceipt,
+        [0x44; 32],
+    )
+    .expect("sample receipt is valid")
 }
 
 fn sample_semantic_statement() -> SemanticTransitionStatement {
-    SemanticTransitionStatement {
-        chain_id: KASPA_LOCAL_TOCCATA,
-        schema_id: *b"rgk:asset:schema:v1_____________",
-        asset_id: [0x22; 32],
-        previous_state_digest: [0x01; 32],
-        new_state_digest: [0x02; 32],
-        transition_digest: [0x33; 32],
-        continuation_commitment: [0x55; 32],
-        continuation_shape_root: [0x66; 32],
-        lane_id: [0x77; 32],
-        privacy_policy: LanePrivacyPolicy::PrivateLane,
-        policy_commitment: [0x88; 32],
-        metadata_commitment: [0x99; 32],
-        previous_owner_commitment: [0xaa; 32],
-        new_owner_commitment: [0xaa; 32],
-        ownership_authorization_commitment: [0; 32],
-        total_supply: 1_000_000,
-        spent_allocation_count: 1,
-        new_allocation_count: 1,
-        spent_supply: 1_000_000,
-        new_supply: 1_000_000,
-        burned_supply: 0,
-        burn_authorization_commitment: [0; 32],
-    }
+    SemanticTransitionStatement::new(
+        KASPA_LOCAL_TOCCATA,
+        *b"rgk:asset:schema:v1_____________",
+        [0x22; 32],
+        [0x01; 32],
+        [0x02; 32],
+        [0x33; 32],
+        [0x55; 32],
+        [0x66; 32],
+        [0x77; 32],
+        LanePrivacyPolicy::PrivateLane,
+        [0x88; 32],
+        [0x99; 32],
+        [0xaa; 32],
+        [0xaa; 32],
+        [0; 32],
+        1_000_000,
+        1,
+        1,
+        1_000_000,
+        1_000_000,
+        0,
+        [0; 32],
+    )
+    .expect("semantic statement")
 }
 
 fn proof_policy() -> RgkProofPolicy {
@@ -94,11 +97,11 @@ fn proof_policy() -> RgkProofPolicy {
 }
 
 fn metadata_commitment() -> RgkMetadataCommitment {
-    RgkMetadataCommitment([0x99; 32])
+    RgkMetadataCommitment::from_bytes([0x99; 32]).expect("fixture metadata commitment is non-zero")
 }
 
 fn owner_commitment() -> RgkOwnerCommitment {
-    RgkOwnerCommitment([0xaa; 32])
+    RgkOwnerCommitment::from_bytes([0xaa; 32]).expect("fixture owner commitment is non-zero")
 }
 
 fn allocation(

@@ -9,20 +9,47 @@ use alloc::collections::BTreeSet;
 use alloc::vec::Vec;
 
 use rgk_core::{
-    Bytes32, DecodeError, KaspaChainId, KaspaCovenantId, KaspaOutpoint, Reader, Writer,
+    Bytes32, DecodeError, Hex32, KaspaChainId, KaspaCovenantId, KaspaOutpoint, Reader, Writer,
     ENCODING_VERSION, MAX_BLOB_BYTES,
 };
 use thiserror::Error;
 
-use crate::{domain_hash_domain, Hex32};
+use crate::internal::asset_domain_hash;
 
-pub type RgkAssetId = Bytes32;
-pub type RgkSchemaId = Bytes32;
+pub use rgk_core::{RgkAssetId, RgkSchemaId};
 pub type BlindedLaneId = Bytes32;
 pub type RgkCollectionId = Bytes32;
 pub type RgkNftTokenId = Bytes32;
 
-#[derive(Copy, Clone, Debug, PartialEq, Eq)]
+macro_rules! bytes32_marker {
+    ($name:ident) => {
+        #[derive(Copy, Clone, Debug, PartialEq, Eq, Hash)]
+        pub struct $name(Bytes32);
+
+        impl $name {
+            pub fn from_bytes(bytes: Bytes32) -> Result<Self, RgkAssetError> {
+                if is_zero32(&bytes) {
+                    return Err(RgkAssetError::ZeroCommitment(stringify!($name)));
+                }
+                Ok(Self(bytes))
+            }
+
+            pub const fn from_bytes_unchecked(bytes: Bytes32) -> Self {
+                Self(bytes)
+            }
+
+            pub const fn as_bytes(&self) -> &Bytes32 {
+                &self.0
+            }
+
+            pub const fn to_bytes(self) -> Bytes32 {
+                self.0
+            }
+        }
+    };
+}
+
+#[derive(Copy, Clone, Debug, PartialEq, Eq, Hash)]
 pub enum RgkAllocationTranscriptSide {
     Spent,
     New,
@@ -37,45 +64,23 @@ impl RgkAllocationTranscriptSide {
     }
 }
 
-#[derive(Copy, Clone, Debug, PartialEq, Eq)]
-pub struct RgkStateDigest(pub Bytes32);
+bytes32_marker!(RgkStateDigest);
+bytes32_marker!(RgkTransitionDigest);
+bytes32_marker!(RgkReceiptCommitment);
+bytes32_marker!(RgkNullifier);
+bytes32_marker!(RgkScanTag);
+bytes32_marker!(RgkPolicyCommitment);
 
-#[derive(Copy, Clone, Debug, PartialEq, Eq)]
-pub struct RgkTransitionDigest(pub Bytes32);
+pub const RGK_ALLOCATION_STRATEGY_RECORD_TAG: &[u8; 12] = b"rgk:pas:0\0\0\0";
 
-#[derive(Copy, Clone, Debug, PartialEq, Eq)]
-pub struct RgkReceiptCommitment(pub Bytes32);
+bytes32_marker!(RgkMetadataCommitment);
+bytes32_marker!(RgkOwnerCommitment);
+bytes32_marker!(RgkNftTemplateCommitment);
+bytes32_marker!(RgkNftPolicyCommitment);
+bytes32_marker!(RgkNftTokenCommitment);
+bytes32_marker!(RgkNftMarketplaceSaleCommitment);
 
-#[derive(Copy, Clone, Debug, PartialEq, Eq)]
-pub struct RgkNullifier(pub Bytes32);
-
-#[derive(Copy, Clone, Debug, PartialEq, Eq)]
-pub struct RgkScanTag(pub Bytes32);
-
-#[derive(Copy, Clone, Debug, PartialEq, Eq)]
-pub struct RgkPolicyCommitment(pub Bytes32);
-
-pub const RGK_PRODUCTION_ALLOCATION_STRATEGY_RECORD_TAG: &[u8; 12] = b"rgk:pas:0\0\0\0";
-
-#[derive(Copy, Clone, Debug, PartialEq, Eq)]
-pub struct RgkMetadataCommitment(pub Bytes32);
-
-#[derive(Copy, Clone, Debug, PartialEq, Eq)]
-pub struct RgkOwnerCommitment(pub Bytes32);
-
-#[derive(Copy, Clone, Debug, PartialEq, Eq)]
-pub struct RgkNftTemplateCommitment(pub Bytes32);
-
-#[derive(Copy, Clone, Debug, PartialEq, Eq)]
-pub struct RgkNftPolicyCommitment(pub Bytes32);
-
-#[derive(Copy, Clone, Debug, PartialEq, Eq)]
-pub struct RgkNftTokenCommitment(pub Bytes32);
-
-#[derive(Copy, Clone, Debug, PartialEq, Eq)]
-pub struct RgkNftMarketplaceSaleCommitment(pub Bytes32);
-
-#[derive(Copy, Clone, Debug, PartialEq, Eq)]
+#[derive(Copy, Clone, Debug, PartialEq, Eq, Hash)]
 pub enum RgkOwnerDescriptor {
     KeyHash(Bytes32),
     ScriptHash(Bytes32),
@@ -110,7 +115,7 @@ impl RgkOwnerDescriptor {
         let mut payload = Vec::with_capacity(33);
         payload.push(self.tag());
         payload.extend_from_slice(self.payload());
-        Ok(RgkOwnerCommitment(domain_hash_domain(
+        Ok(RgkOwnerCommitment(asset_domain_hash(
             "rgk:owner:descriptor:v1",
             &payload,
         )))
@@ -123,7 +128,7 @@ impl RgkOwnerCommitment {
     }
 }
 
-#[derive(Copy, Clone, Debug, PartialEq, Eq)]
+#[derive(Copy, Clone, Debug, PartialEq, Eq, Hash)]
 pub struct RgkNftCollectionIdDerivation {
     pub chain: KaspaChainId,
     pub schema_id: RgkSchemaId,
@@ -133,7 +138,7 @@ pub struct RgkNftCollectionIdDerivation {
     pub royalty_policy_commitment: RgkNftPolicyCommitment,
 }
 
-#[derive(Copy, Clone, Debug, PartialEq, Eq)]
+#[derive(Copy, Clone, Debug, PartialEq, Eq, Hash)]
 pub struct RgkNftCollectionPolicy {
     pub chain: KaspaChainId,
     pub schema_id: RgkSchemaId,
@@ -144,7 +149,7 @@ pub struct RgkNftCollectionPolicy {
     pub royalty_policy_commitment: RgkNftPolicyCommitment,
 }
 
-#[derive(Copy, Clone, Debug, PartialEq, Eq)]
+#[derive(Copy, Clone, Debug, PartialEq, Eq, Hash)]
 pub struct RgkNftTokenSpec {
     pub collection: RgkNftCollectionPolicy,
     pub token_index: u64,
@@ -152,35 +157,35 @@ pub struct RgkNftTokenSpec {
     pub owner_commitment: RgkOwnerCommitment,
 }
 
-#[derive(Clone, Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq, Eq, Hash)]
 pub struct RgkNftMintReport {
     pub token_id: RgkNftTokenId,
     pub token_commitment: RgkNftTokenCommitment,
     pub issue_report: RgkIssueReport,
 }
 
-#[derive(Clone, Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq, Eq, Hash)]
 pub struct RgkNftTransferReport {
     pub token_id: RgkNftTokenId,
     pub token_commitment: RgkNftTokenCommitment,
     pub transition_report: RgkTransitionReport,
 }
 
-#[derive(Clone, Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq, Eq, Hash)]
 pub struct RgkNftBurnContinuationReport {
     pub token_id: RgkNftTokenId,
     pub burned_token_commitment: RgkNftTokenCommitment,
     pub continuation_report: RgkContinuationReport,
 }
 
-#[derive(Clone, Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq, Eq, Hash)]
 pub struct RgkNftBurnReport {
     pub token_id: RgkNftTokenId,
     pub burned_token_commitment: RgkNftTokenCommitment,
     pub transition_report: RgkTransitionReport,
 }
 
-#[derive(Copy, Clone, Debug, PartialEq, Eq)]
+#[derive(Copy, Clone, Debug, PartialEq, Eq, Hash)]
 pub struct RgkNftMarketplaceSaleTerms {
     pub chain: KaspaChainId,
     pub collection_id: RgkCollectionId,
@@ -194,7 +199,7 @@ pub struct RgkNftMarketplaceSaleTerms {
     pub authorization_commitment: Bytes32,
 }
 
-#[derive(Clone, Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq, Eq, Hash)]
 pub struct RgkNftMarketplaceSaleReport {
     pub token_id: RgkNftTokenId,
     pub sale_commitment: RgkNftMarketplaceSaleCommitment,
@@ -247,7 +252,7 @@ impl RgkNftMarketplaceSaleTerms {
         payload.extend_from_slice(&self.royalty_policy_commitment.0);
         payload.extend_from_slice(&self.royalty_amount.to_le_bytes());
         payload.extend_from_slice(&self.authorization_commitment);
-        Ok(RgkNftMarketplaceSaleCommitment(domain_hash_domain(
+        Ok(RgkNftMarketplaceSaleCommitment(asset_domain_hash(
             "rgk:nft:marketplace-sale:v1",
             &payload,
         )))
@@ -272,7 +277,7 @@ impl RgkNftCollectionPolicy {
         payload.extend_from_slice(&input.issuer_owner_commitment.0);
         payload.extend_from_slice(&input.template_commitment.0);
         payload.extend_from_slice(&input.royalty_policy_commitment.0);
-        Ok(domain_hash_domain("rgk:nft:collection-id:v1", &payload))
+        Ok(asset_domain_hash("rgk:nft:collection-id:v1", &payload))
     }
 
     pub fn validate(&self) -> Result<(), RgkAssetError> {
@@ -309,7 +314,7 @@ impl RgkNftTokenSpec {
         payload.extend_from_slice(&self.collection.template_commitment.0);
         payload.extend_from_slice(&self.collection.royalty_policy_commitment.0);
         payload.extend_from_slice(&self.metadata_commitment.0);
-        Ok(domain_hash_domain("rgk:nft:token-id:v1", &payload))
+        Ok(asset_domain_hash("rgk:nft:token-id:v1", &payload))
     }
 
     pub fn token_commitment(&self) -> Result<RgkNftTokenCommitment, RgkAssetError> {
@@ -326,7 +331,7 @@ impl RgkNftTokenSpec {
         payload.extend_from_slice(&self.collection.collection_id);
         payload.extend_from_slice(&token_id);
         payload.extend_from_slice(&owner_commitment.0);
-        Ok(RgkNftTokenCommitment(domain_hash_domain(
+        Ok(RgkNftTokenCommitment(asset_domain_hash(
             "rgk:nft:token-commitment:v1",
             &payload,
         )))
@@ -416,7 +421,7 @@ impl RgkNftTokenSpec {
     }
 }
 
-#[derive(Copy, Clone, Debug, Default, PartialEq, Eq)]
+#[derive(Copy, Clone, Debug, Default, PartialEq, Eq, Hash)]
 pub enum LanePrivacyPolicy {
     PublicLineage,
     #[default]
@@ -440,14 +445,14 @@ impl LanePrivacyPolicy {
 
 pub type RgkPrivacyPolicy = LanePrivacyPolicy;
 
-#[derive(Clone, Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq, Eq, Hash)]
 pub enum ImageIdPolicy {
     Fixed(Bytes32),
     AllowedSet(Vec<Bytes32>),
     PolicyBranch(Bytes32),
 }
 
-#[derive(Clone, Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq, Eq, Hash)]
 pub enum RgkProofPolicy {
     VerifierReceipt {
         verifier_key_hash: Bytes32,
@@ -505,14 +510,14 @@ impl RgkProofPolicy {
         self.validate()?;
         let mut payload = Vec::new();
         encode_proof_policy(&mut payload, self);
-        Ok(RgkPolicyCommitment(domain_hash_domain(
+        Ok(RgkPolicyCommitment(asset_domain_hash(
             "rgk:asset:policy:v1",
             &payload,
         )))
     }
 }
 
-#[derive(Copy, Clone, Debug, PartialEq, Eq)]
+#[derive(Copy, Clone, Debug, PartialEq, Eq, Hash)]
 pub enum RgkAllocationProofShape {
     OneInZeroOut,
     OneInOneOut,
@@ -522,7 +527,7 @@ pub enum RgkAllocationProofShape {
     FourInFourOut,
 }
 
-pub const RGK_PRODUCTION_ZK_ALLOCATION_SHAPES: [RgkAllocationProofShape; 6] = [
+pub const RGK_ALLOCATION_STRATEGY_ZK_SHAPES: [RgkAllocationProofShape; 6] = [
     RgkAllocationProofShape::OneInZeroOut,
     RgkAllocationProofShape::OneInOneOut,
     RgkAllocationProofShape::TwoInTwoOut,
@@ -530,9 +535,9 @@ pub const RGK_PRODUCTION_ZK_ALLOCATION_SHAPES: [RgkAllocationProofShape; 6] = [
     RgkAllocationProofShape::FourInTwoOut,
     RgkAllocationProofShape::FourInFourOut,
 ];
-pub const RGK_PRODUCTION_ZK_ALLOCATION_SHAPE_LABELS: &str = "1x0, 1x1, 2x2, 3x2, 4x2, 4x4";
-pub const RGK_PRODUCTION_ZK_ALLOCATION_MAX_SPENT: usize = 4;
-pub const RGK_PRODUCTION_ZK_ALLOCATION_MAX_NEW: usize = 4;
+pub const RGK_ALLOCATION_STRATEGY_ZK_SHAPE_LABELS: &str = "1x0, 1x1, 2x2, 3x2, 4x2, 4x4";
+pub const RGK_ALLOCATION_STRATEGY_ZK_MAX_SPENT: usize = 4;
+pub const RGK_ALLOCATION_STRATEGY_ZK_MAX_NEW: usize = 4;
 pub const RGK_SEGMENTED_ALLOCATION_AUDIT_SEGMENT_CAPACITY: usize = 2;
 
 impl RgkAllocationProofShape {
@@ -568,7 +573,7 @@ impl RgkAllocationProofShape {
     }
 
     pub fn from_counts(spent_count: usize, new_count: usize) -> Option<Self> {
-        RGK_PRODUCTION_ZK_ALLOCATION_SHAPES
+        RGK_ALLOCATION_STRATEGY_ZK_SHAPES
             .iter()
             .copied()
             .find(|shape| shape.spent_count() == spent_count && shape.new_count() == new_count)
@@ -584,13 +589,13 @@ impl RgkAllocationProofShape {
     }
 }
 
-#[derive(Clone, Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq, Eq, Hash)]
 pub struct RgkLane {
     pub lane_id: BlindedLaneId,
     pub privacy_policy: LanePrivacyPolicy,
 }
 
-#[derive(Clone, Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq, Eq, Hash)]
 pub struct RgkLaneState {
     pub lane_id: BlindedLaneId,
     pub epoch: u64,
@@ -601,7 +606,7 @@ pub struct RgkLaneState {
     pub policy_commitment: RgkPolicyCommitment,
 }
 
-#[derive(Copy, Clone, Debug, PartialEq, Eq)]
+#[derive(Copy, Clone, Debug, PartialEq, Eq, Hash)]
 pub struct RgkLaneStateInput<'a> {
     pub lane_id: BlindedLaneId,
     pub epoch: u64,
@@ -641,11 +646,11 @@ impl RgkLaneState {
         if let Some(tag) = self.scan_tag {
             payload.extend_from_slice(&tag.0);
         }
-        domain_hash_domain("rgk:lane:observer-commitment:v1", &payload)
+        asset_domain_hash("rgk:lane:observer-commitment:v1", &payload)
     }
 }
 
-#[derive(Copy, Clone, Debug, PartialEq, Eq)]
+#[derive(Copy, Clone, Debug, PartialEq, Eq, Hash)]
 pub struct RgkLaneGraphNode {
     pub lane_id: BlindedLaneId,
     pub scan_tag: RgkScanTag,
@@ -672,11 +677,11 @@ pub fn derive_private_lane_graph_root(nodes: &[RgkLaneGraphNode]) -> Bytes32 {
         payload.extend_from_slice(&node.scan_tag.0);
         payload.extend_from_slice(&node.epoch.to_le_bytes());
     }
-    domain_hash_domain("rgk:lane:graph-root:v1", &payload)
+    asset_domain_hash("rgk:lane:graph-root:v1", &payload)
 }
 
 pub fn private_lane_graph_empty_root() -> Bytes32 {
-    domain_hash_domain("rgk:lane:graph-empty-root:v1", &[])
+    asset_domain_hash("rgk:lane:graph-empty-root:v1", &[])
 }
 
 pub fn extend_private_lane_graph_root(
@@ -693,11 +698,11 @@ pub fn extend_private_lane_graph_root(
         payload.extend_from_slice(&node.scan_tag.0);
         payload.extend_from_slice(&node.epoch.to_le_bytes());
     }
-    domain_hash_domain("rgk:lane:graph-segment-root:v1", &payload)
+    asset_domain_hash("rgk:lane:graph-segment-root:v1", &payload)
 }
 
 pub fn allocation_transcript_empty_root(side: RgkAllocationTranscriptSide) -> Bytes32 {
-    domain_hash_domain(
+    asset_domain_hash(
         "rgk:asset:allocation-transcript-empty-root:v1",
         &[side.as_u8()],
     )
@@ -722,7 +727,7 @@ pub fn extend_allocation_transcript_root(
     for allocation in ordered {
         encode_allocation(&mut payload, allocation);
     }
-    domain_hash_domain("rgk:asset:allocation-transcript-segment-root:v1", &payload)
+    asset_domain_hash("rgk:asset:allocation-transcript-segment-root:v1", &payload)
 }
 
 pub fn allocation_transcript_amount_commitment(
@@ -738,7 +743,7 @@ pub fn allocation_transcript_amount_commitment(
     payload.extend_from_slice(&total_count.to_le_bytes());
     payload.extend_from_slice(&segment_amount.to_le_bytes());
     payload.extend_from_slice(&amount_blinding);
-    domain_hash_domain("rgk:asset:allocation-transcript-amount:v1", &payload)
+    asset_domain_hash("rgk:asset:allocation-transcript-amount:v1", &payload)
 }
 
 impl RgkScanTag {
@@ -747,7 +752,7 @@ impl RgkScanTag {
         payload.extend_from_slice(&view_key);
         payload.extend_from_slice(&lane_id);
         payload.extend_from_slice(&epoch.to_le_bytes());
-        Self(domain_hash_domain("rgk:lane:scan-tag:v1", &payload))
+        Self(asset_domain_hash("rgk:lane:scan-tag:v1", &payload))
     }
 }
 
@@ -758,7 +763,7 @@ impl RgkNullifier {
         payload.extend_from_slice(&anchor.covenant_outpoint.transaction_id);
         payload.extend_from_slice(&anchor.covenant_outpoint.index.to_le_bytes());
         payload.extend_from_slice(&anchor.covenant_id);
-        Self(domain_hash_domain("rgk:lane:nullifier:v1", &payload))
+        Self(asset_domain_hash("rgk:lane:nullifier:v1", &payload))
     }
 }
 
@@ -771,7 +776,7 @@ pub fn derive_blinded_lane_id(
     payload.extend_from_slice(&view_key);
     payload.extend_from_slice(&asset_id);
     payload.extend_from_slice(&epoch.to_le_bytes());
-    domain_hash_domain("rgk:lane:blinded-id:v1", &payload)
+    asset_domain_hash("rgk:lane:blinded-id:v1", &payload)
 }
 
 pub fn discover_lane(
@@ -783,7 +788,7 @@ pub fn discover_lane(
     derive_blinded_lane_id(view_key, asset_id, epoch) == candidate
 }
 
-#[derive(Clone, Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq, Eq, Hash)]
 pub struct RgkCovenantAnchor {
     pub chain: KaspaChainId,
     pub covenant_outpoint: KaspaOutpoint,
@@ -793,14 +798,14 @@ pub struct RgkCovenantAnchor {
     pub confirmation_depth: u64,
 }
 
-#[derive(Clone, Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq, Eq, Hash)]
 pub struct RgkAllocation {
     pub anchor: RgkCovenantAnchor,
     pub amount: u64,
     pub encrypted_note_commitment: Bytes32,
 }
 
-#[derive(Copy, Clone, Debug, PartialEq, Eq)]
+#[derive(Copy, Clone, Debug, PartialEq, Eq, Hash)]
 pub struct RgkAssetIdDerivation<'a> {
     pub chain: KaspaChainId,
     pub schema_id: RgkSchemaId,
@@ -813,13 +818,13 @@ pub struct RgkAssetIdDerivation<'a> {
     pub proof_policy: &'a RgkProofPolicy,
 }
 
-#[derive(Clone, Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq, Eq, Hash)]
 pub struct RgkBurnProof {
     pub amount: u64,
     pub authorization_commitment: Bytes32,
 }
 
-#[derive(Clone, Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq, Eq, Hash)]
 pub struct RgkAssetIssue {
     pub chain: KaspaChainId,
     pub schema_id: RgkSchemaId,
@@ -833,7 +838,7 @@ pub struct RgkAssetIssue {
     pub proof_policy: RgkProofPolicy,
 }
 
-#[derive(Clone, Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq, Eq, Hash)]
 pub struct RgkTransition {
     pub chain: KaspaChainId,
     pub schema_id: RgkSchemaId,
@@ -853,13 +858,10 @@ pub struct RgkTransition {
     pub proof_policy: RgkProofPolicy,
 }
 
-#[derive(Copy, Clone, Debug, PartialEq, Eq)]
-pub struct RgkContinuationCommitment(pub Bytes32);
+bytes32_marker!(RgkContinuationCommitment);
+bytes32_marker!(RgkContinuationShapeRoot);
 
-#[derive(Copy, Clone, Debug, PartialEq, Eq)]
-pub struct RgkContinuationShapeRoot(pub Bytes32);
-
-#[derive(Clone, Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq, Eq, Hash)]
 pub struct RgkContinuationAllocationShape {
     pub output_index: u32,
     pub covenant_id: KaspaCovenantId,
@@ -867,7 +869,7 @@ pub struct RgkContinuationAllocationShape {
     pub encrypted_note_commitment: Bytes32,
 }
 
-#[derive(Clone, Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq, Eq, Hash)]
 pub struct RgkContinuationPlan {
     pub chain: KaspaChainId,
     pub schema_id: RgkSchemaId,
@@ -886,7 +888,7 @@ pub struct RgkContinuationPlan {
     pub proof_policy: RgkProofPolicy,
 }
 
-#[derive(Clone, Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq, Eq, Hash)]
 pub struct RgkIssueReport {
     pub chain: KaspaChainId,
     pub schema_id: RgkSchemaId,
@@ -901,7 +903,7 @@ pub struct RgkIssueReport {
     pub state_digest: RgkStateDigest,
 }
 
-#[derive(Clone, Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq, Eq, Hash)]
 pub struct RgkTransitionReport {
     pub chain: KaspaChainId,
     pub schema_id: RgkSchemaId,
@@ -925,7 +927,7 @@ pub struct RgkTransitionReport {
     pub transition_digest: RgkTransitionDigest,
 }
 
-#[derive(Clone, Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq, Eq, Hash)]
 pub struct RgkContinuationReport {
     pub chain: KaspaChainId,
     pub schema_id: RgkSchemaId,
@@ -949,21 +951,21 @@ pub struct RgkContinuationReport {
     pub commitment: RgkContinuationCommitment,
 }
 
-#[derive(Clone, Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq, Eq, Hash)]
 pub struct RgkFinalizedContinuation {
     pub commitment: RgkContinuationCommitment,
     pub transition: RgkTransition,
     pub transition_report: RgkTransitionReport,
 }
 
-#[derive(Clone, Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq, Eq, Hash)]
 pub struct RgkProductionZkTransferPlan {
     continuation_plan: RgkContinuationPlan,
     continuation_report: RgkContinuationReport,
     allocation_shape: RgkAllocationProofShape,
 }
 
-#[derive(Clone, Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq, Eq, Hash)]
 pub struct RgkFinalizedProductionZkTransfer {
     finalized_continuation: RgkFinalizedContinuation,
     allocation_shape: RgkAllocationProofShape,
@@ -971,7 +973,7 @@ pub struct RgkFinalizedProductionZkTransfer {
 
 pub type RgkProductionAllocationStrategyCommitment = Bytes32;
 
-#[derive(Copy, Clone, Debug, PartialEq, Eq)]
+#[derive(Copy, Clone, Debug, PartialEq, Eq, Hash)]
 pub enum RgkProductionAllocationStrategy {
     FixedAllocationVector {
         shape: RgkAllocationProofShape,
@@ -985,7 +987,7 @@ pub enum RgkProductionAllocationStrategy {
     },
 }
 
-#[derive(Clone, Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq, Eq, Hash)]
 pub struct RgkProductionAllocationStrategyPlan {
     continuation_plan: RgkContinuationPlan,
     continuation_report: RgkContinuationReport,
@@ -993,19 +995,19 @@ pub struct RgkProductionAllocationStrategyPlan {
     strategy_commitment: RgkProductionAllocationStrategyCommitment,
 }
 
-#[derive(Clone, Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq, Eq, Hash)]
 pub struct RgkProductionAllocationStrategyRecord {
     plan: RgkProductionAllocationStrategyPlan,
 }
 
-#[derive(Clone, Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq, Eq, Hash)]
 pub struct RgkFinalizedProductionAllocationStrategyTransfer {
     finalized_continuation: RgkFinalizedContinuation,
     strategy: RgkProductionAllocationStrategy,
     strategy_commitment: RgkProductionAllocationStrategyCommitment,
 }
 
-#[derive(Clone, Debug, PartialEq, Eq, Error)]
+#[derive(Clone, Debug, PartialEq, Eq, Hash, Error)]
 pub enum RgkAssetError {
     #[error("RGK asset schema id is zero")]
     ZeroSchemaId,
@@ -1013,6 +1015,8 @@ pub enum RgkAssetError {
     ZeroAssetId,
     #[error("RGK total supply is zero")]
     ZeroTotalSupply,
+    #[error("RGK {0} commitment/digest bytes are zero")]
+    ZeroCommitment(&'static str),
     #[error("RGK metadata commitment is zero")]
     ZeroMetadataCommitment,
     #[error("RGK {role} owner commitment is zero")]
@@ -1187,7 +1191,7 @@ impl RgkAssetIssue {
         payload.push(input.privacy_policy.as_u8());
         payload.extend_from_slice(&input.lane_id);
         payload.extend_from_slice(&policy.0);
-        Ok(domain_hash_domain("rgk:asset:id:v2", &payload))
+        Ok(asset_domain_hash("rgk:asset:id:v2", &payload))
     }
 
     pub fn validate(&self) -> Result<RgkIssueReport, RgkAssetError> {
@@ -1464,7 +1468,7 @@ impl RgkTransition {
             payload.push(b'o');
             encode_allocation(&mut payload, allocation);
         }
-        domain_hash_domain("rgk:asset:transition:v2", &payload)
+        asset_domain_hash("rgk:asset:transition:v2", &payload)
     }
 }
 
@@ -1694,7 +1698,7 @@ impl RgkContinuationPlan {
         payload.extend_from_slice(&self.previous_owner_commitment.0);
         payload.extend_from_slice(&self.new_owner_commitment.0);
         payload.extend_from_slice(&self.ownership_authorization_commitment);
-        domain_hash_domain("rgk:continuation:phase1:v2", &payload)
+        asset_domain_hash("rgk:continuation:phase1:v2", &payload)
     }
 }
 
@@ -1956,7 +1960,7 @@ impl RgkProductionAllocationStrategyRecord {
     pub fn canonical_bytes(&self) -> Result<Vec<u8>, RgkAssetError> {
         validate_canonical_record_plan(self.plan.continuation_plan())?;
         let mut w = Writer::new();
-        w.write_bytes(RGK_PRODUCTION_ALLOCATION_STRATEGY_RECORD_TAG);
+        w.write_bytes(RGK_ALLOCATION_STRATEGY_RECORD_TAG);
         w.write_u16(ENCODING_VERSION);
         encode_continuation_plan(&mut w, self.plan.continuation_plan());
         encode_production_allocation_strategy(&mut w, self.plan.strategy());
@@ -1980,7 +1984,7 @@ impl RgkProductionAllocationStrategyRecord {
         let tag = r
             .read_array::<12>()
             .map_err(production_allocation_strategy_record_decode_error)?;
-        if &tag != RGK_PRODUCTION_ALLOCATION_STRATEGY_RECORD_TAG {
+        if &tag != RGK_ALLOCATION_STRATEGY_RECORD_TAG {
             return Err(RgkAssetError::ProductionAllocationStrategyRecordDecode {
                 reason: "bad record tag",
             });
@@ -2111,7 +2115,7 @@ fn production_allocation_strategy_commitment(
             payload.extend_from_slice(&(groth16_proof_entries as u64).to_le_bytes());
         }
     }
-    domain_hash_domain("rgk:asset:production-allocation-strategy:v1", &payload)
+    asset_domain_hash("rgk:asset:production-allocation-strategy:v1", &payload)
 }
 
 const MAX_CANONICAL_RECORD_ITEMS: usize = MAX_BLOB_BYTES as usize / 32;
@@ -2888,11 +2892,11 @@ fn validate_ownership_handoff(
 }
 
 fn validate_production_zk_issue_count(count: usize) -> Result<(), RgkAssetError> {
-    if count > RGK_PRODUCTION_ZK_ALLOCATION_MAX_SPENT {
+    if count > RGK_ALLOCATION_STRATEGY_ZK_MAX_SPENT {
         return Err(RgkAssetError::ProductionZkAllocationBoundExceeded {
             role: "issue-state",
             count,
-            max: RGK_PRODUCTION_ZK_ALLOCATION_MAX_SPENT,
+            max: RGK_ALLOCATION_STRATEGY_ZK_MAX_SPENT,
         });
     }
     Ok(())
@@ -3080,7 +3084,7 @@ fn state_digest_for_allocations(input: RgkStateDigestInput<'_>) -> Bytes32 {
     payload.extend_from_slice(&input.owner_commitment.0);
     payload.push(input.privacy_policy.as_u8());
     payload.extend_from_slice(&input.lane_id);
-    domain_hash_domain("rgk:asset:state:v2", &payload)
+    asset_domain_hash("rgk:asset:state:v2", &payload)
 }
 
 fn continuation_shape_root(
@@ -3106,7 +3110,7 @@ fn continuation_shape_root(
         payload.extend_from_slice(&shape.amount.to_le_bytes());
         payload.extend_from_slice(&shape.encrypted_note_commitment);
     }
-    domain_hash_domain("rgk:continuation:shape-root:v1", &payload)
+    asset_domain_hash("rgk:continuation:shape-root:v1", &payload)
 }
 
 fn allocation_root(allocations: &[RgkAllocation]) -> Bytes32 {
@@ -3118,7 +3122,7 @@ fn allocation_root(allocations: &[RgkAllocation]) -> Bytes32 {
     for allocation in ordered {
         encode_allocation(&mut payload, allocation);
     }
-    domain_hash_domain("rgk:asset:allocation-root:v1", &payload)
+    asset_domain_hash("rgk:asset:allocation-root:v1", &payload)
 }
 
 fn encode_allocation(payload: &mut Vec<u8>, allocation: &RgkAllocation) {
@@ -3552,7 +3556,7 @@ mod tests {
     #[test]
     fn production_zk_allocation_shape_policy_is_native_and_exact() {
         assert_eq!(
-            RGK_PRODUCTION_ZK_ALLOCATION_SHAPES,
+            RGK_ALLOCATION_STRATEGY_ZK_SHAPES,
             [
                 RgkAllocationProofShape::OneInZeroOut,
                 RgkAllocationProofShape::OneInOneOut,
@@ -3563,11 +3567,11 @@ mod tests {
             ]
         );
         assert_eq!(
-            RGK_PRODUCTION_ZK_ALLOCATION_SHAPE_LABELS,
+            RGK_ALLOCATION_STRATEGY_ZK_SHAPE_LABELS,
             "1x0, 1x1, 2x2, 3x2, 4x2, 4x4"
         );
-        assert_eq!(RGK_PRODUCTION_ZK_ALLOCATION_MAX_SPENT, 4);
-        assert_eq!(RGK_PRODUCTION_ZK_ALLOCATION_MAX_NEW, 4);
+        assert_eq!(RGK_ALLOCATION_STRATEGY_ZK_MAX_SPENT, 4);
+        assert_eq!(RGK_ALLOCATION_STRATEGY_ZK_MAX_NEW, 4);
         assert_eq!(
             RgkAllocationProofShape::from_counts(1, 0),
             Some(RgkAllocationProofShape::OneInZeroOut)

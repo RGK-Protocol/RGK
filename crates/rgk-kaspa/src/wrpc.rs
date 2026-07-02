@@ -13,7 +13,7 @@ use alloc::sync::Arc;
 use alloc::vec;
 use core::fmt::Display;
 use core::future::Future;
-use std::sync::Mutex;
+use std::sync::{Mutex, MutexGuard};
 use std::time::Duration;
 
 use kaspa_rpc_core::api::rpc::RpcApi;
@@ -47,7 +47,7 @@ pub struct WrpcBackend {
 ///
 /// `LocalToccata` uses a simnet wRPC transport but keeps RGK's stricter
 /// `KaspaLocalToccata` domain id for receipts and scanner cursors.
-#[derive(Copy, Clone, Debug, PartialEq, Eq)]
+#[derive(Copy, Clone, Debug, PartialEq, Eq, Hash)]
 pub enum WrpcNetwork {
     Mainnet,
     Testnet,
@@ -78,7 +78,7 @@ impl WrpcNetwork {
 }
 
 /// Result of polling the virtual selected-parent chain from a known block.
-#[derive(Clone, Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq, Eq, Hash)]
 pub struct WrpcVirtualChainScan {
     pub removed_chain_block_hashes: Vec<KaspaBlockHash>,
     pub added_chain_block_hashes: Vec<KaspaBlockHash>,
@@ -87,6 +87,14 @@ pub struct WrpcVirtualChainScan {
 }
 
 impl WrpcBackend {
+    fn observed_spends_lock(
+        &self,
+    ) -> Result<MutexGuard<'_, BTreeMap<KaspaOutpoint, SpendingInfo>>, KaspaNetworkError> {
+        self.observed_spends
+            .lock()
+            .map_err(|_| KaspaNetworkError::Invariant("observed spend cache poisoned".into()))
+    }
+
     pub fn new(client: KaspaRpcClient, network: KaspaChainId) -> Self {
         Self {
             client,
@@ -142,16 +150,24 @@ impl WrpcBackend {
     }
 
     /// Record a spend already observed by the indexer or live harness.
-    pub fn record_spend(&self, spent: KaspaOutpoint, info: SpendingInfo) {
-        self.observed_spends.lock().unwrap().insert(spent, info);
+    pub fn record_spend(
+        &self,
+        spent: KaspaOutpoint,
+        info: SpendingInfo,
+    ) -> Result<(), KaspaNetworkError> {
+        self.observed_spends_lock()?.insert(spent, info);
+        Ok(())
     }
 
-    pub fn observed_spend(&self, spent: KaspaOutpoint) -> Option<SpendingInfo> {
-        self.observed_spends.lock().unwrap().get(&spent).cloned()
+    pub fn observed_spend(
+        &self,
+        spent: KaspaOutpoint,
+    ) -> Result<Option<SpendingInfo>, KaspaNetworkError> {
+        Ok(self.observed_spends_lock()?.get(&spent).cloned())
     }
 
-    pub fn observed_spend_count(&self) -> usize {
-        self.observed_spends.lock().unwrap().len()
+    pub fn observed_spend_count(&self) -> Result<usize, KaspaNetworkError> {
+        Ok(self.observed_spends_lock()?.len())
     }
 
     /// Submit a typed upstream RPC transaction. This is the production path for
@@ -181,7 +197,7 @@ impl WrpcBackend {
     ) -> Result<usize, KaspaNetworkError> {
         let spends = observed_spends_from_rpc_transaction(txid, transaction, block_daa_score)?;
         let observed = spends.len();
-        let mut cache = self.observed_spends.lock().unwrap();
+        let mut cache = self.observed_spends_lock()?;
         for (spent, info) in spends {
             cache.insert(spent, info);
         }
@@ -196,7 +212,7 @@ impl WrpcBackend {
     pub fn observe_rpc_block_spends(&self, block: &RpcBlock) -> Result<usize, KaspaNetworkError> {
         let mut observed = 0usize;
         let accepting_daa_score = rpc_block_accepting_daa_score(block)?;
-        let mut cache = self.observed_spends.lock().unwrap();
+        let mut cache = self.observed_spends_lock()?;
         for (transaction_index, transaction) in block.transactions.iter().enumerate() {
             let txid = rpc_transaction_id_from_block(block, transaction, transaction_index)?;
             let spends =
@@ -275,13 +291,15 @@ impl WrpcBackend {
         }
     }
 
-    fn observed_by_txid(&self, txid: KaspaTxId) -> Option<(KaspaOutpoint, SpendingInfo)> {
-        self.observed_spends
-            .lock()
-            .unwrap()
+    fn observed_by_txid(
+        &self,
+        txid: KaspaTxId,
+    ) -> Result<Option<(KaspaOutpoint, SpendingInfo)>, KaspaNetworkError> {
+        Ok(self
+            .observed_spends_lock()?
             .iter()
             .find(|(_, info)| info.txid == txid)
-            .map(|(outpoint, info)| (*outpoint, info.clone()))
+            .map(|(outpoint, info)| (*outpoint, info.clone())))
     }
 }
 
@@ -304,7 +322,7 @@ impl KaspaChainBackend for WrpcBackend {
         &self,
         txid: KaspaTxId,
     ) -> Result<Option<KaspaTxSummary>, KaspaNetworkError> {
-        if self.observed_by_txid(txid).is_some() {
+        if self.observed_by_txid(txid)?.is_some() {
             return Ok(Some(KaspaTxSummary {
                 txid,
                 mass: 0,
@@ -315,13 +333,12 @@ impl KaspaChainBackend for WrpcBackend {
     }
 
     fn get_utxo(&self, outpoint: KaspaOutpoint) -> Result<Option<KaspaUtxo>, KaspaNetworkError> {
-        Ok(self.observed_spend(outpoint).map(|spending| KaspaUtxo {
-            outpoint,
-            value: 0,
-            script_public_key: vec![],
-            block_daa_score: None,
-            spending: Some(spending),
-        }))
+        let utxo = if let Some(spending) = self.observed_spend(outpoint)? {
+            Some(KaspaUtxo::new(outpoint, 0, vec![], None, Some(spending))?)
+        } else {
+            None
+        };
+        Ok(utxo)
     }
 
     fn get_spending_transaction(
@@ -329,7 +346,7 @@ impl KaspaChainBackend for WrpcBackend {
         outpoint: KaspaOutpoint,
     ) -> Result<Option<KaspaTxSummary>, KaspaNetworkError> {
         Ok(self
-            .observed_spend(outpoint)
+            .observed_spend(outpoint)?
             .map(|spending| KaspaTxSummary {
                 txid: spending.txid,
                 mass: 0,
@@ -344,7 +361,7 @@ impl KaspaChainBackend for WrpcBackend {
     }
 
     fn confirmation_depth(&self, txid: KaspaTxId) -> Result<Option<u64>, KaspaNetworkError> {
-        let Some((_outpoint, spending)) = self.observed_by_txid(txid) else {
+        let Some((_outpoint, spending)) = self.observed_by_txid(txid)? else {
             return Ok(None);
         };
         let Some(accepted_daa) = spending.block_daa_score else {

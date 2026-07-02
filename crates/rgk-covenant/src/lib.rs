@@ -50,7 +50,7 @@
 
 #![forbid(unsafe_code)]
 #![cfg_attr(not(feature = "std"), no_std)]
-#![allow(clippy::unwrap_used, clippy::expect_used)]
+#![cfg_attr(test, allow(clippy::unwrap_used, clippy::expect_used))]
 #![allow(dead_code, unused_imports, unused_variables)]
 #![allow(clippy::needless_borrows_for_generic_args, clippy::vec_init_then_push)]
 #![allow(
@@ -71,7 +71,7 @@ use rgk_core::{
     domain_hash, lineage_id, Bytes32, Canonical, DecodeError, DomainTag, KaspaChainId,
     KaspaCovenantId, KaspaOutpoint, Reader, Writer, ENCODING_VERSION,
 };
-use rgk_core::{ProofMode, ReceiptPolicy};
+pub use rgk_core::{Hex32, ProofMode, ReceiptPolicy};
 use sha2::{Digest, Sha256};
 use thiserror::Error;
 
@@ -79,13 +79,61 @@ use thiserror::Error;
 /// cross-crate reuse in the script builder and the covenant-id recipe.
 pub const COVENANT_STATE_TAG: &[u8; 12] = b"rgk:kov:0\0\0\0";
 
-/// Historical RGK covenant-id tag. Current [`compute_covenant_id`] follows the
-/// upstream Toccata `kaspa_hashes::CovenantID` domain instead.
-pub const COVENANT_ID_TAG: &[u8; 12] = b"rgk:cid:0\0\0\0";
 pub const ADVANCED_COVENANT_EXECUTION_RECORD_TAG: &[u8; 12] = b"rgk:ace:0\0\0\0";
 
-pub type AdvancedCovenantPolicyCommitment = Bytes32;
-pub type AdvancedCovenantExecutionCommitment = Bytes32;
+#[derive(Copy, Clone, Debug, PartialEq, Eq, Hash)]
+pub struct AdvancedCovenantPolicyCommitment(pub Bytes32);
+
+impl From<Bytes32> for AdvancedCovenantPolicyCommitment {
+    fn from(bytes: Bytes32) -> Self {
+        Self(bytes)
+    }
+}
+
+impl From<AdvancedCovenantPolicyCommitment> for Bytes32 {
+    fn from(value: AdvancedCovenantPolicyCommitment) -> Self {
+        value.0
+    }
+}
+
+impl AsRef<Bytes32> for AdvancedCovenantPolicyCommitment {
+    fn as_ref(&self) -> &Bytes32 {
+        &self.0
+    }
+}
+
+impl PartialEq<Bytes32> for AdvancedCovenantPolicyCommitment {
+    fn eq(&self, other: &Bytes32) -> bool {
+        self.0 == *other
+    }
+}
+
+#[derive(Copy, Clone, Debug, PartialEq, Eq, Hash)]
+pub struct AdvancedCovenantExecutionCommitment(pub Bytes32);
+
+impl From<Bytes32> for AdvancedCovenantExecutionCommitment {
+    fn from(bytes: Bytes32) -> Self {
+        Self(bytes)
+    }
+}
+
+impl From<AdvancedCovenantExecutionCommitment> for Bytes32 {
+    fn from(value: AdvancedCovenantExecutionCommitment) -> Self {
+        value.0
+    }
+}
+
+impl AsRef<Bytes32> for AdvancedCovenantExecutionCommitment {
+    fn as_ref(&self) -> &Bytes32 {
+        &self.0
+    }
+}
+
+impl PartialEq<Bytes32> for AdvancedCovenantExecutionCommitment {
+    fn eq(&self, other: &Bytes32) -> bool {
+        self.0 == *other
+    }
+}
 
 /// Native RGK policy-shape classes for advanced Kaspa covenant flows.
 #[derive(Copy, Clone, Debug, PartialEq, Eq, Hash)]
@@ -141,7 +189,7 @@ impl AdvancedCovenantFlow {
 }
 
 /// Errors raised by covenant operations.
-#[derive(Debug, Clone, PartialEq, Eq, Error)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash, Error)]
 pub enum CovenantError {
     #[error("covenant payload decode failed: {0}")]
     Decode(String),
@@ -192,32 +240,13 @@ pub enum CovenantError {
     },
 }
 
-/// Newtype around a 32-byte array with a Display impl that renders as
-/// `0x` + lowercase hex. Used in [`CovenantError`] so the thiserror derive
-/// can produce a human-readable `Display` without breaking on raw bytes.
-#[derive(Clone, Debug, PartialEq, Eq)]
-pub struct Hex32(pub Bytes32);
-
-impl core::fmt::Display for Hex32 {
-    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-        use rgk_core::to_hex;
-        f.write_str("0x")?;
-        f.write_str(&to_hex(&self.0))
-    }
-}
-
-impl From<Bytes32> for Hex32 {
-    fn from(b: Bytes32) -> Self {
-        Hex32(b)
-    }
-}
-
 /// Material committed by a native advanced covenant policy shape.
 ///
 /// Unused fields are allowed to be zero, but every flow validates the fields
 /// that make that flow enforceable. The commitment always binds all fields so a
 /// policy cannot be replayed under a different advanced-covenant interpretation.
 #[derive(Copy, Clone, Debug, PartialEq, Eq, Hash)]
+#[non_exhaustive]
 pub struct AdvancedCovenantPolicyShape {
     pub chain_id: KaspaChainId,
     pub asset_id: Bytes32,
@@ -233,6 +262,37 @@ pub struct AdvancedCovenantPolicyShape {
 }
 
 impl AdvancedCovenantPolicyShape {
+    #[allow(clippy::too_many_arguments)]
+    pub fn new(
+        chain_id: KaspaChainId,
+        asset_id: Bytes32,
+        lineage_id: Bytes32,
+        flow: AdvancedCovenantFlow,
+        covenant_id: KaspaCovenantId,
+        counterparty_covenant_id: KaspaCovenantId,
+        payment_asset_id: Bytes32,
+        payment_amount: u64,
+        unlock_daa_score: u64,
+        policy_commitment: Bytes32,
+        authorization_commitment: Bytes32,
+    ) -> Result<Self, CovenantError> {
+        let shape = Self {
+            chain_id,
+            asset_id,
+            lineage_id,
+            flow,
+            covenant_id,
+            counterparty_covenant_id,
+            payment_asset_id,
+            payment_amount,
+            unlock_daa_score,
+            policy_commitment,
+            authorization_commitment,
+        };
+        shape.validate()?;
+        Ok(shape)
+    }
+
     pub fn validate(&self) -> Result<(), CovenantError> {
         reject_zero32("asset_id", &self.asset_id)?;
         reject_zero32("lineage_id", &self.lineage_id)?;
@@ -282,7 +342,7 @@ impl AdvancedCovenantPolicyShape {
         w.write_u64(self.unlock_daa_score);
         w.write_bytes32(&self.policy_commitment);
         w.write_bytes32(&self.authorization_commitment);
-        Ok(advanced_covenant_policy_hash(&w.into_vec()))
+        Ok(advanced_covenant_policy_hash(&w.into_vec()).into())
     }
 
     fn require_counterparty(&self) -> Result<(), CovenantError> {
@@ -333,6 +393,7 @@ impl AdvancedCovenantPolicyShape {
 /// intentionally strict about the fields that do matter for each flow so wallet
 /// UX can fail before presenting an action as executable.
 #[derive(Copy, Clone, Debug, PartialEq, Eq, Hash)]
+#[non_exhaustive]
 pub struct AdvancedCovenantExecutionEvidence {
     pub counterparty_covenant_id: KaspaCovenantId,
     pub payment_asset_id: Bytes32,
@@ -356,6 +417,27 @@ pub struct AdvancedCovenantExecutionRecord {
 }
 
 impl AdvancedCovenantExecutionEvidence {
+    pub fn new_for_shape(
+        shape: &AdvancedCovenantPolicyShape,
+        counterparty_covenant_id: KaspaCovenantId,
+        payment_asset_id: Bytes32,
+        paid_amount: u64,
+        current_daa_score: u64,
+        policy_commitment: Bytes32,
+        authorization_commitment: Bytes32,
+    ) -> Result<Self, CovenantError> {
+        let evidence = Self {
+            counterparty_covenant_id,
+            payment_asset_id,
+            paid_amount,
+            current_daa_score,
+            policy_commitment,
+            authorization_commitment,
+        };
+        evidence.validate_for_shape(shape)?;
+        Ok(evidence)
+    }
+
     pub fn validate_for_shape(
         &self,
         shape: &AdvancedCovenantPolicyShape,
@@ -518,9 +600,9 @@ impl AdvancedCovenantExecutionRecord {
         w.write_bytes(ADVANCED_COVENANT_EXECUTION_RECORD_TAG);
         w.write_u16(ENCODING_VERSION);
         encode_advanced_covenant_policy_shape(&mut w, &self.plan.shape);
-        w.write_bytes32(&self.plan.policy_commitment);
+        w.write_bytes32(self.plan.policy_commitment.as_ref());
         encode_advanced_covenant_execution_evidence(&mut w, &self.plan.evidence);
-        w.write_bytes32(&self.plan.execution_commitment);
+        w.write_bytes32(self.plan.execution_commitment.as_ref());
         w.into_vec()
     }
 
@@ -544,9 +626,11 @@ impl AdvancedCovenantExecutionRecord {
             return Err(CovenantError::Decode(format!("unknown version {version}")));
         }
         let shape = decode_advanced_covenant_policy_shape(&mut r)?;
-        let policy_commitment = r.read_bytes32().map_err(decode_err)?;
+        let policy_commitment: AdvancedCovenantPolicyCommitment =
+            r.read_bytes32().map_err(decode_err)?.into();
         let evidence = decode_advanced_covenant_execution_evidence(&mut r)?;
-        let execution_commitment = r.read_bytes32().map_err(decode_err)?;
+        let execution_commitment: AdvancedCovenantExecutionCommitment =
+            r.read_bytes32().map_err(decode_err)?.into();
         r.ensure_consumed().map_err(decode_err)?;
 
         let plan = AdvancedCovenantExecutionPlan::new(shape, evidence)?;
@@ -649,24 +733,16 @@ fn is_zero32(bytes: &Bytes32) -> bool {
 }
 
 fn advanced_covenant_policy_hash(payload: &[u8]) -> Bytes32 {
-    const TAG: &[u8] = b"rgk:advanced-covenant-policy:v1";
-    let mut hasher = Sha256::new();
-    hasher.update((TAG.len() as u32).to_le_bytes());
-    hasher.update(TAG);
-    hasher.update(payload);
-    let out = hasher.finalize();
-    let mut bytes = [0u8; 32];
-    bytes.copy_from_slice(&out);
-    bytes
+    domain_hash(DomainTag::AdvancedCovenantPolicy, payload)
 }
 
 fn advanced_covenant_execution_hash(
     policy_commitment: AdvancedCovenantPolicyCommitment,
     shape: &AdvancedCovenantPolicyShape,
     evidence: &AdvancedCovenantExecutionEvidence,
-) -> Bytes32 {
+) -> AdvancedCovenantExecutionCommitment {
     let mut w = Writer::new();
-    w.write_bytes32(&policy_commitment);
+    w.write_bytes32(policy_commitment.as_ref());
     w.write_u8(shape.flow.tag());
     w.write_bytes32(&shape.covenant_id);
     w.write_bytes32(&shape.asset_id);
@@ -677,15 +753,7 @@ fn advanced_covenant_execution_hash(
     w.write_u64(evidence.current_daa_score);
     w.write_bytes32(&evidence.policy_commitment);
     w.write_bytes32(&evidence.authorization_commitment);
-    const TAG: &[u8] = b"rgk:advanced-covenant-execution:v1";
-    let mut hasher = Sha256::new();
-    hasher.update((TAG.len() as u32).to_le_bytes());
-    hasher.update(TAG);
-    hasher.update(w.into_vec());
-    let out = hasher.finalize();
-    let mut bytes = [0u8; 32];
-    bytes.copy_from_slice(&out);
-    bytes
+    domain_hash(DomainTag::AdvancedCovenantExecution, &w.into_vec()).into()
 }
 
 /// The typed covenant state object that lives in the covenant UTXO's payload
@@ -696,6 +764,7 @@ fn advanced_covenant_execution_hash(
 /// RGK asset id, current state digest, lineage id, policy and genesis proof
 /// mode without consulting any external storage.
 #[derive(Clone, Debug, PartialEq, Eq, Hash)]
+#[non_exhaustive]
 pub struct CovenantState {
     pub version: u16,
     pub chain_id: KaspaChainId,
@@ -711,6 +780,31 @@ pub struct CovenantState {
 }
 
 impl CovenantState {
+    #[allow(clippy::too_many_arguments)]
+    pub fn new(
+        version: u16,
+        chain_id: KaspaChainId,
+        lineage_id: Bytes32,
+        asset_id: Bytes32,
+        current_state_digest: Bytes32,
+        receipt_policy: ReceiptPolicy,
+        genesis_proof_mode: ProofMode,
+        replay_marker: Bytes32,
+    ) -> Result<Self, CovenantError> {
+        let state = Self {
+            version,
+            chain_id,
+            lineage_id,
+            asset_id,
+            current_state_digest,
+            receipt_policy,
+            genesis_proof_mode,
+            replay_marker,
+        };
+        state.validate()?;
+        Ok(state)
+    }
+
     pub fn genesis(
         chain_id: KaspaChainId,
         asset_id: Bytes32,
@@ -728,6 +822,18 @@ impl CovenantState {
             genesis_proof_mode,
             replay_marker: [0u8; 32],
         }
+    }
+
+    pub fn validate(&self) -> Result<(), CovenantError> {
+        if self.version != ENCODING_VERSION {
+            return Err(CovenantError::Decode(format!(
+                "unknown version {}",
+                self.version
+            )));
+        }
+        reject_zero32("lineage_id", &self.lineage_id)?;
+        reject_zero32("asset_id", &self.asset_id)?;
+        Ok(())
     }
 
     /// Produce the next state, advancing `current_state_digest` and
@@ -826,7 +932,7 @@ impl CovenantState {
             .map_err(|e| CovenantError::Decode(e.to_string()))?;
         r.ensure_consumed()
             .map_err(|e| CovenantError::Decode(e.to_string()))?;
-        Ok(Self {
+        let state = Self {
             version,
             chain_id,
             lineage_id,
@@ -835,7 +941,9 @@ impl CovenantState {
             receipt_policy,
             genesis_proof_mode,
             replay_marker,
-        })
+        };
+        state.validate()?;
+        Ok(state)
     }
 
     /// The 32-byte digest committed into the covenant. Computed as:
@@ -931,9 +1039,16 @@ const PAYLOAD_CONTRACT_END: usize = 80;
 const PAYLOAD_POLICY_MODE_START: usize = 112;
 const PAYLOAD_POLICY_MODE_END: usize = 116;
 
-/// Toccata covenant script opcode tags. These values are pinned to the local
-/// `rusty-kaspa` Toccata checkout and guarded by tests.
+/// Toccata covenant script opcode tags.
+///
+/// These values are pinned to the local `rusty-kaspa` Toccata checkout
+/// identified by [`TOCCATA_OPCODE_PROFILE_COMMIT`] and guarded by tests.
 pub mod opcodes {
+    /// Human-readable name for the opcode profile these constants target.
+    pub const TOCCATA_OPCODE_PROFILE_NAME: &str = "rusty-kaspa-toccata";
+    /// Local `rusty-kaspa` checkout commit used to pin these opcode values.
+    pub const TOCCATA_OPCODE_PROFILE_COMMIT: &str = "98a4ccd8d200";
+
     /// OpCat (0x7e) — concatenates the top two stack items.
     pub const OP_CAT: u8 = 0x7e;
     /// OpBlake2bWithKey (0xa7) — BLAKE2b-with-key hash (the txscript engine
@@ -987,6 +1102,40 @@ pub mod opcodes {
     pub const OP_HASH160: u8 = 0xa9;
     pub const OP_CHECKSIG: u8 = 0xac;
     pub const OP_ROT: u8 = 0x7b;
+
+    /// Return true when `byte` is one of the Toccata opcodes used by RGK's
+    /// pinned covenant script profile.
+    pub const fn is_rgk_toccata_opcode(byte: u8) -> bool {
+        matches!(
+            byte,
+            OP_CAT
+                | OP_BLAKE2B_WITH_KEY
+                | OP_OUTPOINT_TX_ID
+                | OP_TX_INPUT_INDEX
+                | OP_TX_INPUT_SPK
+                | OP_TX_OUTPUT_COUNT
+                | OP_TX_OUTPUT_SPK
+                | OP_TX_PAYLOAD_LEN
+                | OP_TX_PAYLOAD_SUBSTR
+                | OP_INPUT_COVENANT_ID
+                | OP_OUTPUT_COVENANT_ID
+                | OP_OUTPUT_AUTHORIZING_INPUT
+                | OP_AUTH_OUTPUT_COUNT
+                | OP_AUTH_OUTPUT_IDX
+                | OP_COV_INPUT_COUNT
+                | OP_COV_INPUT_IDX
+                | OP_COV_OUTPUT_COUNT
+                | OP_COV_OUTPUT_IDX
+                | OP_ZK_PRECOMPILE
+                | OP_DUP
+                | OP_EQUAL
+                | OP_EQUAL_VERIFY
+                | OP_DROP
+                | OP_HASH160
+                | OP_CHECKSIG
+                | OP_ROT
+        )
+    }
 }
 
 /// Exact continuation-output shape enforced by a generated Toccata covenant
@@ -998,7 +1147,7 @@ pub mod opcodes {
 /// non-covenant outputs, such as fee/change outputs, in the same transaction.
 /// Those extra outputs are admitted only by `exact_output_count`; their economic
 /// meaning remains part of RGK receipt/resolver validation.
-#[derive(Clone, Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq, Eq, Hash)]
 pub struct CovenantContinuationPolicy {
     pub authorizing_input: u16,
     pub exact_output_count: u32,
@@ -1077,7 +1226,7 @@ impl Default for CovenantContinuationPolicy {
 /// same script validates the global covenant input/output counts and checks
 /// every shared covenant output, independent of which covenant input is
 /// currently executing the script.
-#[derive(Copy, Clone, Debug, PartialEq, Eq)]
+#[derive(Copy, Clone, Debug, PartialEq, Eq, Hash)]
 pub struct CovenantSharedContinuationPolicy {
     pub covenant_input_count: u32,
     pub covenant_output_count: u32,
@@ -1129,7 +1278,7 @@ impl CovenantSharedContinuationPolicy {
 /// The [`build_script`](Self::build_script) method emits the byte sequence
 /// that becomes the covenant's redeem script (and is wrapped in P2SH for the
 /// output's script public key).
-#[derive(Clone, Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq, Eq, Hash)]
 pub struct CovenantSpec {
     pub chain_id: KaspaChainId,
     pub lineage_id: Bytes32,
@@ -1452,8 +1601,9 @@ pub fn push_script_i64(out: &mut Vec<u8>, n: i64) {
     if bytes.last().map(|b| b & 0x80 != 0).unwrap_or(false) {
         bytes.push(if negative { 0x80 } else { 0x00 });
     } else if negative {
-        let last = bytes.last_mut().expect("non-zero value has a byte");
-        *last |= 0x80;
+        if let Some(last) = bytes.last_mut() {
+            *last |= 0x80;
+        }
     }
     push_data(out, &bytes);
 }
@@ -1504,22 +1654,13 @@ pub fn push_data(out: &mut Vec<u8>, data: &[u8]) {
     }
 }
 
-/// Call-site migration helper for callers that still hold a [`CovenantState`]
-/// while computing the consensus covenant id.
+/// Convenience for code paths that already operate on a canonical lineage id.
 ///
-/// The consensus id is derived from the genesis outpoint and authorised output
-/// descriptors only; the state argument is retained so older call sites can move
-/// to [`compute_covenant_id`] without changing their surrounding data flow.
-pub fn derive_covenant_id(
-    genesis_outpoint: KaspaOutpoint,
-    _state: &CovenantState,
-    authorized_outputs: &[(u32, u64, u16, Vec<u8>)],
-) -> KaspaCovenantId {
-    compute_covenant_id(genesis_outpoint, authorized_outputs)
-}
-
-/// Convenience: compute the covenant id from a lineage id alone. This is what
-/// gets embedded in the SPK hash and re-checked at spend time.
+/// Genesis covenant opening still derives lineage from the genesis outpoint and
+/// authorised outputs via [`compute_lineage_id`] and [`compute_covenant_id`].
+/// This helper is intentionally lineage-only: it names an already-derived
+/// covenant lineage for SPK embedding and spend-time re-checks, and should not
+/// be used as a replacement for genesis derivation.
 pub fn compute_covenant_id_from_lineage(lineage: Bytes32) -> KaspaCovenantId {
     domain_hash(DomainTag::Lineage, &lineage)
 }
@@ -1596,6 +1737,51 @@ mod tests {
             policy_commitment: shape.policy_commitment,
             authorization_commitment: shape.authorization_commitment,
         }
+    }
+
+    #[test]
+    fn advanced_covenant_constructors_validate_shape_and_evidence() {
+        let shape = AdvancedCovenantPolicyShape::new(
+            KASPA_LOCAL_TOCCATA,
+            [0x21; 32],
+            [0x22; 32],
+            AdvancedCovenantFlow::AtomicSwap,
+            [0x23; 32],
+            [0x24; 32],
+            [0x25; 32],
+            50_000,
+            1_000_000,
+            [0x26; 32],
+            [0x27; 32],
+        )
+        .expect("valid advanced covenant policy shape");
+
+        assert!(AdvancedCovenantExecutionEvidence::new_for_shape(
+            &shape,
+            shape.counterparty_covenant_id,
+            shape.payment_asset_id,
+            shape.payment_amount,
+            shape.unlock_daa_score,
+            shape.policy_commitment,
+            shape.authorization_commitment,
+        )
+        .is_ok());
+
+        assert!(matches!(
+            AdvancedCovenantExecutionEvidence::new_for_shape(
+                &shape,
+                shape.counterparty_covenant_id,
+                [0xff; 32],
+                shape.payment_amount,
+                shape.unlock_daa_score,
+                shape.policy_commitment,
+                shape.authorization_commitment,
+            ),
+            Err(CovenantError::AdvancedCovenantExecutionMismatch {
+                field: "payment_asset_id",
+                ..
+            })
+        ));
     }
 
     #[test]
@@ -1935,20 +2121,6 @@ mod tests {
     }
 
     #[test]
-    fn derive_covenant_id_uses_consensus_recipe() {
-        let op = KaspaOutpoint {
-            transaction_id: b32("ab".repeat(32).as_str()),
-            index: 0,
-        };
-        let state = sample_state();
-        let outs = vec![(0u32, 1_000u64, 0u16, vec![1u8, 2, 3])];
-        assert_eq!(
-            derive_covenant_id(op, &state, &outs),
-            compute_covenant_id(op, &outs)
-        );
-    }
-
-    #[test]
     fn lineage_id_binds_outpoint_and_asset() {
         let a = compute_lineage_id(b"out-A", &b32("11".repeat(32).as_str()));
         let b = compute_lineage_id(b"out-B", &b32("11".repeat(32).as_str()));
@@ -2120,6 +2292,8 @@ mod tests {
 
     #[test]
     fn opcode_values_match_toccata_checkout() {
+        assert_eq!(opcodes::TOCCATA_OPCODE_PROFILE_NAME, "rusty-kaspa-toccata");
+        assert_eq!(opcodes::TOCCATA_OPCODE_PROFILE_COMMIT, "98a4ccd8d200");
         assert_eq!(opcodes::OP_ZK_PRECOMPILE, 0xa6);
         assert_eq!(opcodes::OP_BLAKE2B_WITH_KEY, 0xa7);
         assert_eq!(opcodes::OP_TX_OUTPUT_COUNT, 0xb4);
@@ -2138,6 +2312,8 @@ mod tests {
         assert_eq!(opcodes::OP_COV_OUTPUT_IDX, 0xd3);
         assert_eq!(opcodes::OP_OUTPUT_COVENANT_ID, 0xd5);
         assert_eq!(opcodes::OP_OUTPUT_AUTHORIZING_INPUT, 0xd6);
+        assert!(opcodes::is_rgk_toccata_opcode(opcodes::OP_ZK_PRECOMPILE));
+        assert!(!opcodes::is_rgk_toccata_opcode(0xff));
     }
 
     #[test]

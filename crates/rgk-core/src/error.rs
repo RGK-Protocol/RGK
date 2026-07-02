@@ -8,7 +8,7 @@ use thiserror::Error;
 /// Every variant maps to a hard rejection in the verifier — there is no
 /// "lenient" decode. The variants are intentionally fine-grained so the
 /// verifier / resolver can surface *why* a receipt was rejected.
-#[derive(Debug, Clone, PartialEq, Eq, Error)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash, Error)]
 pub enum DecodeError {
     #[error("unexpected end of canonical buffer")]
     Eof,
@@ -40,7 +40,7 @@ pub enum DecodeError {
 
 /// Errors that can occur while *encoding*. Encoding only fails on programmer
 /// error (e.g. an oversized domain string), so this is kept minimal.
-#[derive(Debug, Clone, PartialEq, Eq, Error)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash, Error)]
 pub enum EncodeError {
     #[error("canonical buffer overflowed a size budget: {0}")]
     Overflow(&'static str),

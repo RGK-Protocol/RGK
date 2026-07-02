@@ -9,6 +9,7 @@
 use alloc::format;
 use alloc::string::String;
 use core::fmt;
+use core::ops::Deref;
 
 use crate::error::DecodeError;
 
@@ -22,6 +23,47 @@ pub type Bytes32 = [u8; 32];
 /// A 64-byte blob (e.g. a Schnorr signature or a concatenated pair of 32-byte
 /// commitments).
 pub type Bytes64 = [u8; 64];
+
+/// Display wrapper around a 32-byte value.
+///
+/// This is intentionally defined in `rgk-core` so every crate uses the same
+/// public error-display type instead of exposing crate-local lookalikes.
+#[derive(Copy, Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+pub struct Hex32(pub Bytes32);
+
+impl fmt::Display for Hex32 {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.write_str("0x")?;
+        f.write_str(&to_hex(&self.0))
+    }
+}
+
+impl From<Bytes32> for Hex32 {
+    fn from(bytes: Bytes32) -> Self {
+        Self(bytes)
+    }
+}
+
+impl From<Hex32> for Bytes32 {
+    fn from(value: Hex32) -> Self {
+        value.0
+    }
+}
+
+impl AsRef<Bytes32> for Hex32 {
+    fn as_ref(&self) -> &Bytes32 {
+        &self.0
+    }
+}
+
+impl Deref for Hex32 {
+    type Target = Bytes32;
+
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
 
 /// Parse exactly `N` lowercase-hex characters into a fixed byte array.
 ///
@@ -66,13 +108,6 @@ pub fn to_hex<const N: usize>(bytes: &[u8; N]) -> String {
 /// Debug-render a 32-byte digest as `0x` + lowercase hex.
 pub fn fmt_hex<const N: usize>(bytes: &[u8; N], f: &mut fmt::Formatter<'_>) -> fmt::Result {
     write!(f, "0x{}", to_hex(bytes))
-}
-
-/// Helper to build a `Bytes32` from a raw `[u8;32]` with a debug label, used in
-/// tests/constructors. Panics by returning an error if the label mismatches —
-/// kept for ergonomic construction in non-critical paths.
-pub fn labeled(b: [u8; 32], _label: &str) -> [u8; 32] {
-    b
 }
 
 /// Re-exported so other crates can build user-facing error strings without
