@@ -70,9 +70,12 @@ wallet actions or future scanner/resolver/prover integration.
 New locally-staged lanes use protocol-width 32-byte textual handles but start
 in `unknown`, not `open`, because a frontend action is not chain evidence.
 Manual `POST /proofs` calls stage local receipt evidence as `pending`; they do
-not mark a receipt as verified and do not move a lane into
-`NativeTransitionedValid`. That transition is reserved for verifier,
-scanner/resolver, or prover-backed evidence.
+not move a lane into `NativeTransitionedValid`. If the request includes
+canonical `receiptBytes`, `covenantId`, spent/new outpoints, a continuation
+shape root, and DAA score, walletd verifies the receipt against the indexed
+covenant state and records the spend in sled before returning `verified`.
+Partial receipt bundles are rejected. `NativeTransitionedValid` remains
+reserved for scanner/resolver-backed chain evidence.
 `POST /wallet/sync` now runs one restart-safe `rgk-sync` scanner tick against
 the wallet profile's Kaspa wRPC endpoint. The scanner persists observed spend
 records to sled before advancing the scan cursor; the cursor must not outrun

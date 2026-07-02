@@ -15,6 +15,7 @@ hex.workspace = true
 rgk-core = { workspace = true, features = ["serde"] }
 rgk-indexer = { workspace = true, features = ["persistent"] }
 rgk-kaspa = { workspace = true, features = ["wrpc"] }
+rgk-receipt = { workspace = true }
 rgk-resolver = { workspace = true }
 rgk-sync = { workspace = true, features = ["wrpc"] }
 serde.workspace = true

@@ -238,6 +238,17 @@ assert_handle_hex32(lane["laneId"], "laneId")
 assert_hex32(lane["covenantId"], "covenantId")
 assert_hex32(lane["stateDigest"], "stateDigest")
 
+empty_proof_evidence = {
+    "receiptBytes": "",
+    "covenantId": "",
+    "spentTxid": "",
+    "spentIndex": 0,
+    "newTxid": "",
+    "newIndex": 0,
+    "continuationShapeRoot": "",
+    "daaScore": 0,
+}
+
 request("POST", "/proofs", {
     "laneId": "rgk:lane:missing",
     "proofMode": "verifier-receipt",
@@ -245,6 +256,7 @@ request("POST", "/proofs", {
     "strategy": "contract-smoke-orphan",
     "txid": "",
     "confirmations": 0,
+    **empty_proof_evidence,
 }, expected_status=400)
 
 request("POST", "/proofs", {
@@ -255,6 +267,7 @@ request("POST", "/proofs", {
     "verifierStatus": "verified",
     "txid": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
     "confirmations": 1,
+    **empty_proof_evidence,
 }, expected_status=422)
 
 request("POST", "/proofs", {
@@ -264,6 +277,19 @@ request("POST", "/proofs", {
     "strategy": "contract-smoke-bad-txid",
     "txid": "contract-smoke-txid",
     "confirmations": 1,
+    **empty_proof_evidence,
+}, expected_status=400)
+
+partial_evidence = dict(empty_proof_evidence)
+partial_evidence["receiptBytes"] = "abcd"
+request("POST", "/proofs", {
+    "laneId": lane["laneId"],
+    "proofMode": "verifier-receipt",
+    "receiptPolicy": "verifier-only",
+    "strategy": "contract-smoke-partial-evidence",
+    "txid": "",
+    "confirmations": 0,
+    **partial_evidence,
 }, expected_status=400)
 
 proof = request("POST", "/proofs", {
@@ -273,6 +299,7 @@ proof = request("POST", "/proofs", {
     "strategy": "contract-smoke-verifier",
     "txid": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
     "confirmations": 1,
+    **empty_proof_evidence,
 })
 assert proof["strategy"] == "contract-smoke-verifier"
 assert proof["verifierStatus"] == "pending"

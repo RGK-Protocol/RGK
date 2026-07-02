@@ -12,9 +12,13 @@ use axum::http::StatusCode;
 use axum::routing::{get, post};
 use axum::{Json, Router};
 use clap::{Parser, ValueEnum};
-use rgk_core::{from_hex, to_hex, Bytes32, KaspaChainId};
-use rgk_indexer::{IndexedLane, Indexer, ObservedSpendStore, SledIndexer};
+use rgk_core::{
+    from_hex, receipt_commitment, to_hex, Bytes32, Canonical, KaspaChainId, KaspaOutpoint,
+    ProofMode, ReceiptPolicy, RgkReceipt, MAX_BLOB_BYTES,
+};
+use rgk_indexer::{ContinuationProof, IndexedLane, Indexer, ObservedSpendStore, SledIndexer};
 use rgk_kaspa::{KaspaChainBackend, WrpcBackend, WrpcNetwork};
+use rgk_receipt::ReceiptVerifier;
 use rgk_resolver::{LaneResolverState, ResolverState, RgkResolver};
 use rgk_sync::{ScanService, ScanServiceConfig, ScanTick};
 use serde::{Deserialize, Serialize};
@@ -339,7 +343,7 @@ struct CreateLaneInput {
     proof_policy: ReceiptPolicyName,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Clone, Debug, Deserialize)]
 #[serde(rename_all = "camelCase", deny_unknown_fields)]
 struct RecordProofInput {
     lane_id: String,
@@ -348,6 +352,22 @@ struct RecordProofInput {
     strategy: String,
     txid: String,
     confirmations: u64,
+    #[serde(default)]
+    receipt_bytes: String,
+    #[serde(default)]
+    covenant_id: String,
+    #[serde(default)]
+    spent_txid: String,
+    #[serde(default)]
+    spent_index: u32,
+    #[serde(default)]
+    new_txid: String,
+    #[serde(default)]
+    new_index: u32,
+    #[serde(default)]
+    continuation_shape_root: String,
+    #[serde(default)]
+    daa_score: u64,
 }
 
 #[derive(Debug, Serialize)]
@@ -566,18 +586,58 @@ async fn record_proof(
     State(state): State<AppState>,
     Json(input): Json<RecordProofInput>,
 ) -> ApiResult<ProofSummary> {
-    let mut store = state.store()?;
-    let wallet_id = ready_wallet_id(&store)?;
+    let (wallet_id, selected_lane_covenant_id) = {
+        let store = state.store()?;
+        let wallet_id = ready_wallet_id(&store)?;
+        let Some(lane) = store
+            .lanes
+            .iter()
+            .find(|lane| lane.lane_id == input.lane_id)
+        else {
+            return Err(api_error(WalletdError::BadRequest(format!(
+                "laneId {} was not found",
+                input.lane_id
+            ))));
+        };
+        (wallet_id, lane.covenant_id.clone())
+    };
     let strategy = validate_strategy(&input.strategy)?;
-    let seed = format!("{}:{}:{}", wallet_id, strategy, store.proofs.len());
     let txid = validate_optional_txid(&input.txid)?;
+    validate_proof_lane_binding(&input, &selected_lane_covenant_id)
+        .map_err(|message| api_error(WalletdError::BadRequest(message)))?;
+    let verified = ingest_proof_evidence(Arc::clone(&state.config), input.clone())
+        .await
+        .map_err(|message| api_error(WalletdError::BadRequest(message)))?;
+
+    let mut store = state.store()?;
+    let seed = format!("{}:{}:{}", wallet_id, strategy, store.proofs.len());
     let updated_at = now_label();
+    let proof_mode = verified
+        .as_ref()
+        .map(|evidence| evidence.proof_mode)
+        .unwrap_or(input.proof_mode);
+    let receipt_policy = verified
+        .as_ref()
+        .map(|evidence| evidence.receipt_policy)
+        .unwrap_or(input.receipt_policy);
+    let receipt_id = verified
+        .as_ref()
+        .map(|evidence| format!("rgk:receipt:{}", hex32_label(&evidence.receipt_id)))
+        .unwrap_or_else(|| format!("rgk:receipt:{}", hex_digest("receipt", &seed, 32)));
+    let txid = verified
+        .as_ref()
+        .map(|evidence| hex32_plain(&evidence.new_outpoint.transaction_id))
+        .or(txid);
     let proof = ProofSummary {
-        receipt_id: format!("rgk:receipt:{}", hex_digest("receipt", &seed, 32)),
-        proof_mode: input.proof_mode,
-        receipt_policy: input.receipt_policy,
+        receipt_id,
+        proof_mode,
+        receipt_policy,
         strategy,
-        verifier_status: ProofVerifierStatus::Pending,
+        verifier_status: if verified.is_some() {
+            ProofVerifierStatus::Verified
+        } else {
+            ProofVerifierStatus::Pending
+        },
         txid,
         confirmations: input.confirmations,
         updated_at: updated_at.clone(),
@@ -595,6 +655,9 @@ async fn record_proof(
     };
 
     lane.latest_receipt_id = Some(proof.receipt_id.clone());
+    if let Some(evidence) = verified.as_ref() {
+        lane.state_digest = hex32_label(&evidence.new_state_digest);
+    }
     lane.updated_at = updated_at;
 
     store.proofs.push(proof.clone());
@@ -665,6 +728,15 @@ struct LaneResolutionUpdate {
     latest_receipt_id: Option<String>,
 }
 
+#[derive(Clone, Debug, PartialEq, Eq)]
+struct VerifiedProofEvidence {
+    receipt_id: Bytes32,
+    proof_mode: ProofModeName,
+    receipt_policy: ReceiptPolicyName,
+    new_outpoint: KaspaOutpoint,
+    new_state_digest: Bytes32,
+}
+
 async fn run_scan_tick(
     config: Arc<DaemonConfig>,
     kaspa_endpoint: String,
@@ -701,6 +773,145 @@ async fn run_scan_tick(
     })
     .await
     .map_err(|error| format!("scanner task failed: {error}"))?
+}
+
+async fn ingest_proof_evidence(
+    config: Arc<DaemonConfig>,
+    input: RecordProofInput,
+) -> Result<Option<VerifiedProofEvidence>, String> {
+    if !proof_evidence_supplied(&input) {
+        return Ok(None);
+    }
+    let sync_db_path = config.sync_db_path.clone();
+    let chain_id = config.network.chain_id();
+    tokio::task::spawn_blocking(move || {
+        ingest_proof_evidence_at_path(&sync_db_path, chain_id, &input)
+    })
+    .await
+    .map_err(|error| format!("proof evidence task failed: {error}"))?
+}
+
+fn ingest_proof_evidence_at_path(
+    sync_db_path: &Path,
+    chain_id: KaspaChainId,
+    input: &RecordProofInput,
+) -> Result<Option<VerifiedProofEvidence>, String> {
+    if !proof_evidence_supplied(input) {
+        return Ok(None);
+    }
+    require_proof_evidence_bundle(input)?;
+    let receipt_bytes = parse_hex_blob(&input.receipt_bytes, "receiptBytes")?;
+    let covenant_id = parse_bytes32_required(&input.covenant_id, "covenantId")?;
+    let spent = KaspaOutpoint {
+        transaction_id: parse_bytes32_required(&input.spent_txid, "spentTxid")?,
+        index: input.spent_index,
+    };
+    let new_outpoint = KaspaOutpoint {
+        transaction_id: parse_bytes32_required(&input.new_txid, "newTxid")?,
+        index: input.new_index,
+    };
+    if let Some(txid) = trimmed_optional(&input.txid) {
+        let txid = parse_bytes32_required(&txid, "txid")?;
+        if txid != new_outpoint.transaction_id {
+            return Err("txid must match newTxid when receipt evidence is supplied".to_string());
+        }
+    }
+    let shape_root =
+        parse_bytes32_required(&input.continuation_shape_root, "continuationShapeRoot")?;
+    let receipt = RgkReceipt::decode_canonical(&receipt_bytes)
+        .map_err(|error| format!("receiptBytes could not be decoded: {error}"))?;
+    if proof_mode_name(receipt.proof_mode) != input.proof_mode {
+        return Err("proofMode does not match the canonical receipt".to_string());
+    }
+    if receipt_policy_name(receipt.new_state.receipt_policy) != input.receipt_policy {
+        return Err("receiptPolicy does not match the canonical receipt new state".to_string());
+    }
+
+    let mut indexer = SledIndexer::open_path(sync_db_path)
+        .map_err(|error| format!("failed to open scanner database: {error}"))?;
+    let expected_old = indexer
+        .latest_state(covenant_id)
+        .ok_or_else(|| "covenantId is not indexed in the wallet database".to_string())?;
+    let receipt_id =
+        ReceiptVerifier::verify_local_structured(&receipt, covenant_id, &expected_old, chain_id)
+            .map_err(|error| format!("receipt verification failed: {error}"))?;
+    let canonical_receipt_id = receipt_commitment(&receipt);
+    if receipt_id != canonical_receipt_id {
+        return Err("receipt verifier returned a non-canonical receipt id".to_string());
+    }
+    let continuation = ContinuationProof {
+        commitment: receipt.continuation_commitment,
+        shape_root,
+        transition_digest: receipt.transition_digest,
+    };
+    indexer
+        .apply_spend_with_continuation(
+            covenant_id,
+            receipt_id,
+            spent,
+            new_outpoint,
+            receipt.new_state.clone(),
+            input.daa_score,
+            continuation,
+        )
+        .map_err(|error| format!("failed to index receipt spend: {error}"))?;
+    indexer
+        .flush()
+        .map_err(|error| format!("failed to flush scanner database: {error}"))?;
+
+    Ok(Some(VerifiedProofEvidence {
+        receipt_id,
+        proof_mode: proof_mode_name(receipt.proof_mode),
+        receipt_policy: receipt_policy_name(receipt.new_state.receipt_policy),
+        new_outpoint,
+        new_state_digest: receipt.new_state.state_digest,
+    }))
+}
+
+fn proof_evidence_supplied(input: &RecordProofInput) -> bool {
+    !input.receipt_bytes.trim().is_empty()
+        || !input.covenant_id.trim().is_empty()
+        || !input.spent_txid.trim().is_empty()
+        || !input.new_txid.trim().is_empty()
+        || !input.continuation_shape_root.trim().is_empty()
+}
+
+fn require_proof_evidence_bundle(input: &RecordProofInput) -> Result<(), String> {
+    for (name, value) in [
+        ("receiptBytes", input.receipt_bytes.as_str()),
+        ("covenantId", input.covenant_id.as_str()),
+        ("spentTxid", input.spent_txid.as_str()),
+        ("newTxid", input.new_txid.as_str()),
+        (
+            "continuationShapeRoot",
+            input.continuation_shape_root.as_str(),
+        ),
+    ] {
+        if value.trim().is_empty() {
+            return Err(format!(
+                "{name} is required when proof evidence is supplied"
+            ));
+        }
+    }
+    Ok(())
+}
+
+fn validate_proof_lane_binding(
+    input: &RecordProofInput,
+    selected_lane_covenant_id: &str,
+) -> Result<(), String> {
+    if !proof_evidence_supplied(input) {
+        return Ok(());
+    }
+    let selected = parse_bytes32_required(selected_lane_covenant_id, "selected lane covenantId")?;
+    let supplied = parse_bytes32_required(&input.covenant_id, "covenantId")?;
+    if selected != supplied {
+        return Err(
+            "covenantId must match the selected lane before proof evidence can be indexed"
+                .to_string(),
+        );
+    }
+    Ok(())
 }
 
 fn apply_successful_scan(store: &mut PersistedState, scan: &WalletdScanResult) {
@@ -1244,8 +1455,57 @@ fn parse_bytes32_handle(value: &str) -> Option<Bytes32> {
     from_hex::<32>(hex).ok()
 }
 
+fn parse_bytes32_required(value: &str, field: &str) -> Result<Bytes32, String> {
+    parse_bytes32_handle(value).ok_or_else(|| {
+        format!("{field} must be a 32-byte lowercase hexadecimal value, with optional 0x prefix")
+    })
+}
+
+fn parse_hex_blob(value: &str, field: &str) -> Result<Vec<u8>, String> {
+    let trimmed = value.trim();
+    let lower = trimmed.to_ascii_lowercase();
+    let hex = lower.strip_prefix("0x").unwrap_or(&lower);
+    if hex.is_empty() {
+        return Err(format!("{field} must not be empty"));
+    }
+    if hex.len() % 2 != 0 {
+        return Err(format!(
+            "{field} must contain an even number of hex characters"
+        ));
+    }
+    let bytes = hex::decode(hex).map_err(|error| format!("{field} is not valid hex: {error}"))?;
+    if bytes.len() > MAX_BLOB_BYTES as usize {
+        return Err(format!(
+            "{field} is too large: {} bytes exceeds {}",
+            bytes.len(),
+            MAX_BLOB_BYTES
+        ));
+    }
+    Ok(bytes)
+}
+
 fn hex32_label(value: &Bytes32) -> String {
     format!("0x{}", to_hex(value))
+}
+
+fn hex32_plain(value: &Bytes32) -> String {
+    to_hex(value)
+}
+
+fn proof_mode_name(value: ProofMode) -> ProofModeName {
+    match value {
+        ProofMode::VerifierReceipt => ProofModeName::VerifierReceipt,
+        ProofMode::ZkReceipt => ProofModeName::ZkReceipt,
+        ProofMode::P2mrRet => ProofModeName::P2mrRet,
+    }
+}
+
+fn receipt_policy_name(value: ReceiptPolicy) -> ReceiptPolicyName {
+    match value {
+        ReceiptPolicy::Any => ReceiptPolicyName::Any,
+        ReceiptPolicy::VerifierOnly => ReceiptPolicyName::VerifierOnly,
+        ReceiptPolicy::ZkOrVerifier => ReceiptPolicyName::ZkOrVerifier,
+    }
 }
 
 fn now_label() -> String {
@@ -1262,6 +1522,7 @@ mod tests {
     use rgk_core::{KaspaOutpoint, ReceiptPolicy, RgkStateCommitment, KASPA_LOCAL_TOCCATA};
     use rgk_indexer::InMemoryIndexer;
     use rgk_kaspa::{FixtureBackend, KaspaUtxo};
+    use rgk_receipt::{ReceiptBuilder, ReceiptInput};
 
     fn sample_lane(lane_id: Bytes32, covenant_id: Bytes32) -> AssetLane {
         AssetLane {
@@ -1278,6 +1539,33 @@ mod tests {
             latest_receipt_id: None,
             updated_at: "unix:0".to_string(),
         }
+    }
+
+    fn proof_input() -> RecordProofInput {
+        RecordProofInput {
+            lane_id: "rgk:lane:public:test".to_string(),
+            proof_mode: ProofModeName::VerifierReceipt,
+            receipt_policy: ReceiptPolicyName::VerifierOnly,
+            strategy: "verifier-receipt-baseline".to_string(),
+            txid: String::new(),
+            confirmations: 0,
+            receipt_bytes: String::new(),
+            covenant_id: String::new(),
+            spent_txid: String::new(),
+            spent_index: 0,
+            new_txid: String::new(),
+            new_index: 0,
+            continuation_shape_root: String::new(),
+            daa_score: 0,
+        }
+    }
+
+    fn temp_path(prefix: &str) -> PathBuf {
+        let timestamp = SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .map(|duration| duration.as_nanos())
+            .unwrap_or_default();
+        std::env::temp_dir().join(format!("{prefix}-{}-{timestamp}", std::process::id()))
     }
 
     #[test]
@@ -1376,5 +1664,134 @@ mod tests {
         assert_eq!(updates[0].covenant_id, None);
         assert_eq!(updates[0].state_digest, None);
         assert_eq!(updates[0].latest_receipt_id, None);
+    }
+
+    #[test]
+    fn ingest_proof_evidence_indexes_verified_receipt_spend() {
+        let path = temp_path("rgk-walletd-proof-ingest");
+        let _ = std::fs::remove_dir_all(&path);
+        let covenant_id = [0x41u8; 32];
+        let asset_id = [0x42u8; 32];
+        let old_state = RgkStateCommitment::new(
+            KASPA_LOCAL_TOCCATA,
+            covenant_id,
+            asset_id,
+            [0x43u8; 32],
+            ReceiptPolicy::VerifierOnly,
+        )
+        .expect("old state");
+        let new_state = RgkStateCommitment::new(
+            KASPA_LOCAL_TOCCATA,
+            covenant_id,
+            asset_id,
+            [0x44u8; 32],
+            ReceiptPolicy::VerifierOnly,
+        )
+        .expect("new state");
+        let spent = KaspaOutpoint {
+            transaction_id: [0x45u8; 32],
+            index: 1,
+        };
+        let created = KaspaOutpoint {
+            transaction_id: [0x46u8; 32],
+            index: 0,
+        };
+        let transition_digest = [0x47u8; 32];
+        let continuation_commitment = [0x48u8; 32];
+        let shape_root = [0x49u8; 32];
+        let input = ReceiptInput::new(
+            KASPA_LOCAL_TOCCATA,
+            covenant_id,
+            old_state.clone(),
+            new_state.clone(),
+            transition_digest,
+            continuation_commitment,
+            ProofMode::VerifierReceipt,
+            [0x4au8; 32],
+        )
+        .expect("receipt input");
+        let (_receipt, receipt_id, receipt_bytes) = ReceiptBuilder::build(&input).expect("receipt");
+
+        {
+            let mut indexer = SledIndexer::open_path(&path).expect("open indexer");
+            indexer
+                .open(
+                    KASPA_LOCAL_TOCCATA,
+                    covenant_id,
+                    [0x4bu8; 32],
+                    old_state,
+                    spent,
+                    10,
+                )
+                .expect("open covenant");
+            indexer.flush().expect("flush");
+        }
+
+        let mut request = proof_input();
+        request.receipt_bytes = format!("0x{}", hex::encode(receipt_bytes));
+        request.covenant_id = hex32_label(&covenant_id);
+        request.spent_txid = hex32_plain(&spent.transaction_id);
+        request.spent_index = spent.index;
+        request.new_txid = hex32_plain(&created.transaction_id);
+        request.new_index = created.index;
+        request.txid = hex32_plain(&created.transaction_id);
+        request.continuation_shape_root = hex32_label(&shape_root);
+        request.daa_score = 11;
+
+        let evidence = ingest_proof_evidence_at_path(&path, KASPA_LOCAL_TOCCATA, &request)
+            .expect("ingest")
+            .expect("verified evidence");
+
+        assert_eq!(evidence.receipt_id, receipt_id);
+        assert_eq!(evidence.proof_mode, ProofModeName::VerifierReceipt);
+        assert_eq!(evidence.receipt_policy, ReceiptPolicyName::VerifierOnly);
+        assert_eq!(evidence.new_outpoint, created);
+        assert_eq!(evidence.new_state_digest, [0x44u8; 32]);
+
+        let indexer = SledIndexer::open_path(&path).expect("reopen indexer");
+        assert_eq!(indexer.latest_state(covenant_id), Some(new_state));
+        let entry = indexer.lookup(covenant_id).expect("indexed covenant");
+        assert_eq!(entry.spend_history.len(), 1);
+        let spend = &entry.spend_history[0];
+        assert_eq!(spend.receipt_id, receipt_id);
+        assert_eq!(spend.spent, spent);
+        assert_eq!(spend.created, created);
+        assert_eq!(
+            spend.continuation,
+            Some(ContinuationProof {
+                commitment: continuation_commitment,
+                shape_root,
+                transition_digest,
+            })
+        );
+
+        let _ = std::fs::remove_dir_all(&path);
+    }
+
+    #[test]
+    fn ingest_proof_evidence_rejects_partial_bundle() {
+        let mut request = proof_input();
+        request.receipt_bytes = "abcd".to_string();
+
+        let err = ingest_proof_evidence_at_path(
+            Path::new("/tmp/unused-rgk-walletd-proof"),
+            KASPA_LOCAL_TOCCATA,
+            &request,
+        )
+        .expect_err("partial proof evidence must fail");
+
+        assert!(err.contains("covenantId is required"));
+    }
+
+    #[test]
+    fn validate_proof_lane_binding_rejects_cross_lane_covenant() {
+        let mut request = proof_input();
+        request.receipt_bytes = "abcd".to_string();
+        request.covenant_id = hex32_label(&[0x51u8; 32]);
+
+        let err = validate_proof_lane_binding(&request, &hex32_label(&[0x52u8; 32]))
+            .expect_err("cross-lane proof binding must fail");
+
+        assert!(err.contains("covenantId must match the selected lane"));
     }
 }
