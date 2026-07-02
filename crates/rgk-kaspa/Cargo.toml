@@ -24,11 +24,12 @@ hex.workspace = true
 # feature because it pulls in the upstream rusty-kaspa RPC stack.
 kaspa-wrpc-client = { path = "../../../rusty-kaspa/rpc/wrpc/client", default-features = false, optional = true }
 kaspa-rpc-core = { path = "../../../rusty-kaspa/rpc/core", default-features = false, optional = true }
+kaspa-addresses = { workspace = true, optional = true }
 tokio = { version = "1", features = ["rt", "rt-multi-thread", "time"], optional = true }
 
 [features]
 default = ["std"]
 std = []
 http = ["dep:ureq", "dep:serde_json"]
-wrpc = ["std", "dep:kaspa-wrpc-client", "dep:kaspa-rpc-core", "dep:tokio"]
+wrpc = ["std", "dep:kaspa-wrpc-client", "dep:kaspa-rpc-core", "dep:kaspa-addresses", "dep:tokio"]
 fixture = []

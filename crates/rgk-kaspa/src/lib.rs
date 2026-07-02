@@ -325,6 +325,15 @@ pub trait KaspaChainBackend: Send + Sync {
     fn confirmation_depth(&self, txid: KaspaTxId) -> Result<Option<u64>, KaspaNetworkError>;
 }
 
+/// Wallet-facing Kaspa queries that are useful to Avato but separate from RGK
+/// resolver evidence.
+pub trait KaspaWalletBackend: Send + Sync {
+    /// Returns the total unspent sompi balance for a Kaspa address.
+    ///
+    /// Live nodes must have the Kaspa UTXO index enabled for this call.
+    fn balance_by_address(&self, address: &str) -> Result<u64, KaspaNetworkError>;
+}
+
 // ---------------- Fixture backend ----------------
 
 /// A deterministic, in-memory `KaspaChainBackend`. Used by tests and by the
@@ -343,6 +352,8 @@ pub struct FixtureBackend {
     spends: BTreeMap<KaspaOutpoint, (u64, KaspaTxId, u32)>,
     /// Submitted transactions (for get_transaction)
     txs: BTreeMap<KaspaTxId, KaspaTxSummary>,
+    /// Fixture wallet-address balances in sompi.
+    balances: BTreeMap<String, u64>,
     /// Failure mode: if set, all calls return this error. Used by tests to
     /// exercise the NodeUnavailable / WrongNetwork paths.
     failure: Option<KaspaNetworkError>,
@@ -366,6 +377,7 @@ impl FixtureBackend {
             blocks: BTreeMap::new(),
             spends: BTreeMap::new(),
             txs: BTreeMap::new(),
+            balances: BTreeMap::new(),
             failure: None,
         }
     }
@@ -416,6 +428,10 @@ impl FixtureBackend {
 
     pub fn set_tip(&mut self, tip: KaspaTip) {
         self.tip = tip;
+    }
+
+    pub fn set_balance_by_address(&mut self, address: impl Into<String>, balance_sompi: u64) {
+        self.balances.insert(address.into(), balance_sompi);
     }
 
     fn check_failure(&self) -> Result<(), KaspaNetworkError> {
@@ -494,6 +510,13 @@ impl KaspaChainBackend for FixtureBackend {
                 None
             }
         }))
+    }
+}
+
+impl KaspaWalletBackend for FixtureBackend {
+    fn balance_by_address(&self, address: &str) -> Result<u64, KaspaNetworkError> {
+        self.check_failure()?;
+        Ok(self.balances.get(address).copied().unwrap_or_default())
     }
 }
 
@@ -813,5 +836,15 @@ mod tests {
             b.submit_transaction(&[]),
             Err(KaspaNetworkError::Invariant(_))
         ));
+    }
+
+    #[test]
+    fn fixture_wallet_balance_defaults_to_zero_and_can_be_set() {
+        let mut b = FixtureBackend::new(KaspaChainId::KaspaLocalToccata);
+        assert_eq!(b.balance_by_address("kaspasim:test").unwrap(), 0);
+
+        b.set_balance_by_address("kaspasim:test", 123_456_789);
+
+        assert_eq!(b.balance_by_address("kaspasim:test").unwrap(), 123_456_789);
     }
 }

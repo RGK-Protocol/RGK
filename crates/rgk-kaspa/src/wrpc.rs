@@ -16,6 +16,7 @@ use core::future::Future;
 use std::sync::{Mutex, MutexGuard};
 use std::time::Duration;
 
+use kaspa_addresses::Address;
 use kaspa_rpc_core::api::rpc::RpcApi;
 use kaspa_rpc_core::{RpcBlock, RpcHash, RpcTransaction};
 use kaspa_wrpc_client::prelude::{NetworkId, NetworkType};
@@ -26,7 +27,7 @@ use kaspa_wrpc_client::{
 
 use crate::{
     KaspaBlockHash, KaspaChainBackend, KaspaNetworkError, KaspaTip, KaspaTxId, KaspaTxSummary,
-    KaspaUtxo, ObservedSpend, SpendingInfo,
+    KaspaUtxo, KaspaWalletBackend, ObservedSpend, SpendingInfo,
 };
 use rgk_core::{KaspaChainId, KaspaOutpoint};
 
@@ -384,6 +385,15 @@ impl KaspaChainBackend for WrpcBackend {
             return Ok(None);
         }
         Ok(Some(tip.daa_score - accepted_daa + 1))
+    }
+}
+
+impl KaspaWalletBackend for WrpcBackend {
+    fn balance_by_address(&self, address: &str) -> Result<u64, KaspaNetworkError> {
+        let address = Address::try_from(address).map_err(|error| {
+            KaspaNetworkError::Invariant(format!("invalid Kaspa wallet address: {error}"))
+        })?;
+        self.run_rpc(self.client.get_balance_by_address(address))
     }
 }
 

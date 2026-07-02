@@ -21,7 +21,7 @@ use rgk_core::{
     KaspaOutpoint, ProofMode, ReceiptPolicy, RgkReceipt, RgkStateCommitment, MAX_BLOB_BYTES,
 };
 use rgk_indexer::{ContinuationProof, IndexedLane, Indexer, ObservedSpendStore, SledIndexer};
-use rgk_kaspa::{KaspaChainBackend, WrpcBackend, WrpcNetwork};
+use rgk_kaspa::{KaspaChainBackend, KaspaWalletBackend, WrpcBackend, WrpcNetwork};
 use rgk_receipt::{ReceiptBuilder, ReceiptInput, ReceiptVerifier};
 use rgk_resolver::{LaneResolverState, ResolverState, RgkResolver};
 use rgk_sync::{ScanService, ScanServiceConfig, ScanTick};
@@ -701,16 +701,21 @@ async fn unlock_wallet(
 }
 
 async fn sync_wallet(State(state): State<AppState>) -> ApiResult<DashboardSnapshot> {
-    let (kaspa_endpoint, lanes) = {
+    let (kaspa_endpoint, lanes, address) = {
         let store = state.store()?;
         let profile = ready_profile(&store)?;
         if matches!(profile.lifecycle, WalletLifecycle::Locked) {
             return Err(api_error(WalletdError::Locked));
         }
-        (profile.kaspa_endpoint.clone(), store.lanes.clone())
+        (
+            profile.kaspa_endpoint.clone(),
+            store.lanes.clone(),
+            profile.address.clone(),
+        )
     };
 
-    let scan_result = run_scan_tick(Arc::clone(&state.config), kaspa_endpoint, lanes).await;
+    let scan_result =
+        run_scan_tick(Arc::clone(&state.config), kaspa_endpoint, lanes, address).await;
 
     let mut store = state.store()?;
     if matches!(
@@ -1020,7 +1025,7 @@ async fn upsert_wallet(state: AppState, input: CreateWalletInput) -> ApiResult<W
     store.passphrase_verifier = Some(identity_material.passphrase_verifier.clone());
     store.passphrase_salt = Some(identity_material.passphrase_salt.clone());
     store.identity_vault = Some(identity_material.vault.clone());
-    store.kas_balance = "0.00000000 KAS".to_string();
+    store.kas_balance = format_kas_balance(0);
     store.lanes.clear();
     store.proofs.clear();
     store.scan = ScanStatus {
@@ -1049,6 +1054,7 @@ struct WalletdScanResult {
     tick: ScanTick,
     indexed_spends: usize,
     lane_updates: Vec<LaneResolutionUpdate>,
+    kas_balance_sompi: Option<u64>,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -1102,6 +1108,7 @@ async fn run_scan_tick(
     config: Arc<DaemonConfig>,
     kaspa_endpoint: String,
     lanes: Vec<AssetLane>,
+    address: Option<String>,
 ) -> Result<WalletdScanResult, String> {
     let backend = WrpcBackend::connect_borsh(&kaspa_endpoint, config.network.wrpc_network())
         .await
@@ -1126,10 +1133,19 @@ async fn run_scan_tick(
             .observed_spend_count()
             .map_err(|error| format!("failed to count observed spends: {error}"))?;
         let lane_updates = resolve_indexed_lanes(&backend, &indexer, chain_id, &lanes);
+        let kas_balance_sompi = match address.as_deref().map(str::trim) {
+            Some(address) if !address.is_empty() => {
+                Some(backend.balance_by_address(address).map_err(|error| {
+                    format!("failed to refresh funding-address balance: {error}")
+                })?)
+            }
+            _ => None,
+        };
         Ok(WalletdScanResult {
             tick,
             indexed_spends,
             lane_updates,
+            kas_balance_sompi,
         })
     })
     .await
@@ -1562,6 +1578,9 @@ fn apply_successful_scan(store: &mut PersistedState, scan: &WalletdScanResult) {
     let indexed_spends = u64::try_from(scan.indexed_spends).unwrap_or(u64::MAX);
     store.scan.indexed_spends = indexed_spends;
     store.scan.observed_spends = indexed_spends;
+    if let Some(kas_balance_sompi) = scan.kas_balance_sompi {
+        store.kas_balance = format_kas_balance(kas_balance_sompi);
+    }
     apply_lane_resolution_updates(store, &scan.lane_updates);
     store.scan_notice = Some(if tick.initialised_cursor {
         format!(
@@ -2518,11 +2537,17 @@ fn now_label() -> String {
     format!("unix:{seconds}")
 }
 
+const SOMPI_PER_KAS: u64 = 100_000_000;
+
+fn format_kas_balance(sompi: u64) -> String {
+    format!("{}.{:08} KAS", sompi / SOMPI_PER_KAS, sompi % SOMPI_PER_KAS)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
     use rgk_core::{KaspaOutpoint, ReceiptPolicy, RgkStateCommitment, KASPA_LOCAL_TOCCATA};
-    use rgk_indexer::InMemoryIndexer;
+    use rgk_indexer::{InMemoryIndexer, ScanCursor};
     use rgk_kaspa::{FixtureBackend, KaspaUtxo};
     use rgk_receipt::{ReceiptBuilder, ReceiptInput};
 
@@ -2702,6 +2727,44 @@ mod tests {
         assert!(mainnet.starts_with("kaspa:"));
         assert_ne!(local, testnet);
         assert_ne!(testnet, mainnet);
+    }
+
+    #[test]
+    fn format_kas_balance_uses_eight_decimal_places() {
+        assert_eq!(format_kas_balance(0), "0.00000000 KAS");
+        assert_eq!(format_kas_balance(1), "0.00000001 KAS");
+        assert_eq!(format_kas_balance(123_456_789), "1.23456789 KAS");
+        assert_eq!(format_kas_balance(10_000_000_000), "100.00000000 KAS");
+    }
+
+    #[test]
+    fn successful_scan_refreshes_dashboard_kas_balance() {
+        let mut store = PersistedState {
+            profile: Some(profile_with_identity("0xfingerprint".to_string())),
+            kas_balance: "stale".to_string(),
+            ..PersistedState::default()
+        };
+        let cursor = ScanCursor {
+            chain_id: KASPA_LOCAL_TOCCATA,
+            block_hash: [0x77u8; 32],
+            daa_score: 42,
+        };
+        let scan = WalletdScanResult {
+            tick: ScanTick {
+                initialised_cursor: false,
+                start_cursor: cursor.clone(),
+                end_cursor: cursor,
+                added_chain_blocks: 0,
+                observed_spends: 0,
+            },
+            indexed_spends: 0,
+            lane_updates: Vec::new(),
+            kas_balance_sompi: Some(123_456_789),
+        };
+
+        apply_successful_scan(&mut store, &scan);
+
+        assert_eq!(store.kas_balance, "1.23456789 KAS");
     }
 
     #[test]
