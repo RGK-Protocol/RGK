@@ -30,15 +30,17 @@ The daemon exposes the Avato contract:
 * `POST /wallet/unlock`
 * `POST /wallet/sync`
 * `GET /dashboard`
+* `POST /lanes`
+* `POST /proofs`
 
 The daemon deliberately does not accept a frontend-selected chain domain that
 differs from its configured `--network`. RGK receipt evidence is chain-domain
 separated, so `kaspa-local-toccata`, `kaspa-testnet`, and `kaspa-mainnet` must
 not be treated as interchangeable display labels.
 
-The first implementation persists wallet profile/dashboard metadata and a
-salted passphrase verifier. It does not persist recovery phrases or raw
-passphrases.
+The first implementation persists wallet profile/dashboard metadata, staged RGK
+lanes, staged proof receipts, and a salted passphrase verifier. It does not
+persist recovery phrases or raw passphrases.
 Scanner/resolver/prover integration should extend this daemon behind the same
 HTTP contract instead of changing the frontend shape.
 
@@ -50,5 +52,6 @@ bash scripts/verify-avato-walletd-contract.sh
 
 The script starts `rgk-walletd` on an isolated local port, reads
 `../avato-wallet-frontend/contracts/rgk-wallet-http-contract.json`, exercises
-health/profile/create/dashboard/lock/unlock/sync, rejects a mismatched network
-request, and checks the state file for raw phrase/passphrase leakage.
+health/profile/create/dashboard/lane/proof/lock/unlock/sync, rejects a
+mismatched network request, and checks the state file for raw phrase/passphrase
+leakage.

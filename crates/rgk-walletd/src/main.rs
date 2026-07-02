@@ -306,6 +306,28 @@ struct UnlockWalletInput {
     passphrase: String,
 }
 
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct CreateLaneInput {
+    label: String,
+    ticker: String,
+    balance: String,
+    privacy: PrivacyMode,
+    proof_policy: ReceiptPolicyName,
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct RecordProofInput {
+    lane_id: String,
+    proof_mode: ProofModeName,
+    receipt_policy: ReceiptPolicyName,
+    strategy: String,
+    verifier_status: ProofVerifierStatus,
+    txid: String,
+    confirmations: u64,
+}
+
 #[derive(Debug, Serialize)]
 #[serde(rename_all = "camelCase")]
 struct HealthResponse {
@@ -364,6 +386,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .route("/wallet/unlock", post(unlock_wallet))
         .route("/wallet/sync", post(sync_wallet))
         .route("/dashboard", get(dashboard))
+        .route("/lanes", post(create_lane))
+        .route("/proofs", post(record_proof))
         .layer(CorsLayer::permissive())
         .with_state(app_state);
 
@@ -471,6 +495,97 @@ async fn dashboard(State(state): State<AppState>) -> ApiResult<DashboardSnapshot
     }))
 }
 
+async fn create_lane(
+    State(state): State<AppState>,
+    Json(input): Json<CreateLaneInput>,
+) -> ApiResult<AssetLane> {
+    let mut store = state.store()?;
+    let wallet_id = ready_wallet_id(&store)?;
+    let label = trimmed_or_default(&input.label, "New RGK lane");
+    let ticker = trimmed_or_default(&input.ticker, "RGK");
+    let balance = trimmed_or_default(&input.balance, "0.0000");
+    let seed = format!("{}:{}:{}:{}", wallet_id, label, ticker, store.lanes.len());
+    let updated_at = now_label();
+    let lane = AssetLane {
+        lineage_id: format!("rgk:lineage:{}", hex_digest("lineage", &seed, 8)),
+        lane_id: format!(
+            "rgk:lane:{}:{}",
+            privacy_slug(input.privacy),
+            hex_digest("lane", &seed, 8)
+        ),
+        label,
+        ticker,
+        balance,
+        privacy: input.privacy,
+        proof_policy: input.proof_policy,
+        resolver_state: if state.config.network.chain_id().toccata_active_by_default() {
+            ResolverStateName::Open
+        } else {
+            ResolverStateName::NodeDown
+        },
+        covenant_id: hex_digest("covenant", &seed, 16),
+        state_digest: hex_digest("state", &seed, 16),
+        latest_receipt_id: None,
+        updated_at,
+    };
+    store.lanes.push(lane.clone());
+    save_state(&state.config.state_path, &store)?;
+    Ok(Json(lane))
+}
+
+async fn record_proof(
+    State(state): State<AppState>,
+    Json(input): Json<RecordProofInput>,
+) -> ApiResult<ProofSummary> {
+    let mut store = state.store()?;
+    let wallet_id = ready_wallet_id(&store)?;
+    let strategy = trimmed_or_default(&input.strategy, "verifier-receipt-baseline");
+    let seed = format!("{}:{}:{}", wallet_id, strategy, store.proofs.len());
+    let txid = trimmed_optional(&input.txid);
+    let updated_at = now_label();
+    let proof = ProofSummary {
+        receipt_id: format!("rgk:receipt:{}", hex_digest("receipt", &seed, 8)),
+        proof_mode: input.proof_mode,
+        receipt_policy: input.receipt_policy,
+        strategy,
+        verifier_status: input.verifier_status,
+        txid,
+        confirmations: input.confirmations,
+        updated_at: updated_at.clone(),
+    };
+
+    let Some(lane) = store
+        .lanes
+        .iter_mut()
+        .find(|lane| lane.lane_id == input.lane_id)
+    else {
+        return Err(api_error(WalletdError::BadRequest(format!(
+            "laneId {} was not found",
+            input.lane_id
+        ))));
+    };
+
+    lane.latest_receipt_id = Some(proof.receipt_id.clone());
+    lane.updated_at = updated_at;
+    if matches!(proof.verifier_status, ProofVerifierStatus::Verified) {
+        lane.resolver_state = ResolverStateName::NativeTransitionedValid;
+    }
+
+    store.proofs.push(proof.clone());
+    store.scan.scan_mode = ScanMode::Idle;
+    store.scan.indexed_spends = store.scan.indexed_spends.saturating_add(1);
+    store.scan.observed_spends = store.scan.observed_spends.saturating_add(1);
+    store.scan.last_daa_score = Some(
+        store
+            .scan
+            .last_daa_score
+            .unwrap_or_default()
+            .saturating_add(1),
+    );
+    save_state(&state.config.state_path, &store)?;
+    Ok(Json(proof))
+}
+
 async fn upsert_wallet(state: AppState, input: CreateWalletInput) -> ApiResult<WalletProfile> {
     validate_input_network(&state.config, &input)?;
     if input.recovery_phrase.len() < 12 {
@@ -547,6 +662,42 @@ fn validate_input_network(
         ))));
     }
     Ok(())
+}
+
+fn ready_wallet_id(store: &PersistedState) -> Result<String, (StatusCode, Json<ApiError>)> {
+    let profile = store
+        .profile
+        .as_ref()
+        .ok_or_else(|| api_error(WalletdError::NotFound))?;
+    if matches!(profile.lifecycle, WalletLifecycle::Locked) {
+        return Err(api_error(WalletdError::Locked));
+    }
+    Ok(profile.wallet_id.clone())
+}
+
+fn trimmed_or_default(value: &str, fallback: &str) -> String {
+    let trimmed = value.trim();
+    if trimmed.is_empty() {
+        fallback.to_string()
+    } else {
+        trimmed.to_string()
+    }
+}
+
+fn trimmed_optional(value: &str) -> Option<String> {
+    let trimmed = value.trim();
+    if trimmed.is_empty() {
+        None
+    } else {
+        Some(trimmed.to_string())
+    }
+}
+
+const fn privacy_slug(value: PrivacyMode) -> &'static str {
+    match value {
+        PrivacyMode::PrivateLane => "private",
+        PrivacyMode::PublicLineage => "public",
+    }
 }
 
 impl AppState {

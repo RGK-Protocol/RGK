@@ -3,7 +3,7 @@ set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 FRONTEND_CONTRACT="${AVATO_RGK_CONTRACT:-${ROOT}/../avato-wallet-frontend/contracts/rgk-wallet-http-contract.json}"
-PORT="${RGK_WALLETD_CONTRACT_PORT:-18788}"
+PORT="${RGK_WALLETD_CONTRACT_PORT:-$((18000 + ($$ % 10000)))}"
 BASE_URL="http://127.0.0.1:${PORT}"
 STATE="${RGK_WALLETD_CONTRACT_STATE:-${ROOT}/target/rgk-walletd/contract-smoke-${PORT}.json}"
 LOG="${ROOT}/target/rgk-walletd/contract-smoke-${PORT}.log"
@@ -66,6 +66,8 @@ expected_endpoints = {
     ("POST", "/wallet/unlock"),
     ("POST", "/wallet/sync"),
     ("GET", "/dashboard"),
+    ("POST", "/lanes"),
+    ("POST", "/proofs"),
 }
 contract_endpoints = {
     (endpoint["method"], endpoint["path"]) for endpoint in contract["endpoints"]
@@ -162,8 +164,57 @@ assert dashboard["proofs"][0]["proofMode"] in contract["enums"]["proofMode"]
 assert dashboard["proofs"][0]["verifierStatus"] in contract["enums"]["proofVerifierStatus"]
 assert dashboard["scan"]["scanMode"] in contract["enums"]["scanMode"]
 
+lane = request("POST", "/lanes", {
+    "label": "Contract smoke public lane",
+    "ticker": "SMK",
+    "balance": "42.0000",
+    "privacy": "public-lineage",
+    "proofPolicy": "verifier-only",
+})
+assert lane["label"] == "Contract smoke public lane"
+assert lane["privacy"] == "public-lineage"
+assert lane["proofPolicy"] == "verifier-only"
+assert lane["resolverState"] in contract["enums"]["resolverState"]
+
+request("POST", "/proofs", {
+    "laneId": "rgk:lane:missing",
+    "proofMode": "verifier-receipt",
+    "receiptPolicy": "verifier-only",
+    "strategy": "contract-smoke-orphan",
+    "verifierStatus": "pending",
+    "txid": "",
+    "confirmations": 0,
+}, expected_status=400)
+
+proof = request("POST", "/proofs", {
+    "laneId": lane["laneId"],
+    "proofMode": "verifier-receipt",
+    "receiptPolicy": "verifier-only",
+    "strategy": "contract-smoke-verifier",
+    "verifierStatus": "verified",
+    "txid": "contract-smoke-txid",
+    "confirmations": 1,
+})
+assert proof["strategy"] == "contract-smoke-verifier"
+assert proof["verifierStatus"] == "verified"
+assert proof["confirmations"] == 1
+
+dashboard_after_actions = request("GET", "/dashboard")
+assert any(item["laneId"] == lane["laneId"] for item in dashboard_after_actions["lanes"])
+assert any(item["receiptId"] == proof["receiptId"] for item in dashboard_after_actions["proofs"])
+updated_lane = next(item for item in dashboard_after_actions["lanes"] if item["laneId"] == lane["laneId"])
+assert updated_lane["latestReceiptId"] == proof["receiptId"]
+assert updated_lane["resolverState"] == "native-transitioned-valid"
+
 request("POST", "/wallet/lock", expected_status=204)
 request("GET", "/dashboard", expected_status=401)
+request("POST", "/lanes", {
+    "label": "Locked lane",
+    "ticker": "LCK",
+    "balance": "0",
+    "privacy": "private-lane",
+    "proofPolicy": "zk-or-verifier",
+}, expected_status=401)
 request(
     "POST",
     "/wallet/unlock",
@@ -184,4 +235,3 @@ assert "passphraseVerifier" in state_text
 
 print("[verify-avato-walletd-contract] ok")
 PY
-
