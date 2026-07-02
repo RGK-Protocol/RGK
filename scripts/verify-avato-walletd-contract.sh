@@ -75,6 +75,7 @@ expected_endpoints = {
     ("GET", "/dashboard"),
     ("POST", "/lanes"),
     ("POST", "/proofs"),
+    ("POST", "/transitions"),
 }
 contract_endpoints = {
     (endpoint["method"], endpoint["path"]) for endpoint in contract["endpoints"]
@@ -327,6 +328,37 @@ assert indexed_lane["covenantId"] == indexed_lane_evidence["covenantId"]
 assert indexed_lane["stateDigest"] == indexed_lane_evidence["stateDigest"]
 assert indexed_lane["resolverState"] == "unknown"
 
+transition_payload = {
+    "laneId": indexed_lane["laneId"],
+    "proofMode": "verifier-receipt",
+    "receiptPolicy": "verifier-only",
+    "strategy": "contract-smoke-transition",
+    "newStateDigest": hex32(0x68),
+    "transitionDigest": hex32(0x69),
+    "continuationCommitment": hex32(0x6a),
+    "continuationShapeRoot": hex32(0x6b),
+    "newTxid": txid(0x6c),
+    "newIndex": 3,
+    "daaScore": 21,
+}
+
+metadata_only_transition = dict(transition_payload)
+metadata_only_transition["laneId"] = lane["laneId"]
+request("POST", "/transitions", metadata_only_transition, expected_status=400)
+
+stale_transition = dict(transition_payload)
+stale_transition["unexpectedField"] = "stale-client"
+request("POST", "/transitions", stale_transition, expected_status=422)
+
+transition = request("POST", "/transitions", transition_payload)
+assert transition["strategy"] == "contract-smoke-transition"
+assert transition["verifierStatus"] == "verified"
+assert transition["receiptPolicy"] == "verifier-only"
+assert transition["proofMode"] == "verifier-receipt"
+assert transition["txid"] == txid(0x6c)
+assert transition["confirmations"] == 0
+assert_handle_hex32(transition["receiptId"], "transition receiptId")
+
 empty_proof_evidence = {
     "receiptBytes": "",
     "covenantId": "",
@@ -397,15 +429,19 @@ assert_handle_hex32(proof["receiptId"], "receiptId")
 
 dashboard_after_actions = request("GET", "/dashboard")
 assert len(dashboard_after_actions["lanes"]) == 2
-assert len(dashboard_after_actions["proofs"]) == 1
+assert len(dashboard_after_actions["proofs"]) == 2
 assert dashboard_after_actions["scan"]["indexedSpends"] == 0
 assert dashboard_after_actions["scan"]["observedSpends"] == 0
 assert any(item["laneId"] == lane["laneId"] for item in dashboard_after_actions["lanes"])
 assert any(item["laneId"] == indexed_lane["laneId"] for item in dashboard_after_actions["lanes"])
 assert any(item["receiptId"] == proof["receiptId"] for item in dashboard_after_actions["proofs"])
+assert any(item["receiptId"] == transition["receiptId"] for item in dashboard_after_actions["proofs"])
 updated_lane = next(item for item in dashboard_after_actions["lanes"] if item["laneId"] == lane["laneId"])
 assert updated_lane["latestReceiptId"] == proof["receiptId"]
 assert updated_lane["resolverState"] == lane["resolverState"]
+updated_indexed_lane = next(item for item in dashboard_after_actions["lanes"] if item["laneId"] == indexed_lane["laneId"])
+assert updated_indexed_lane["latestReceiptId"] == transition["receiptId"]
+assert updated_indexed_lane["stateDigest"] == hex32(0x68)
 
 request("POST", "/wallet/lock", expected_status=204)
 request("GET", "/dashboard", expected_status=401)

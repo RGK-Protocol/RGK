@@ -13,12 +13,12 @@ use axum::routing::{get, post};
 use axum::{Json, Router};
 use clap::{Parser, ValueEnum};
 use rgk_core::{
-    from_hex, receipt_commitment, to_hex, Bytes32, Canonical, KaspaChainId, KaspaOutpoint,
-    ProofMode, ReceiptPolicy, RgkReceipt, RgkStateCommitment, MAX_BLOB_BYTES,
+    from_hex, receipt_commitment, replay_nonce, to_hex, Bytes32, Canonical, KaspaChainId,
+    KaspaOutpoint, ProofMode, ReceiptPolicy, RgkReceipt, RgkStateCommitment, MAX_BLOB_BYTES,
 };
 use rgk_indexer::{ContinuationProof, IndexedLane, Indexer, ObservedSpendStore, SledIndexer};
 use rgk_kaspa::{KaspaChainBackend, WrpcBackend, WrpcNetwork};
-use rgk_receipt::ReceiptVerifier;
+use rgk_receipt::{ReceiptBuilder, ReceiptInput, ReceiptVerifier};
 use rgk_resolver::{LaneResolverState, ResolverState, RgkResolver};
 use rgk_sync::{ScanService, ScanServiceConfig, ScanTick};
 use serde::{Deserialize, Serialize};
@@ -390,6 +390,22 @@ struct RecordProofInput {
     daa_score: u64,
 }
 
+#[derive(Clone, Debug, Deserialize)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+struct RecordTransitionInput {
+    lane_id: String,
+    proof_mode: ProofModeName,
+    receipt_policy: ReceiptPolicyName,
+    strategy: String,
+    new_state_digest: String,
+    transition_digest: String,
+    continuation_commitment: String,
+    continuation_shape_root: String,
+    new_txid: String,
+    new_index: u32,
+    daa_score: u64,
+}
+
 #[derive(Debug, Serialize)]
 #[serde(rename_all = "camelCase")]
 struct HealthResponse {
@@ -453,6 +469,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .route("/dashboard", get(dashboard))
         .route("/lanes", post(create_lane))
         .route("/proofs", post(record_proof))
+        .route("/transitions", post(record_transition))
         .layer(CorsLayer::permissive())
         .with_state(app_state);
 
@@ -724,6 +741,67 @@ async fn record_proof(
     Ok(Json(proof))
 }
 
+async fn record_transition(
+    State(state): State<AppState>,
+    Json(input): Json<RecordTransitionInput>,
+) -> ApiResult<ProofSummary> {
+    let selected_lane_covenant_id = {
+        let store = state.store()?;
+        ready_wallet_id(&store)?;
+        let Some(lane) = store
+            .lanes
+            .iter()
+            .find(|lane| lane.lane_id == input.lane_id)
+        else {
+            return Err(api_error(WalletdError::BadRequest(format!(
+                "laneId {} was not found",
+                input.lane_id
+            ))));
+        };
+        lane.covenant_id.clone()
+    };
+    let strategy = validate_strategy(&input.strategy)?;
+    let evidence = build_transition_receipt(
+        Arc::clone(&state.config),
+        input.clone(),
+        selected_lane_covenant_id,
+    )
+    .await
+    .map_err(|message| api_error(WalletdError::BadRequest(message)))?;
+
+    let mut store = state.store()?;
+    let updated_at = now_label();
+    let proof = ProofSummary {
+        receipt_id: format!("rgk:receipt:{}", hex32_label(&evidence.receipt_id)),
+        proof_mode: evidence.proof_mode,
+        receipt_policy: evidence.receipt_policy,
+        strategy,
+        verifier_status: ProofVerifierStatus::Verified,
+        txid: Some(hex32_plain(&evidence.new_outpoint.transaction_id)),
+        confirmations: 0,
+        updated_at: updated_at.clone(),
+    };
+
+    let Some(lane) = store
+        .lanes
+        .iter_mut()
+        .find(|lane| lane.lane_id == input.lane_id)
+    else {
+        return Err(api_error(WalletdError::BadRequest(format!(
+            "laneId {} was not found",
+            input.lane_id
+        ))));
+    };
+
+    lane.latest_receipt_id = Some(proof.receipt_id.clone());
+    lane.state_digest = hex32_label(&evidence.new_state_digest);
+    lane.updated_at = updated_at;
+
+    store.proofs.push(proof.clone());
+    save_state(&state.config.state_path, &store)?;
+    Ok(Json(proof))
+}
+
 async fn upsert_wallet(state: AppState, input: CreateWalletInput) -> ApiResult<WalletProfile> {
     validate_input_network(&state.config, &input)?;
     let wallet_id = validate_wallet_id(&input.wallet_id)?;
@@ -801,6 +879,15 @@ struct LaneEvidence {
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 struct VerifiedProofEvidence {
+    receipt_id: Bytes32,
+    proof_mode: ProofModeName,
+    receipt_policy: ReceiptPolicyName,
+    new_outpoint: KaspaOutpoint,
+    new_state_digest: Bytes32,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+struct TransitionReceiptEvidence {
     receipt_id: Bytes32,
     proof_mode: ProofModeName,
     receipt_policy: ReceiptPolicyName,
@@ -1094,6 +1181,118 @@ fn ingest_proof_evidence_at_path(
         new_outpoint,
         new_state_digest: receipt.new_state.state_digest,
     }))
+}
+
+async fn build_transition_receipt(
+    config: Arc<DaemonConfig>,
+    input: RecordTransitionInput,
+    selected_lane_covenant_id: String,
+) -> Result<TransitionReceiptEvidence, String> {
+    let sync_db_path = config.sync_db_path.clone();
+    let chain_id = config.network.chain_id();
+    tokio::task::spawn_blocking(move || {
+        build_transition_receipt_at_path(
+            &sync_db_path,
+            chain_id,
+            &input,
+            &selected_lane_covenant_id,
+        )
+    })
+    .await
+    .map_err(|error| format!("transition receipt task failed: {error}"))?
+}
+
+fn build_transition_receipt_at_path(
+    sync_db_path: &Path,
+    chain_id: KaspaChainId,
+    input: &RecordTransitionInput,
+    selected_lane_covenant_id: &str,
+) -> Result<TransitionReceiptEvidence, String> {
+    let lane_id = parse_bytes32_required(&input.lane_id, "laneId")?;
+    let covenant_id =
+        parse_bytes32_required(selected_lane_covenant_id, "selected lane covenantId")?;
+    let new_state_digest = parse_bytes32_required(&input.new_state_digest, "newStateDigest")?;
+    let transition_digest = parse_bytes32_required(&input.transition_digest, "transitionDigest")?;
+    let continuation_commitment =
+        parse_bytes32_required(&input.continuation_commitment, "continuationCommitment")?;
+    let continuation_shape_root =
+        parse_bytes32_required(&input.continuation_shape_root, "continuationShapeRoot")?;
+    let new_outpoint = KaspaOutpoint {
+        transaction_id: parse_bytes32_required(&input.new_txid, "newTxid")?,
+        index: input.new_index,
+    };
+
+    let mut indexer = SledIndexer::open_path(sync_db_path)
+        .map_err(|error| format!("failed to open scanner database: {error}"))?;
+    let indexed_lane = indexer
+        .lane_by_id(&lane_id)
+        .ok_or_else(|| "laneId is not indexed in the wallet database".to_string())?;
+    if indexed_lane.covenant_id != covenant_id {
+        return Err("indexed lane covenant does not match the selected wallet lane".to_string());
+    }
+    let old_state = indexer.latest_state(covenant_id).ok_or_else(|| {
+        "selected lane covenant is not indexed in the wallet database".to_string()
+    })?;
+    let spent = indexer
+        .open_outpoint(covenant_id)
+        .ok_or_else(|| "selected lane has no indexed open outpoint".to_string())?;
+    if receipt_policy_name(old_state.receipt_policy) != input.receipt_policy {
+        return Err("receiptPolicy must match the indexed lane current policy".to_string());
+    }
+    let new_state = RgkStateCommitment::new(
+        chain_id,
+        covenant_id,
+        old_state.asset_id,
+        new_state_digest,
+        receipt_policy(input.receipt_policy),
+    )
+    .map_err(|error| format!("transition state commitment is invalid: {error}"))?;
+    let nonce = replay_nonce(&spent.encode_canonical(), &transition_digest);
+    let receipt_input = ReceiptInput::new(
+        chain_id,
+        covenant_id,
+        old_state.clone(),
+        new_state.clone(),
+        transition_digest,
+        continuation_commitment,
+        proof_mode(input.proof_mode),
+        nonce,
+    )
+    .map_err(|error| format!("transition receipt input is invalid: {error}"))?;
+    let (receipt, receipt_id, _receipt_bytes) = ReceiptBuilder::build(&receipt_input)
+        .map_err(|error| format!("failed to build transition receipt: {error}"))?;
+    let verified_id =
+        ReceiptVerifier::verify_local_structured(&receipt, covenant_id, &old_state, chain_id)
+            .map_err(|error| format!("transition receipt verification failed: {error}"))?;
+    if verified_id != receipt_id {
+        return Err("transition receipt verifier returned a non-canonical receipt id".to_string());
+    }
+    indexer
+        .apply_spend_with_continuation(
+            covenant_id,
+            receipt_id,
+            spent,
+            new_outpoint,
+            new_state,
+            input.daa_score,
+            ContinuationProof {
+                commitment: continuation_commitment,
+                shape_root: continuation_shape_root,
+                transition_digest,
+            },
+        )
+        .map_err(|error| format!("failed to index transition receipt: {error}"))?;
+    indexer
+        .flush()
+        .map_err(|error| format!("failed to flush scanner database: {error}"))?;
+
+    Ok(TransitionReceiptEvidence {
+        receipt_id,
+        proof_mode: input.proof_mode,
+        receipt_policy: input.receipt_policy,
+        new_outpoint,
+        new_state_digest,
+    })
 }
 
 fn proof_evidence_supplied(input: &RecordProofInput) -> bool {
@@ -1728,6 +1927,14 @@ fn proof_mode_name(value: ProofMode) -> ProofModeName {
     }
 }
 
+fn proof_mode(value: ProofModeName) -> ProofMode {
+    match value {
+        ProofModeName::VerifierReceipt => ProofMode::VerifierReceipt,
+        ProofModeName::ZkReceipt => ProofMode::ZkReceipt,
+        ProofModeName::P2mrRet => ProofMode::P2mrRet,
+    }
+}
+
 fn receipt_policy_name(value: ReceiptPolicy) -> ReceiptPolicyName {
     match value {
         ReceiptPolicy::Any => ReceiptPolicyName::Any,
@@ -1793,6 +2000,22 @@ mod tests {
             new_index: 0,
             continuation_shape_root: String::new(),
             daa_score: 0,
+        }
+    }
+
+    fn transition_input() -> RecordTransitionInput {
+        RecordTransitionInput {
+            lane_id: hex32_label(&[0x64u8; 32]),
+            proof_mode: ProofModeName::VerifierReceipt,
+            receipt_policy: ReceiptPolicyName::VerifierOnly,
+            strategy: "verifier-receipt-baseline".to_string(),
+            new_state_digest: hex32_label(&[0x68u8; 32]),
+            transition_digest: hex32_label(&[0x69u8; 32]),
+            continuation_commitment: hex32_label(&[0x6au8; 32]),
+            continuation_shape_root: hex32_label(&[0x6bu8; 32]),
+            new_txid: hex32_plain(&[0x6cu8; 32]),
+            new_index: 3,
+            daa_score: 21,
         }
     }
 
@@ -1938,6 +2161,113 @@ mod tests {
             vec![evidence.lane.clone()]
         );
 
+        let _ = std::fs::remove_dir_all(&path);
+    }
+
+    #[test]
+    fn build_transition_receipt_indexes_spend_after_reopen() {
+        let path = temp_path("rgk-walletd-transition-index");
+        let _ = std::fs::remove_dir_all(&path);
+        let request = indexed_lane_input();
+        let evidence = parse_lane_evidence(KASPA_LOCAL_TOCCATA, &request)
+            .expect("parse")
+            .expect("evidence");
+        index_lane_evidence_at_path(&path, KASPA_LOCAL_TOCCATA, evidence.clone())
+            .expect("index lane")
+            .expect("indexed");
+
+        let transition = transition_input();
+        let receipt = build_transition_receipt_at_path(
+            &path,
+            KASPA_LOCAL_TOCCATA,
+            &transition,
+            &hex32_label(&evidence.covenant_id),
+        )
+        .expect("transition receipt");
+
+        assert_eq!(receipt.proof_mode, ProofModeName::VerifierReceipt);
+        assert_eq!(receipt.receipt_policy, ReceiptPolicyName::VerifierOnly);
+        assert_eq!(receipt.new_state_digest, [0x68u8; 32]);
+        assert_eq!(
+            receipt.new_outpoint,
+            KaspaOutpoint {
+                transaction_id: [0x6cu8; 32],
+                index: 3,
+            }
+        );
+
+        let indexer = SledIndexer::open_path(&path).expect("reopen indexer");
+        assert_eq!(
+            indexer
+                .latest_state(evidence.covenant_id)
+                .map(|state| state.state_digest),
+            Some([0x68u8; 32])
+        );
+        assert_eq!(
+            indexer.open_outpoint(evidence.covenant_id),
+            Some(KaspaOutpoint {
+                transaction_id: [0x6cu8; 32],
+                index: 3,
+            })
+        );
+        let entry = indexer
+            .lookup(evidence.covenant_id)
+            .expect("indexed covenant");
+        assert_eq!(entry.spend_history.len(), 1);
+        assert_eq!(entry.spend_history[0].receipt_id, receipt.receipt_id);
+        assert_eq!(
+            entry.spend_history[0].continuation,
+            Some(ContinuationProof {
+                commitment: [0x6au8; 32],
+                shape_root: [0x6bu8; 32],
+                transition_digest: [0x69u8; 32],
+            })
+        );
+
+        let _ = std::fs::remove_dir_all(&path);
+    }
+
+    #[test]
+    fn build_transition_receipt_rejects_policy_mismatch() {
+        let path = temp_path("rgk-walletd-transition-policy");
+        let _ = std::fs::remove_dir_all(&path);
+        let request = indexed_lane_input();
+        let evidence = parse_lane_evidence(KASPA_LOCAL_TOCCATA, &request)
+            .expect("parse")
+            .expect("evidence");
+        index_lane_evidence_at_path(&path, KASPA_LOCAL_TOCCATA, evidence.clone())
+            .expect("index lane")
+            .expect("indexed");
+
+        let mut transition = transition_input();
+        transition.receipt_policy = ReceiptPolicyName::Any;
+        let err = build_transition_receipt_at_path(
+            &path,
+            KASPA_LOCAL_TOCCATA,
+            &transition,
+            &hex32_label(&evidence.covenant_id),
+        )
+        .expect_err("policy mismatch must fail");
+
+        assert!(err.contains("receiptPolicy must match the indexed lane current policy"));
+        let _ = std::fs::remove_dir_all(&path);
+    }
+
+    #[test]
+    fn build_transition_receipt_rejects_unindexed_lane() {
+        let path = temp_path("rgk-walletd-transition-unindexed");
+        let _ = std::fs::remove_dir_all(&path);
+        let transition = transition_input();
+
+        let err = build_transition_receipt_at_path(
+            &path,
+            KASPA_LOCAL_TOCCATA,
+            &transition,
+            &hex32_label(&[0x61u8; 32]),
+        )
+        .expect_err("unindexed lane must fail");
+
+        assert!(err.contains("laneId is not indexed"));
         let _ = std::fs::remove_dir_all(&path);
     }
 

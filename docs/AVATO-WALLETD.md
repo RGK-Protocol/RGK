@@ -46,6 +46,7 @@ The daemon exposes the Avato contract:
 * `GET /dashboard`
 * `POST /lanes`
 * `POST /proofs`
+* `POST /transitions`
 
 The daemon deliberately does not accept a frontend-selected chain domain that
 differs from its configured `--network`. RGK receipt evidence is chain-domain
@@ -85,6 +86,18 @@ shape root, and DAA score, walletd verifies the receipt against the indexed
 covenant state and records the spend in sled before returning `verified`.
 Partial receipt bundles are rejected. `NativeTransitionedValid` remains
 reserved for scanner/resolver-backed chain evidence.
+`POST /transitions` is the wallet-built receipt path. It requires an Avato lane
+that was created with a complete covenant evidence bundle and therefore exists
+in the local sled indexer. The request supplies the selected lane, proof mode,
+current receipt policy, strategy label, new state digest, transition digest,
+continuation commitment, continuation shape root, new outpoint, and DAA score.
+walletd reads the indexed current state and open outpoint, rejects policy
+mismatches and metadata-only lanes, derives a replay nonce from the open
+outpoint plus transition digest, builds a canonical RGK receipt, verifies it
+locally, and then records the spend in sled before returning a `verified`
+`RgkProofSummary`. This proves the local receipt is structurally valid against
+the indexed lane state; it does not by itself prove the transition was
+broadcast, confirmed, or classified by the resolver.
 `POST /wallet/sync` now runs one restart-safe `rgk-sync` scanner tick against
 the wallet profile's Kaspa wRPC endpoint. The scanner persists observed spend
 records to sled before advancing the scan cursor; the cursor must not outrun
@@ -106,7 +119,7 @@ bash scripts/verify-avato-walletd-contract.sh
 
 The script starts `rgk-walletd` on an isolated local port, reads
 `../avato-wallet-frontend/contracts/rgk-wallet-http-contract.json`, exercises
-health/profile/create/dashboard/lane/proof/lock/unlock/sync, verifies that new
-wallets do not contain synthetic lane/proof records, rejects a mismatched
-network request, and checks the state file for raw phrase/passphrase leakage and
-unsafe group/world-readable permissions.
+health/profile/create/dashboard/lane/proof/transition/lock/unlock/sync,
+verifies that new wallets do not contain synthetic lane/proof records, rejects
+a mismatched network request, and checks the state file for raw
+phrase/passphrase leakage and unsafe group/world-readable permissions.
