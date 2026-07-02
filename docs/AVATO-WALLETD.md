@@ -67,8 +67,17 @@ is written with private user-only permissions so local metadata is not
 group/world readable. New and imported wallet profiles start without synthetic
 lane or proof records; lanes and receipt evidence appear only after explicit
 wallet actions or future scanner/resolver/prover integration.
-New locally-staged lanes use protocol-width 32-byte textual handles but start
-in `unknown`, not `open`, because a frontend action is not chain evidence.
+`POST /lanes` has two explicit modes. With empty covenant evidence fields, it
+stages local metadata only, using protocol-width 32-byte textual handles and
+starting in `unknown`, not `open`, because a frontend action is not chain
+evidence. With a complete evidence bundle (`covenantId`, `lineageId`,
+`assetId`, `laneId`, `stateDigest`, `openTxid`, plus open index, epoch, optional
+scan tag, and DAA score), the daemon first validates the bundle, then opens the
+covenant and registers the lane in the local sled indexer before persisting the
+wallet profile row. Partial lane evidence is rejected, and duplicate lane or
+covenant handles are rejected before any indexer write when they are already
+present in the wallet profile. The lane still starts as `unknown`; sync/resolver
+evidence is responsible for promoting it to `open` or a transition state.
 Manual `POST /proofs` calls stage local receipt evidence as `pending`; they do
 not move a lane into `NativeTransitionedValid`. If the request includes
 canonical `receiptBytes`, `covenantId`, spent/new outpoints, a continuation

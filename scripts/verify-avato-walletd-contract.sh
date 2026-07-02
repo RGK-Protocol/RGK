@@ -124,6 +124,12 @@ def assert_hex32(value, label):
 def assert_handle_hex32(value, label):
     assert_hex32(value.rsplit(":", 1)[-1], label)
 
+def hex32(byte):
+    return "0x" + f"{byte:02x}" * 32
+
+def txid(byte):
+    return f"{byte:02x}" * 32
+
 health = request("GET", "/health")
 assert health["service"] == "rgk-wallet"
 assert health["protocol"] == "rgk"
@@ -202,6 +208,16 @@ request("POST", "/lanes", {
     "balance": "1.0000",
     "privacy": "public-lineage",
     "proofPolicy": "verifier-only",
+    "covenantId": "",
+    "lineageId": "",
+    "assetId": "",
+    "laneId": "",
+    "scanTag": "",
+    "stateDigest": "",
+    "openTxid": "",
+    "openIndex": 0,
+    "epoch": 0,
+    "daaScore": 0,
 }, expected_status=400)
 
 request("POST", "/lanes", {
@@ -210,6 +226,16 @@ request("POST", "/lanes", {
     "balance": "-1.0000",
     "privacy": "public-lineage",
     "proofPolicy": "verifier-only",
+    "covenantId": "",
+    "lineageId": "",
+    "assetId": "",
+    "laneId": "",
+    "scanTag": "",
+    "stateDigest": "",
+    "openTxid": "",
+    "openIndex": 0,
+    "epoch": 0,
+    "daaScore": 0,
 }, expected_status=400)
 
 request("POST", "/lanes", {
@@ -218,8 +244,42 @@ request("POST", "/lanes", {
     "balance": "1.0000",
     "privacy": "public-lineage",
     "proofPolicy": "verifier-only",
+    "covenantId": "",
+    "lineageId": "",
+    "assetId": "",
+    "laneId": "",
+    "scanTag": "",
+    "stateDigest": "",
+    "openTxid": "",
+    "openIndex": 0,
+    "epoch": 0,
+    "daaScore": 0,
     "unexpectedField": "stale-client",
 }, expected_status=422)
+
+empty_lane_evidence = {
+    "covenantId": "",
+    "lineageId": "",
+    "assetId": "",
+    "laneId": "",
+    "scanTag": "",
+    "stateDigest": "",
+    "openTxid": "",
+    "openIndex": 0,
+    "epoch": 0,
+    "daaScore": 0,
+}
+
+partial_lane_evidence = dict(empty_lane_evidence)
+partial_lane_evidence["covenantId"] = hex32(0x61)
+request("POST", "/lanes", {
+    "label": "Partial indexed lane",
+    "ticker": "IDX",
+    "balance": "1.0000",
+    "privacy": "public-lineage",
+    "proofPolicy": "verifier-only",
+    **partial_lane_evidence,
+}, expected_status=400)
 
 lane = request("POST", "/lanes", {
     "label": "Contract smoke public lane",
@@ -227,6 +287,7 @@ lane = request("POST", "/lanes", {
     "balance": "42.0000",
     "privacy": "public-lineage",
     "proofPolicy": "verifier-only",
+    **empty_lane_evidence,
 })
 assert lane["label"] == "Contract smoke public lane"
 assert lane["privacy"] == "public-lineage"
@@ -237,6 +298,34 @@ assert_handle_hex32(lane["lineageId"], "lineageId")
 assert_handle_hex32(lane["laneId"], "laneId")
 assert_hex32(lane["covenantId"], "covenantId")
 assert_hex32(lane["stateDigest"], "stateDigest")
+
+indexed_lane_evidence = {
+    "covenantId": hex32(0x61),
+    "lineageId": hex32(0x62),
+    "assetId": hex32(0x63),
+    "laneId": hex32(0x64),
+    "scanTag": hex32(0x65),
+    "stateDigest": hex32(0x66),
+    "openTxid": txid(0x67),
+    "openIndex": 2,
+    "epoch": 7,
+    "daaScore": 13,
+}
+
+indexed_lane = request("POST", "/lanes", {
+    "label": "Contract smoke indexed lane",
+    "ticker": "IDX",
+    "balance": "7.0000",
+    "privacy": "private-lane",
+    "proofPolicy": "verifier-only",
+    **indexed_lane_evidence,
+})
+assert indexed_lane["label"] == "Contract smoke indexed lane"
+assert indexed_lane["lineageId"] == f"rgk:lineage:{indexed_lane_evidence['lineageId']}"
+assert indexed_lane["laneId"] == f"rgk:lane:private:{indexed_lane_evidence['laneId']}"
+assert indexed_lane["covenantId"] == indexed_lane_evidence["covenantId"]
+assert indexed_lane["stateDigest"] == indexed_lane_evidence["stateDigest"]
+assert indexed_lane["resolverState"] == "unknown"
 
 empty_proof_evidence = {
     "receiptBytes": "",
@@ -307,11 +396,12 @@ assert proof["confirmations"] == 1
 assert_handle_hex32(proof["receiptId"], "receiptId")
 
 dashboard_after_actions = request("GET", "/dashboard")
-assert len(dashboard_after_actions["lanes"]) == 1
+assert len(dashboard_after_actions["lanes"]) == 2
 assert len(dashboard_after_actions["proofs"]) == 1
 assert dashboard_after_actions["scan"]["indexedSpends"] == 0
 assert dashboard_after_actions["scan"]["observedSpends"] == 0
 assert any(item["laneId"] == lane["laneId"] for item in dashboard_after_actions["lanes"])
+assert any(item["laneId"] == indexed_lane["laneId"] for item in dashboard_after_actions["lanes"])
 assert any(item["receiptId"] == proof["receiptId"] for item in dashboard_after_actions["proofs"])
 updated_lane = next(item for item in dashboard_after_actions["lanes"] if item["laneId"] == lane["laneId"])
 assert updated_lane["latestReceiptId"] == proof["receiptId"]
@@ -325,6 +415,7 @@ request("POST", "/lanes", {
     "balance": "0",
     "privacy": "private-lane",
     "proofPolicy": "zk-or-verifier",
+    **empty_lane_evidence,
 }, expected_status=401)
 request(
     "POST",

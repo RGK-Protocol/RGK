@@ -14,7 +14,7 @@ use axum::{Json, Router};
 use clap::{Parser, ValueEnum};
 use rgk_core::{
     from_hex, receipt_commitment, to_hex, Bytes32, Canonical, KaspaChainId, KaspaOutpoint,
-    ProofMode, ReceiptPolicy, RgkReceipt, MAX_BLOB_BYTES,
+    ProofMode, ReceiptPolicy, RgkReceipt, RgkStateCommitment, MAX_BLOB_BYTES,
 };
 use rgk_indexer::{ContinuationProof, IndexedLane, Indexer, ObservedSpendStore, SledIndexer};
 use rgk_kaspa::{KaspaChainBackend, WrpcBackend, WrpcNetwork};
@@ -333,7 +333,7 @@ struct UnlockWalletInput {
     passphrase: String,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Clone, Debug, Deserialize)]
 #[serde(rename_all = "camelCase", deny_unknown_fields)]
 struct CreateLaneInput {
     label: String,
@@ -341,6 +341,26 @@ struct CreateLaneInput {
     balance: String,
     privacy: PrivacyMode,
     proof_policy: ReceiptPolicyName,
+    #[serde(default)]
+    covenant_id: String,
+    #[serde(default)]
+    lineage_id: String,
+    #[serde(default)]
+    asset_id: String,
+    #[serde(default)]
+    lane_id: String,
+    #[serde(default)]
+    scan_tag: String,
+    #[serde(default)]
+    state_digest: String,
+    #[serde(default)]
+    open_txid: String,
+    #[serde(default)]
+    open_index: u32,
+    #[serde(default)]
+    epoch: u64,
+    #[serde(default)]
+    daa_score: u64,
 }
 
 #[derive(Clone, Debug, Deserialize)]
@@ -552,31 +572,70 @@ async fn create_lane(
     State(state): State<AppState>,
     Json(input): Json<CreateLaneInput>,
 ) -> ApiResult<AssetLane> {
-    let mut store = state.store()?;
-    let wallet_id = ready_wallet_id(&store)?;
+    let (wallet_id, lane_count) = {
+        let store = state.store()?;
+        (ready_wallet_id(&store)?, store.lanes.len())
+    };
     let label = validate_lane_label(&input.label)?;
     let ticker = validate_ticker(&input.ticker)?;
     let balance = validate_balance(&input.balance)?;
-    let seed = format!("{}:{}:{}:{}", wallet_id, label, ticker, store.lanes.len());
+    let evidence = parse_lane_evidence(state.config.network.chain_id(), &input)
+        .map_err(|message| api_error(WalletdError::BadRequest(message)))?;
+    if let Some(evidence) = evidence.as_ref() {
+        let store = state.store()?;
+        validate_lane_profile_uniqueness(&store, evidence)?;
+    }
+    let indexed = index_lane_evidence(Arc::clone(&state.config), evidence.clone())
+        .await
+        .map_err(|message| api_error(WalletdError::BadRequest(message)))?;
+    let seed = format!("{}:{}:{}:{}", wallet_id, label, ticker, lane_count);
     let updated_at = now_label();
     let lane = AssetLane {
-        lineage_id: format!("rgk:lineage:{}", hex_digest("lineage", &seed, 32)),
-        lane_id: format!(
-            "rgk:lane:{}:{}",
-            privacy_slug(input.privacy),
-            hex_digest("lane", &seed, 32)
-        ),
+        lineage_id: indexed
+            .as_ref()
+            .map(|evidence| format!("rgk:lineage:{}", hex32_label(&evidence.lineage_id)))
+            .unwrap_or_else(|| format!("rgk:lineage:{}", hex_digest("lineage", &seed, 32))),
+        lane_id: indexed
+            .as_ref()
+            .map(|evidence| {
+                format!(
+                    "rgk:lane:{}:{}",
+                    privacy_slug(input.privacy),
+                    hex32_label(&evidence.lane_id)
+                )
+            })
+            .unwrap_or_else(|| {
+                format!(
+                    "rgk:lane:{}:{}",
+                    privacy_slug(input.privacy),
+                    hex_digest("lane", &seed, 32)
+                )
+            }),
         label,
         ticker,
         balance,
         privacy: input.privacy,
         proof_policy: input.proof_policy,
         resolver_state: ResolverStateName::Unknown,
-        covenant_id: hex_digest("covenant", &seed, 32),
-        state_digest: hex_digest("state", &seed, 32),
+        covenant_id: indexed
+            .as_ref()
+            .map(|evidence| hex32_label(&evidence.covenant_id))
+            .unwrap_or_else(|| hex_digest("covenant", &seed, 32)),
+        state_digest: indexed
+            .as_ref()
+            .map(|evidence| hex32_label(&evidence.state_digest))
+            .unwrap_or_else(|| hex_digest("state", &seed, 32)),
         latest_receipt_id: None,
         updated_at,
     };
+    let mut store = state.store()?;
+    if store.lanes.iter().any(|existing| {
+        existing.lane_id == lane.lane_id || existing.covenant_id == lane.covenant_id
+    }) {
+        return Err(api_error(WalletdError::BadRequest(
+            "lane or covenant is already present in the wallet profile".to_string(),
+        )));
+    }
     store.lanes.push(lane.clone());
     save_state(&state.config.state_path, &store)?;
     Ok(Json(lane))
@@ -729,6 +788,18 @@ struct LaneResolutionUpdate {
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
+struct LaneEvidence {
+    covenant_id: Bytes32,
+    lineage_id: Bytes32,
+    asset_id: Bytes32,
+    lane_id: Bytes32,
+    state_digest: Bytes32,
+    state: RgkStateCommitment,
+    open_outpoint: KaspaOutpoint,
+    lane: IndexedLane,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
 struct VerifiedProofEvidence {
     receipt_id: Bytes32,
     proof_mode: ProofModeName,
@@ -773,6 +844,163 @@ async fn run_scan_tick(
     })
     .await
     .map_err(|error| format!("scanner task failed: {error}"))?
+}
+
+async fn index_lane_evidence(
+    config: Arc<DaemonConfig>,
+    evidence: Option<LaneEvidence>,
+) -> Result<Option<LaneEvidence>, String> {
+    let Some(evidence) = evidence else {
+        return Ok(None);
+    };
+    let sync_db_path = config.sync_db_path.clone();
+    let chain_id = config.network.chain_id();
+    tokio::task::spawn_blocking(move || {
+        index_lane_evidence_at_path(&sync_db_path, chain_id, evidence)
+    })
+    .await
+    .map_err(|error| format!("lane evidence task failed: {error}"))?
+}
+
+fn index_lane_evidence_at_path(
+    sync_db_path: &Path,
+    chain_id: KaspaChainId,
+    evidence: LaneEvidence,
+) -> Result<Option<LaneEvidence>, String> {
+    if evidence.lane.chain_id != chain_id {
+        return Err("lane evidence chain id does not match walletd network".to_string());
+    }
+    let mut indexer = SledIndexer::open_path(sync_db_path)
+        .map_err(|error| format!("failed to open scanner database: {error}"))?;
+    indexer
+        .open(
+            chain_id,
+            evidence.covenant_id,
+            evidence.lineage_id,
+            evidence.state.clone(),
+            evidence.open_outpoint,
+            evidence.lane.last_update_daa_score,
+        )
+        .map_err(|error| format!("failed to index covenant: {error}"))?;
+    indexer
+        .register_lane(evidence.lane.clone())
+        .map_err(|error| format!("failed to register lane: {error}"))?;
+    indexer
+        .flush()
+        .map_err(|error| format!("failed to flush scanner database: {error}"))?;
+
+    Ok(Some(evidence))
+}
+
+fn parse_lane_evidence(
+    chain_id: KaspaChainId,
+    input: &CreateLaneInput,
+) -> Result<Option<LaneEvidence>, String> {
+    if !lane_evidence_supplied(input) {
+        return Ok(None);
+    }
+    require_lane_evidence_bundle(input)?;
+    let covenant_id = parse_bytes32_required(&input.covenant_id, "covenantId")?;
+    let lineage_id = parse_bytes32_required(&input.lineage_id, "lineageId")?;
+    let asset_id = parse_bytes32_required(&input.asset_id, "assetId")?;
+    let lane_id = parse_bytes32_required(&input.lane_id, "laneId")?;
+    let scan_tag = trimmed_optional(&input.scan_tag)
+        .map(|scan_tag| parse_bytes32_required(&scan_tag, "scanTag"))
+        .transpose()?;
+    let state_digest = parse_bytes32_required(&input.state_digest, "stateDigest")?;
+    validate_lane_evidence_invariants(lane_id, scan_tag, state_digest)?;
+    let open_outpoint = KaspaOutpoint {
+        transaction_id: parse_bytes32_required(&input.open_txid, "openTxid")?,
+        index: input.open_index,
+    };
+    let state = RgkStateCommitment::new(
+        chain_id,
+        covenant_id,
+        asset_id,
+        state_digest,
+        receipt_policy(input.proof_policy),
+    )
+    .map_err(|error| format!("indexed state commitment is invalid: {error}"))?;
+    let lane = IndexedLane::new(
+        chain_id,
+        covenant_id,
+        asset_id,
+        lane_id,
+        input.epoch,
+        scan_tag,
+        matches!(input.privacy, PrivacyMode::PublicLineage),
+        state_digest,
+        input.daa_score,
+    );
+
+    Ok(Some(LaneEvidence {
+        covenant_id,
+        lineage_id,
+        asset_id,
+        lane_id,
+        state_digest,
+        state,
+        open_outpoint,
+        lane,
+    }))
+}
+
+fn validate_lane_evidence_invariants(
+    lane_id: Bytes32,
+    scan_tag: Option<Bytes32>,
+    state_digest: Bytes32,
+) -> Result<(), String> {
+    if lane_id == [0u8; 32] {
+        return Err("laneId must not be zero when lane evidence is supplied".to_string());
+    }
+    if state_digest == [0u8; 32] {
+        return Err("stateDigest must not be zero when lane evidence is supplied".to_string());
+    }
+    if scan_tag == Some([0u8; 32]) {
+        return Err("scanTag must not be zero when lane evidence is supplied".to_string());
+    }
+    Ok(())
+}
+
+fn validate_lane_profile_uniqueness(
+    store: &PersistedState,
+    evidence: &LaneEvidence,
+) -> Result<(), (StatusCode, Json<ApiError>)> {
+    if store.lanes.iter().any(|existing| {
+        parse_bytes32_handle(&existing.lane_id) == Some(evidence.lane_id)
+            || parse_bytes32_handle(&existing.covenant_id) == Some(evidence.covenant_id)
+    }) {
+        return Err(api_error(WalletdError::BadRequest(
+            "lane or covenant is already present in the wallet profile".to_string(),
+        )));
+    }
+    Ok(())
+}
+
+fn lane_evidence_supplied(input: &CreateLaneInput) -> bool {
+    !input.covenant_id.trim().is_empty()
+        || !input.lineage_id.trim().is_empty()
+        || !input.asset_id.trim().is_empty()
+        || !input.lane_id.trim().is_empty()
+        || !input.scan_tag.trim().is_empty()
+        || !input.state_digest.trim().is_empty()
+        || !input.open_txid.trim().is_empty()
+}
+
+fn require_lane_evidence_bundle(input: &CreateLaneInput) -> Result<(), String> {
+    for (name, value) in [
+        ("covenantId", input.covenant_id.as_str()),
+        ("lineageId", input.lineage_id.as_str()),
+        ("assetId", input.asset_id.as_str()),
+        ("laneId", input.lane_id.as_str()),
+        ("stateDigest", input.state_digest.as_str()),
+        ("openTxid", input.open_txid.as_str()),
+    ] {
+        if value.trim().is_empty() {
+            return Err(format!("{name} is required when lane evidence is supplied"));
+        }
+    }
+    Ok(())
 }
 
 async fn ingest_proof_evidence(
@@ -1508,6 +1736,14 @@ fn receipt_policy_name(value: ReceiptPolicy) -> ReceiptPolicyName {
     }
 }
 
+fn receipt_policy(value: ReceiptPolicyName) -> ReceiptPolicy {
+    match value {
+        ReceiptPolicyName::Any => ReceiptPolicy::Any,
+        ReceiptPolicyName::VerifierOnly => ReceiptPolicy::VerifierOnly,
+        ReceiptPolicyName::ZkOrVerifier => ReceiptPolicy::ZkOrVerifier,
+    }
+}
+
 fn now_label() -> String {
     let seconds = SystemTime::now()
         .duration_since(UNIX_EPOCH)
@@ -1560,6 +1796,41 @@ mod tests {
         }
     }
 
+    fn lane_input() -> CreateLaneInput {
+        CreateLaneInput {
+            label: "Indexed RGK lane".to_string(),
+            ticker: "RGK".to_string(),
+            balance: "1.0000".to_string(),
+            privacy: PrivacyMode::PublicLineage,
+            proof_policy: ReceiptPolicyName::VerifierOnly,
+            covenant_id: String::new(),
+            lineage_id: String::new(),
+            asset_id: String::new(),
+            lane_id: String::new(),
+            scan_tag: String::new(),
+            state_digest: String::new(),
+            open_txid: String::new(),
+            open_index: 0,
+            epoch: 0,
+            daa_score: 0,
+        }
+    }
+
+    fn indexed_lane_input() -> CreateLaneInput {
+        let mut request = lane_input();
+        request.covenant_id = hex32_label(&[0x61u8; 32]);
+        request.lineage_id = hex32_label(&[0x62u8; 32]);
+        request.asset_id = hex32_label(&[0x63u8; 32]);
+        request.lane_id = hex32_label(&[0x64u8; 32]);
+        request.scan_tag = hex32_label(&[0x65u8; 32]);
+        request.state_digest = hex32_label(&[0x66u8; 32]);
+        request.open_txid = hex32_plain(&[0x67u8; 32]);
+        request.open_index = 2;
+        request.epoch = 7;
+        request.daa_score = 13;
+        request
+    }
+
     fn temp_path(prefix: &str) -> PathBuf {
         let timestamp = SystemTime::now()
             .duration_since(UNIX_EPOCH)
@@ -1582,6 +1853,92 @@ mod tests {
         );
         assert_eq!(parse_bytes32_handle("rgk:lane:private:0x1111"), None);
         assert_eq!(parse_bytes32_handle("rgk:lane:private:not-hex"), None);
+    }
+
+    #[test]
+    fn parse_lane_evidence_accepts_metadata_only_lane() {
+        assert_eq!(
+            parse_lane_evidence(KASPA_LOCAL_TOCCATA, &lane_input()).expect("parse"),
+            None
+        );
+    }
+
+    #[test]
+    fn parse_lane_evidence_rejects_partial_bundle() {
+        let mut request = lane_input();
+        request.covenant_id = hex32_label(&[0x61u8; 32]);
+
+        let err = parse_lane_evidence(KASPA_LOCAL_TOCCATA, &request)
+            .expect_err("partial lane evidence must fail");
+
+        assert!(err.contains("lineageId is required"));
+    }
+
+    #[test]
+    fn parse_lane_evidence_rejects_zero_scan_tag_before_indexing() {
+        let mut request = indexed_lane_input();
+        request.scan_tag = hex32_label(&[0u8; 32]);
+
+        let err = parse_lane_evidence(KASPA_LOCAL_TOCCATA, &request)
+            .expect_err("zero scan tag must fail before indexing");
+
+        assert!(err.contains("scanTag must not be zero"));
+    }
+
+    #[test]
+    fn validate_lane_profile_uniqueness_rejects_existing_lane_or_covenant() {
+        let request = indexed_lane_input();
+        let evidence = parse_lane_evidence(KASPA_LOCAL_TOCCATA, &request)
+            .expect("parse")
+            .expect("evidence");
+        let store = PersistedState {
+            lanes: vec![sample_lane(evidence.lane_id, evidence.covenant_id)],
+            ..PersistedState::default()
+        };
+
+        let err = validate_lane_profile_uniqueness(&store, &evidence)
+            .expect_err("duplicate lane evidence must fail");
+
+        assert_eq!(err.0, StatusCode::BAD_REQUEST);
+    }
+
+    #[test]
+    fn index_lane_evidence_persists_covenant_and_lane_after_reopen() {
+        let path = temp_path("rgk-walletd-lane-index");
+        let _ = std::fs::remove_dir_all(&path);
+        let request = indexed_lane_input();
+        let evidence = parse_lane_evidence(KASPA_LOCAL_TOCCATA, &request)
+            .expect("parse")
+            .expect("evidence");
+
+        let indexed = index_lane_evidence_at_path(&path, KASPA_LOCAL_TOCCATA, evidence.clone())
+            .expect("index lane")
+            .expect("indexed evidence");
+
+        assert_eq!(indexed.asset_id, [0x63u8; 32]);
+        let indexer = SledIndexer::open_path(&path).expect("reopen indexer");
+        assert_eq!(
+            indexer.latest_state(evidence.covenant_id),
+            Some(evidence.state.clone())
+        );
+        assert_eq!(
+            indexer.open_outpoint(evidence.covenant_id),
+            Some(evidence.open_outpoint)
+        );
+        assert_eq!(
+            indexer.lane_by_id(&evidence.lane_id),
+            Some(evidence.lane.clone())
+        );
+        assert_eq!(
+            indexer.lane_by_scan_tag(&[0x65u8; 32]),
+            Some(evidence.lane.clone())
+        );
+        assert_eq!(
+            indexer.public_lanes(&evidence.asset_id),
+            vec![evidence.lane.clone()]
+        );
+
+        let _ = std::fs::remove_dir_all(&path);
     }
 
     #[test]
