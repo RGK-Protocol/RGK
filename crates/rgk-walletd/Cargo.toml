@@ -31,6 +31,12 @@ tokio = { version = "1", features = ["macros", "net", "rt-multi-thread", "signal
 tower-http = { version = "0.6", features = ["cors"] }
 zeroize.workspace = true
 
+[dev-dependencies]
+# `util` provides `ServiceExt::oneshot`, used by the HTTP-layer tests to drive
+# the real axum router in-process (status code + serialised ApiError wire shape)
+# without binding a socket. Pinned to match the tower already in the dep tree.
+tower = { version = "0.5", features = ["util"] }
+
 [[bin]]
 name = "rgk-walletd"
 path = "src/main.rs"

@@ -611,7 +611,19 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         store,
         identity_session: Arc::new(Mutex::new(RuntimeIdentitySession::default())),
     };
-    let app = Router::new()
+    let app = build_router(app_state);
+
+    let listener = TcpListener::bind(cli.listen).await?;
+    eprintln!("rgk-walletd: listening on http://{}", cli.listen);
+    axum::serve(listener, app).await?;
+    Ok(())
+}
+
+/// Builds the walletd axum router. Extracted from `main` so the HTTP-layer
+/// tests can drive the real request → handler → `ApiError` → wire-shape
+/// pipeline (status code + serialised `code` field) without spawning a socket.
+fn build_router(app_state: AppState) -> Router {
+    Router::new()
         .route("/health", get(health))
         .route("/wallet/profile", get(profile))
         .route("/wallets", post(create_wallet))
@@ -625,12 +637,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .route("/proofs", post(record_proof))
         .route("/transitions", post(record_transition))
         .layer(CorsLayer::permissive())
-        .with_state(app_state);
-
-    let listener = TcpListener::bind(cli.listen).await?;
-    eprintln!("rgk-walletd: listening on http://{}", cli.listen);
-    axum::serve(listener, app).await?;
-    Ok(())
+        .with_state(app_state)
 }
 
 async fn health(State(state): State<AppState>) -> Json<HealthResponse> {
@@ -2663,6 +2670,7 @@ mod tests {
     use rgk_indexer::{InMemoryIndexer, ScanCursor};
     use rgk_kaspa::{FixtureBackend, KaspaUtxo};
     use rgk_receipt::{ReceiptBuilder, ReceiptInput};
+    use tower::ServiceExt;
 
     fn sample_lane(lane_id: Bytes32, covenant_id: Bytes32) -> AssetLane {
         AssetLane {
@@ -3483,5 +3491,137 @@ mod tests {
             assert_eq!(status, expected_status);
             assert_eq!(body.code, expected_code, "stable code drift for {expected_code}");
         }
+    }
+
+    // ---- HTTP-layer integration: real request → handler → ApiError wire shape ----
+    //
+    // These exercise the full axum pipeline (router → handler → `api_error` →
+    // axum serialisation) in-process via `tower::ServiceExt::oneshot`, so the
+    // `code` field is asserted on its actual serialised wire form, not just the
+    // in-memory `ApiError` struct. This is the end-to-end guarantee the frontend
+    // depends on: a 401 carries a `code` that distinguishes `wallet_locked` from
+    // `unauthorized` (audit §1.3).
+
+    fn test_app_state(profile: Option<WalletProfile>) -> AppState {
+        let network = CliNetwork::LocalToccata;
+        AppState {
+            config: Arc::new(DaemonConfig {
+                network,
+                kaspa_endpoint: network.default_kaspa_endpoint().map(ToString::to_string),
+                state_path: std::env::temp_dir().join(format!(
+                    "rgk-walletd-http-test-{}",
+                    std::process::id()
+                )),
+                sync_db_path: std::env::temp_dir().join(format!(
+                    "rgk-walletd-http-test-sync-{}",
+                    std::process::id()
+                )),
+            }),
+            store: Arc::new(Mutex::new(PersistedState {
+                profile,
+                ..PersistedState::default()
+            })),
+            identity_session: Arc::new(Mutex::new(RuntimeIdentitySession::default())),
+        }
+    }
+
+    fn locked_test_profile() -> WalletProfile {
+        let network = CliNetwork::LocalToccata;
+        WalletProfile {
+            wallet_id: "rgk:wallet:test".to_string(),
+            protocol: "rgk".to_string(),
+            network_id: network.network_id().to_string(),
+            protocol_network_id: network.protocol_network_id().to_string(),
+            canonical_chain_domain: network.protocol_network_id().to_string(),
+            kaspa_endpoint: "ws://127.0.0.1:18111/v2/kaspa/simnet/no-tls/wrpc/borsh"
+                .to_string(),
+            wallet_set_id: None,
+            address: None,
+            identity_vault_status: IdentityVaultStatus::Encrypted,
+            identity_fingerprint: None,
+            lifecycle: WalletLifecycle::Locked,
+        }
+    }
+
+    #[tokio::test]
+    async fn http_dashboard_returns_locked_code_when_wallet_is_locked() {
+        // The headline §1.3 guarantee over the wire: a locked wallet yields
+        // HTTP 401 with a distinct `wallet_locked` code, separable from the
+        // `unauthorized` (wrong-passphrase) code even though both share 401.
+        let app = build_router(test_app_state(Some(locked_test_profile())));
+        let res = app
+            .oneshot(
+                axum::http::Request::builder()
+                    .method("GET")
+                    .uri("/dashboard")
+                    .body(axum::body::Body::empty())
+                    .unwrap(),
+            )
+            .await
+            .expect("router oneshot");
+
+        assert_eq!(res.status(), StatusCode::UNAUTHORIZED);
+        let bytes = axum::body::to_bytes(res.into_body(), 1024 * 64)
+            .await
+            .expect("collect body");
+        let payload: serde_json::Value =
+            serde_json::from_slice(&bytes).expect("body is valid JSON");
+        assert_eq!(payload["code"], "wallet_locked");
+        assert!(
+            payload["message"].as_str().unwrap().contains("locked"),
+            "message should describe the locked state: {}",
+            payload["message"]
+        );
+    }
+
+    #[tokio::test]
+    async fn http_dashboard_returns_not_found_code_when_no_profile() {
+        // Confirms a different error path surfaces its own code on the wire,
+        // so the frontend can branch on `code` rather than status alone.
+        let app = build_router(test_app_state(None));
+        let res = app
+            .oneshot(
+                axum::http::Request::builder()
+                    .method("GET")
+                    .uri("/dashboard")
+                    .body(axum::body::Body::empty())
+                    .unwrap(),
+            )
+            .await
+            .expect("router oneshot");
+
+        assert_eq!(res.status(), StatusCode::NOT_FOUND);
+        let bytes = axum::body::to_bytes(res.into_body(), 1024 * 64)
+            .await
+            .expect("collect body");
+        let payload: serde_json::Value =
+            serde_json::from_slice(&bytes).expect("body is valid JSON");
+        assert_eq!(payload["code"], "wallet_not_found");
+        assert!(!payload["message"].as_str().unwrap().is_empty());
+    }
+
+    #[tokio::test]
+    async fn http_health_is_ok_and_carries_no_error_body() {
+        // Sanity: the success path is unaffected by the ApiError change.
+        let app = build_router(test_app_state(None));
+        let res = app
+            .oneshot(
+                axum::http::Request::builder()
+                    .method("GET")
+                    .uri("/health")
+                    .body(axum::body::Body::empty())
+                    .unwrap(),
+            )
+            .await
+            .expect("router oneshot");
+
+        assert_eq!(res.status(), StatusCode::OK);
+        let bytes = axum::body::to_bytes(res.into_body(), 1024 * 64)
+            .await
+            .expect("collect body");
+        let payload: serde_json::Value =
+            serde_json::from_slice(&bytes).expect("body is valid JSON");
+        assert_eq!(payload["status"], "ok");
+        assert_eq!(payload["protocol"], "rgk");
     }
 }
