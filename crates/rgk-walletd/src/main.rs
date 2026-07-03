@@ -550,6 +550,12 @@ struct HealthResponse {
 
 #[derive(Debug, Serialize)]
 struct ApiError {
+    /// Stable, machine-readable snake_case identifier. Clients MUST branch on
+    /// this rather than `message` (which is human-readable and may change).
+    /// Of special note: `wallet_locked` and `unauthorized` share HTTP 401 but
+    /// carry distinct codes, so a locked wallet can be told apart from a wrong
+    /// passphrase without parsing the message.
+    code: String,
     message: String,
 }
 
@@ -2196,19 +2202,27 @@ fn restrict_state_file_permissions(path: &Path) -> std::io::Result<()> {
 }
 
 fn api_error(error: WalletdError) -> (StatusCode, Json<ApiError>) {
-    let status = match error {
-        WalletdError::NotFound => StatusCode::NOT_FOUND,
-        WalletdError::Locked | WalletdError::Unauthorized => StatusCode::UNAUTHORIZED,
-        WalletdError::BadRequest(_) => StatusCode::BAD_REQUEST,
-        WalletdError::PoisonedState
-        | WalletdError::PoisonedIdentitySession
-        | WalletdError::Persist(_)
-        | WalletdError::Crypto(_)
-        | WalletdError::Entropy(_) => StatusCode::INTERNAL_SERVER_ERROR,
+    // `Locked` and `Unauthorized` deliberately map to distinct `code` values
+    // while sharing HTTP 401. Keeping the status identical preserves backward
+    // compatibility for clients that only read the status line; the `code`
+    // field is the new authoritative discriminator.
+    let (status, code) = match error {
+        WalletdError::NotFound => (StatusCode::NOT_FOUND, "wallet_not_found"),
+        WalletdError::Locked => (StatusCode::UNAUTHORIZED, "wallet_locked"),
+        WalletdError::Unauthorized => (StatusCode::UNAUTHORIZED, "unauthorized"),
+        WalletdError::BadRequest(_) => (StatusCode::BAD_REQUEST, "bad_request"),
+        WalletdError::PoisonedState => (StatusCode::INTERNAL_SERVER_ERROR, "poisoned_state"),
+        WalletdError::PoisonedIdentitySession => {
+            (StatusCode::INTERNAL_SERVER_ERROR, "poisoned_identity_session")
+        }
+        WalletdError::Persist(_) => (StatusCode::INTERNAL_SERVER_ERROR, "persist_failed"),
+        WalletdError::Crypto(_) => (StatusCode::INTERNAL_SERVER_ERROR, "crypto_failed"),
+        WalletdError::Entropy(_) => (StatusCode::INTERNAL_SERVER_ERROR, "entropy_failed"),
     };
     (
         status,
         Json(ApiError {
+            code: code.to_string(),
             message: error.to_string(),
         }),
     )
@@ -3407,5 +3421,67 @@ mod tests {
             .expect_err("cross-lane proof binding must fail");
 
         assert!(err.contains("covenantId must match the selected lane"));
+    }
+
+    #[test]
+    fn api_error_distinguishes_locked_from_unauthorized() {
+        // HTTP 401 is shared so the status line stays backward-compatible, but
+        // the `code` field is the authoritative discriminator. This guards the
+        // cross-repo fix for the audit's §1.3 finding: a locked wallet must be
+        // distinguishable from a wrong passphrase without parsing `message`.
+        let (locked_status, locked_body) = api_error(WalletdError::Locked);
+        let (unauthorized_status, unauthorized_body) = api_error(WalletdError::Unauthorized);
+
+        assert_eq!(locked_status, StatusCode::UNAUTHORIZED);
+        assert_eq!(unauthorized_status, StatusCode::UNAUTHORIZED);
+        assert_eq!(locked_body.code, "wallet_locked");
+        assert_eq!(unauthorized_body.code, "unauthorized");
+        assert_ne!(locked_body.code, unauthorized_body.code);
+        assert!(!locked_body.message.is_empty());
+        assert!(!unauthorized_body.message.is_empty());
+    }
+
+    #[test]
+    fn api_error_codes_are_stable_per_variant() {
+        // Snapshot of the full code surface — guards against silent renames
+        // that would break frontend branching on `code`. If you intentionally
+        // change one of these identifiers, update the frontend adapter and the
+        // HTTP contract in the same change.
+        let cases = [
+            (WalletdError::NotFound, StatusCode::NOT_FOUND, "wallet_not_found"),
+            (WalletdError::Locked, StatusCode::UNAUTHORIZED, "wallet_locked"),
+            (WalletdError::Unauthorized, StatusCode::UNAUTHORIZED, "unauthorized"),
+            (
+                WalletdError::BadRequest("x".to_string()),
+                StatusCode::BAD_REQUEST,
+                "bad_request",
+            ),
+            (WalletdError::PoisonedState, StatusCode::INTERNAL_SERVER_ERROR, "poisoned_state"),
+            (
+                WalletdError::PoisonedIdentitySession,
+                StatusCode::INTERNAL_SERVER_ERROR,
+                "poisoned_identity_session",
+            ),
+            (
+                WalletdError::Persist("x".to_string()),
+                StatusCode::INTERNAL_SERVER_ERROR,
+                "persist_failed",
+            ),
+            (
+                WalletdError::Crypto("x".to_string()),
+                StatusCode::INTERNAL_SERVER_ERROR,
+                "crypto_failed",
+            ),
+            (
+                WalletdError::Entropy("x".to_string()),
+                StatusCode::INTERNAL_SERVER_ERROR,
+                "entropy_failed",
+            ),
+        ];
+        for (err, expected_status, expected_code) in cases {
+            let (status, body) = api_error(err);
+            assert_eq!(status, expected_status);
+            assert_eq!(body.code, expected_code, "stable code drift for {expected_code}");
+        }
     }
 }
