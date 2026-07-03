@@ -1307,7 +1307,8 @@ impl CovenantSpec {
     /// [`build_script_for_policy`](Self::build_script_for_policy).
     ///
     /// The script bytes are intentionally compact and human-auditable. The
-    /// opcodes used here are stable in the rusty-kaspa toccata branch; see
+    /// opcodes used here are stable in the rusty-kaspa master branch
+    /// (commit `98a4ccd8`, pinned via `scripts/setup-external.sh`); see
     /// `docs/COVENANT-SPEC.md` for the full annotated disassembly.
     pub fn build_script(&self) -> Result<Vec<u8>, CovenantError> {
         self.build_script_for_policy(&CovenantContinuationPolicy::singleton())

@@ -57,7 +57,8 @@ use rgk_core::{
 use thiserror::Error;
 
 /// ZK tag byte, matching `kaspa_txscript::zk_precompiles::tags::ZkTag` in the
-/// rusty-kaspa toccata branch (commit `0ae28f9`).
+/// rusty-kaspa master branch (commit `98a4ccd8`); pinned via
+/// `scripts/setup-external.sh`.
 #[derive(Copy, Clone, Debug, PartialEq, Eq, Hash)]
 #[repr(u8)]
 pub enum ZkTag {
@@ -921,7 +922,8 @@ mod tests {
 
     #[test]
     fn tag_bytes_match_upstream() {
-        // Pinned values from rusty-kaspa toccata `zk_precompiles::tags::ZkTag`.
+        // Pinned values from rusty-kaspa master `zk_precompiles::tags::ZkTag`
+        // (see `scripts/setup-external.sh`; verified at commit `98a4ccd8`).
         assert_eq!(ZkTag::Groth16.as_byte(), 0x20);
         assert_eq!(ZkTag::R0Succinct.as_byte(), 0x21);
         assert_eq!(ZkTag::from_byte(0x20), Some(ZkTag::Groth16));
