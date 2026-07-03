@@ -17,6 +17,7 @@ use std::time::Duration;
 #[cfg(feature = "persistent-indexer")]
 use std::time::{SystemTime, UNIX_EPOCH};
 
+use kaspa_consensus_core::constants::TX_VERSION_TOCCATA;
 use kaspa_rpc_core::api::rpc::RpcApi;
 use kaspa_wrpc_client::prelude::{NetworkId, NetworkType};
 use kaspa_wrpc_client::{
@@ -90,10 +91,24 @@ async fn live_devnet_reports_toccata_node_identity() {
         info.server_version, info.network_id, info.is_synced, info.has_utxo_index
     );
     assert_eq!(info.network_id.network_type(), NetworkType::Devnet);
+    // The node must be Toccata-capable. We do NOT match on a version-string
+    // decoration (the old `contains("toc")` check): upstream `rusty-kaspa`
+    // merged the `toccata` branch into `master`, so master dropped the `-toc`
+    // Cargo suffix (`2.0.1`) while still shipping every Toccata feature. The
+    // authoritative capability signal is the compile-time presence of the
+    // Toccata transaction version constant in the linked `kaspa-consensus-core`
+    // — if this test binary builds, the dependency tree carries Toccata. We
+    // additionally sanity-check the running node's version so a mismatch
+    // between the linked crate and the launched `kaspad` binary is visible.
+    assert_eq!(
+        TX_VERSION_TOCCATA, 1,
+        "linked kaspa-consensus-core must expose the Toccata tx version"
+    );
     assert!(
-        info.server_version.contains("toc"),
-        "must be built from the Toccata branch; got {}",
-        info.server_version
+        !info.server_version.trim().is_empty(),
+        "devnet node reported an empty server_version; the launched kaspad does \
+         not match the linked kaspa-consensus-core checkout — rebuild with \
+         ./scripts/build-kaspa.sh from the same external/rusty-kaspa-toccata",
     );
     assert!(
         info.has_utxo_index,

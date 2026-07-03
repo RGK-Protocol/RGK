@@ -7,7 +7,7 @@
 #   ./scripts/setup-external.sh --update   # fetch + fast-forward existing clones
 #
 # Layout produced:
-#   external/rusty-kaspa-toccata/  -> branch `toccata`
+#   external/rusty-kaspa-toccata/  -> branch `master` (Toccata merged here)
 #   external/silverscript/         -> pinned compiler commit
 
 set -euo pipefail
@@ -32,10 +32,16 @@ clone_or_update() {
     (cd "${dir}" && git rev-parse HEAD)
 }
 
+# The upstream `toccata` branch was merged into `master` (toccata HEAD is a
+# strict ancestor of master, verified via `git merge-base`). We therefore pin
+# `master` so RGK tracks the line that actually carries every Toccata feature
+# plus subsequent fixes. The legacy `-toc` Cargo version suffix was dropped on
+# master, so capability is asserted structurally (TX_VERSION_TOCCATA) in the
+# e2e harness rather than by version-string matching.
 clone_or_update \
     "https://github.com/kaspanet/rusty-kaspa.git" \
     "${EXTERNAL}/rusty-kaspa-toccata" \
-    "origin/toccata"
+    "origin/master"
 
 clone_or_update \
     "https://github.com/kaspanet/silverscript.git" \

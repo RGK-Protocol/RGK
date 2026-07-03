@@ -16,8 +16,14 @@ Toccata node.
 ./scripts/setup-external.sh
 ```
 
-This only prepares the Kaspa Toccata source used for covenant and devnet
-evidence.
+This prepares the Kaspa Toccata source used for covenant and devnet evidence.
+Upstream merged the `toccata` branch into `master`, so `setup-external.sh`
+pins `origin/master` (a strict superset of the former `toccata` branch). The
+legacy `-toc` Cargo version suffix was dropped on master, so Toccata
+capability is asserted structurally — the e2e harness links against
+`kaspa_consensus_core::constants::TX_VERSION_TOCCATA`, which only compiles
+when the dependency tree carries Toccata — rather than by version-string
+matching.
 
 ## Step 2 - Build Kaspad
 
