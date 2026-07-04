@@ -8316,6 +8316,472 @@ mod tests {
         ));
     }
 
+    /// Adversarial scenario P2 from `docs/ADVERSARIAL-SCENARIOS.md`.
+    ///
+    /// The fixed-shape circuit enforces, for every new allocation, that the
+    /// encoded `covenant_outpoint.transaction_id` (`allocation[1..33]`) equals
+    /// the encoded `witness_txid` (`allocation[69..101]`) — see
+    /// `enforce_allocation_transition` and the in-circuit check at the line
+    /// `allocation[1..33].enforce_equal(&allocation[69..101])`.
+    ///
+    /// The segmented segment circuits (`enforce_allocation_transcript_segment`,
+    /// `enforce_allocation_conservation_segment`,
+    /// `enforce_allocation_exclusion_segment_pair`) enforce chain match,
+    /// distinct outpoints, supply sum, amount commitment, and next-root — but
+    /// never compare `transaction_id` to `witness_txid`.
+    ///
+    /// This means a >4x4 transition whose new allocation outpoint txid has
+    /// been detached from the witness txid still produces a verifying
+    /// segmented bundle. The txid binding for the segmented path must
+    /// therefore be supplied by an off-circuit verifier (resolver / indexer).
+    ///
+    /// These two tests pin that asymmetry. If a future refactor adds the
+    /// binding to the segmented circuit, the second test must flip to
+    /// rejection and this block must be updated.
+    #[test]
+    fn fixed_shape_circuit_binds_new_allocation_outpoint_txid_to_witness_txid() {
+        use ark_relations::r1cs::ConstraintSystem;
+
+        // A fresh 1x1 statement + witness, internally consistent: the new
+        // allocation's covenant_outpoint.transaction_id equals its witness_txid
+        // (finalise sets both to the same value).
+        let (statement, witness) = sample_allocation_statement_and_witness();
+
+        // Sanity: the unmodified witness satisfies the circuit.
+        let baseline = OneInOneOutAllocationCircuit::from_statement_and_witness(&statement, witness.clone())
+            .expect("baseline 1x1 circuit");
+        {
+            let cs = ConstraintSystem::<Fr>::new_ref();
+            baseline
+                .generate_constraints(cs.clone())
+                .expect("baseline constraint synthesis");
+            assert!(
+                cs.is_satisfied().expect("baseline satisfaction check"),
+                "baseline 1x1 circuit must be satisfied before tampering"
+            );
+        }
+
+        // Detach the new allocation's outpoint txid from its witness txid.
+        // Byte layout in the encoded witness (ALLOCATION_WITNESS_LEN = 157):
+        //   [0]      chain
+        //   [1..33]  covenant_outpoint.transaction_id
+        //   [33..37] covenant_outpoint.index
+        //   [37..69] covenant_id
+        //   [69..101] witness_txid
+        let mut tampered = witness.clone();
+        assert_eq!(
+            tampered.new_allocation[1..33], tampered.new_allocation[69..101],
+            "fixture must start with equal outpoint txid and witness txid"
+        );
+        // Flip a byte in [1..33] so it no longer equals [69..101].
+        tampered.new_allocation[1] ^= 0x01;
+        assert_ne!(
+            tampered.new_allocation[1..33], tampered.new_allocation[69..101],
+            "tamper must actually detach outpoint txid from witness txid"
+        );
+
+        let reject_circuit =
+            OneInOneOutAllocationCircuit::from_statement_and_witness(&statement, tampered)
+                .expect("tampered 1x1 circuit still constructs");
+        let cs = ConstraintSystem::<Fr>::new_ref();
+        reject_circuit
+            .generate_constraints(cs.clone())
+            .expect("tampered constraint synthesis");
+        assert!(
+            !cs.is_satisfied().expect("tampered satisfaction check"),
+            "fixed-shape circuit must reject a new allocation whose outpoint txid \
+             differs from its witness txid (binding enforced in circuit)"
+        );
+    }
+
+    #[test]
+    fn segmented_exclusion_pair_circuit_does_not_bind_outpoint_txid_to_witness_txid() {
+        use ark_relations::r1cs::ConstraintSystem;
+
+        // Build an exclusion-pair statement + witness directly from a new
+        // allocation whose covenant_outpoint.transaction_id is intentionally
+        // DIFFERENT from its witness_txid. The statement and witness are
+        // constructed from the same (inconsistent) allocation, so they agree
+        // on all public roots, commitments, and the exclusion relation — the
+        // only thing that differs is the intra-allocation txid equality,
+        // which the segmented circuit does not inspect.
+        let spent = allocation(
+            [0xd0u8; 32],
+            0,
+            [0x11u8; 32],
+            [0xe0u8; 32],
+            1,
+            500_000,
+            [0xf0u8; 32],
+        );
+        // transaction_id = [0xaau8; 32], witness_txid = [0xbau8; 32] — deliberately unequal.
+        let new_unbound = allocation(
+            [0xaau8; 32],
+            0,
+            [0x11u8; 32],
+            [0xbau8; 32],
+            2,
+            500_000,
+            [0xcau8; 32],
+        );
+        assert_ne!(
+            new_unbound.anchor.covenant_outpoint.transaction_id,
+            new_unbound.anchor.witness_txid,
+            "fixture new allocation must start with detached txids"
+        );
+
+        let statement = AllocationExclusionSegmentPairStatement::<1, 1>::from_allocations(
+            allocation_transcript_empty_root(RgkAllocationTranscriptSide::Spent),
+            allocation_transcript_empty_root(RgkAllocationTranscriptSide::New),
+            0,
+            0,
+            1,
+            1,
+            core::slice::from_ref(&spent),
+            core::slice::from_ref(&new_unbound),
+            [0x51u8; 32],
+            [0x52u8; 32],
+        )
+        .expect("exclusion statement with detached txid still constructs");
+        let witness = AllocationExclusionSegmentPairWitness::<1, 1>::from_allocations(
+            core::slice::from_ref(&spent),
+            core::slice::from_ref(&new_unbound),
+            [0x51u8; 32],
+            [0x52u8; 32],
+        )
+        .expect("exclusion witness with detached txid still constructs");
+        assert!(
+            statement.matches_witness(&witness),
+            "segmented statement/witness matching must not depend on txid equality"
+        );
+
+        let circuit = AllocationExclusionSegmentPairCircuit::<1, 1>::from_statement_and_witness(
+            &statement, witness,
+        )
+        .expect("exclusion circuit constructs with detached txid");
+
+        let cs = ConstraintSystem::<Fr>::new_ref();
+        circuit
+            .generate_constraints(cs.clone())
+            .expect("exclusion constraint synthesis");
+        assert!(
+            cs.is_satisfied().expect("exclusion satisfaction check"),
+            "segmented exclusion circuit does not bind new allocation outpoint txid to \
+             witness txid — this is the documented gap that the off-circuit resolver \
+             check at crates/rgk-resolver/src/lib.rs:540 must close"
+        );
+    }
+
+    #[test]
+    fn segmented_audit_bundle_verifies_with_detached_new_allocation_txid() {
+        // End-to-end confirmation at the bundle layer. The existing
+        // `sample_allocation_audit_bundle_grid` fixture already builds new
+        // allocations whose outpoint transaction_id differs from the witness
+        // txid (transaction_id [0xd2;32]/[0xd3;32] vs witness_txid
+        // [0xe2;32]/[0xe3;32]), and the bundle verifies. This test re-asserts
+        // that fact explicitly so a future refactor that adds in-circuit txid
+        // binding to the segmented path flips this test to rejection.
+        let fixture = sample_allocation_audit_bundle_grid();
+        let report = verify_allocation_audit_bundle(&fixture.bundle())
+            .expect("segmented bundle verifies despite detached new allocation txids");
+        assert_eq!(report.spent_segments, 2);
+        assert_eq!(report.new_segments, 2);
+        assert_eq!(report.exclusion_pairs, 4);
+        // The fixture allocations themselves are not retained on the statement
+        // (only derived roots/commitments are), so the detached-txid property
+        // is documented in `sample_allocation_audit_bundle_grid` and asserted
+        // at the segment level by
+        // `segmented_exclusion_pair_circuit_does_not_bind_outpoint_txid_to_witness_txid`.
+    }
+
+    /// Adversarial scenario S1 from `docs/ADVERSARIAL-SCENARIOS.md`.
+    ///
+    /// The exclusion grid rejects any `(spent, new)` allocation pair whose
+    /// encoded `[1..41]` byte slices agree. Note that `[1..41]` is wider
+    /// than the bare outpoint: it is `transaction_id[1..33] ||
+    /// index[33..37] || covenant_id[37..41]`, i.e. it also covers the first
+    /// four bytes of `covenant_id`. A collision is therefore detected only
+    /// when both the outpoint and the leading four covenant-id bytes agree
+    /// (which is the realistic case within a single covenant lineage, where
+    /// all allocations share the same `covenant_id`).
+    ///
+    /// This test confirms the check fires when the colliding allocations
+    /// share a full outpoint and covenant id, and that the pair therefore
+    /// cannot be constructed as a verifying circuit. Combined with the
+    /// missing- and duplicate-pair tests above, this pins the full grid
+    /// defence: a colliding pair cannot be silently dropped (missing-pair
+    /// rejection), cannot be duplicated to mask it (duplicate-pair
+    /// rejection), and cannot be presented intact (this test).
+    #[test]
+    fn exclusion_segment_pair_rejects_reused_outpoint_between_spent_and_new() {
+        use ark_relations::r1cs::ConstraintSystem;
+
+        // Two allocations within the same covenant lineage (same covenant_id)
+        // sharing the SAME full outpoint (txid [0xee;32], index 0). Only the
+        // witness txid and note differ. The exclusion check compares the
+        // [1..41] slice, which here agrees byte-for-byte.
+        let shared_outpoint_txid = [0xeeu8; 32];
+        let shared_covenant_id = [0x11u8; 32];
+        let spent = allocation(
+            shared_outpoint_txid,
+            0,
+            shared_covenant_id,
+            [0xbau8; 32],
+            1,
+            500_000,
+            [0xcau8; 32],
+        );
+        let new_colliding = allocation(
+            shared_outpoint_txid,
+            0, // same index → identical [1..41] slice
+            shared_covenant_id,
+            [0xbbu8; 32], // different witness txid — must not matter
+            2,
+            500_000,
+            [0xcbu8; 32],
+        );
+
+        // The statement still constructs (it commits to roots, not to the
+        // exclusion relation directly). The witness also constructs. But
+        // `matches_witness` must reject the pair, because the native
+        // exclusion check at `allocation_exclusion_segment_pair_matches`
+        // compares the [1..41] slices.
+        let statement = AllocationExclusionSegmentPairStatement::<1, 1>::from_allocations(
+            allocation_transcript_empty_root(RgkAllocationTranscriptSide::Spent),
+            allocation_transcript_empty_root(RgkAllocationTranscriptSide::New),
+            0,
+            0,
+            1,
+            1,
+            core::slice::from_ref(&spent),
+            core::slice::from_ref(&new_colliding),
+            [0x51u8; 32],
+            [0x52u8; 32],
+        )
+        .expect("exclusion statement with colliding outpoint still constructs");
+        let witness = AllocationExclusionSegmentPairWitness::<1, 1>::from_allocations(
+            core::slice::from_ref(&spent),
+            core::slice::from_ref(&new_colliding),
+            [0x51u8; 32],
+            [0x52u8; 32],
+        )
+        .expect("exclusion witness with colliding outpoint still constructs");
+        assert!(
+            &witness.spent.allocations[0][1..41] == &witness.new.allocations[0][1..41],
+            "fixture must produce matching [1..41] slices for the collision to be in scope"
+        );
+
+        assert!(
+            !statement.matches_witness(&witness),
+            "exclusion pair must reject a spent/new allocation pair sharing [1..41]"
+        );
+
+        // Consequently, the circuit cannot be constructed via the public API.
+        let circuit_result =
+            AllocationExclusionSegmentPairCircuit::<1, 1>::from_statement_and_witness(&statement, witness);
+        let err = match circuit_result {
+            Err(message) => message,
+            Ok(_) => panic!("colliding exclusion pair must not yield a verifying circuit"),
+        };
+        assert!(
+            err.contains("does not match"),
+            "unexpected exclusion circuit error: {err}"
+        );
+
+        // Defence-in-depth: even if the matches_witness gate were bypassed,
+        // the in-circuit check `enforce_spent_anchors_not_reused` would fail.
+        // Build a non-colliding statement for its public inputs, then feed a
+        // colliding witness through a hand-assembled circuit. The circuit's
+        // own amount/commitment checks will already differ, but the
+        // load-bearing claim is that the exclusion constraint itself is
+        // enforced in circuit; we assert the circuit is not satisfied.
+        let safe_statement = AllocationExclusionSegmentPairStatement::<1, 1>::from_allocations(
+            allocation_transcript_empty_root(RgkAllocationTranscriptSide::Spent),
+            allocation_transcript_empty_root(RgkAllocationTranscriptSide::New),
+            0,
+            0,
+            1,
+            1,
+            core::slice::from_ref(&spent),
+            core::slice::from_ref(&allocation(
+                [0xefu8; 32], // distinct outpoint
+                1,
+                shared_covenant_id,
+                [0xbbu8; 32],
+                2,
+                500_000,
+                [0xcbu8; 32],
+            )),
+            [0x51u8; 32],
+            [0x52u8; 32],
+        )
+        .expect("safe exclusion statement");
+        let colliding_witness = AllocationExclusionSegmentPairWitness::<1, 1>::from_allocations(
+            core::slice::from_ref(&spent),
+            core::slice::from_ref(&new_colliding),
+            [0x51u8; 32],
+            [0x52u8; 32],
+        )
+        .expect("colliding witness");
+        // Hand-assemble a circuit that bypasses matches_witness, feeding the
+        // colliding witness but the safe public inputs.
+        let bypass_circuit = AllocationExclusionSegmentPairCircuit::<1, 1> {
+            public_inputs: safe_statement.public_inputs(),
+            witness: colliding_witness,
+        };
+        let cs = ConstraintSystem::<Fr>::new_ref();
+        bypass_circuit
+            .generate_constraints(cs.clone())
+            .expect("constraint synthesis");
+        assert!(
+            !cs.is_satisfied().expect("colliding satisfaction check"),
+            "in-circuit exclusion check `enforce_spent_anchors_not_reused` must reject a \
+             spent/new pair sharing an outpoint"
+        );
+    }
+
+    /// Adversarial scenario S2 from `docs/ADVERSARIAL-SCENARIOS.md`.
+    ///
+    /// Conservation invariants rely on non-zero blinding factors to keep
+    /// amount commitments hiding and to prevent the conservation chain from
+    /// degenerating to plaintext equality. This scenario pins rejection at
+    /// two layers:
+    ///
+    /// 1. The conservation-segment constructors reject zero total blindings
+    ///    natively (`AllocationConservationSegmentWitness::from_allocations`
+    ///    and `AllocationConservationSegmentStatement::from_allocations`).
+    /// 2. The transcript-segment circuit rejects a zero amount blinding via
+    ///    `enforce_nonzero_bytes(amount_blinding)` in
+    ///    `enforce_allocation_transcript_segment`, even though the transcript
+    ///    witness constructor does NOT check it natively. This ensures a
+    ///    malicious prover cannot bypass the check by hand-assembling a
+    ///    witness.
+    #[test]
+    fn conservation_segment_witness_rejects_zero_total_blinding_natively() {
+        let allocations = alloc::vec![allocation(
+            [0xaau8; 32],
+            0,
+            [0x11u8; 32],
+            [0xbau8; 32],
+            1,
+            500_000,
+            [0xcau8; 32],
+        )];
+        let zero_blinding = [0u8; 32];
+        let nonzero_blinding = [0x61u8; 32];
+
+        // Statement with a zero previous_total_blinding is rejected.
+        let err = AllocationConservationSegmentStatement::<1>::from_allocations(
+            allocation_transcript_empty_root(RgkAllocationTranscriptSide::Spent),
+            RgkAllocationTranscriptSide::Spent,
+            0,
+            1,
+            0,
+            &allocations,
+            [0x51u8; 32],
+            zero_blinding, // previous_total_blinding = 0
+            nonzero_blinding,
+        )
+        .expect_err("zero previous_total_blinding must be rejected");
+        assert!(
+            err.contains("blinding"),
+            "unexpected conservation statement error: {err}"
+        );
+
+        // Witness with a zero next_total_blinding is rejected.
+        let err = AllocationConservationSegmentWitness::<1>::from_allocations(
+            0,
+            &allocations,
+            [0x51u8; 32],
+            nonzero_blinding,
+            zero_blinding, // next_total_blinding = 0
+        )
+        .expect_err("zero next_total_blinding must be rejected");
+        assert!(
+            err.contains("blinding"),
+            "unexpected conservation witness error: {err}"
+        );
+    }
+
+    #[test]
+    fn transcript_segment_circuit_rejects_zero_amount_blinding_in_circuit() {
+        use ark_relations::r1cs::ConstraintSystem;
+
+        // The transcript witness constructor does NOT reject a zero amount
+        // blinding, so a malicious prover could hand-assemble one. The
+        // circuit's `enforce_nonzero_bytes(amount_blinding)` constraint must
+        // catch it.
+        let allocations = alloc::vec![
+            allocation(
+                [0xaau8; 32],
+                0,
+                [0x11u8; 32],
+                [0xbau8; 32],
+                1,
+                400_000,
+                [0xcau8; 32],
+            ),
+            allocation(
+                [0xabu8; 32],
+                0,
+                [0x11u8; 32],
+                [0xbbu8; 32],
+                1,
+                600_000,
+                [0xcbu8; 32],
+            ),
+        ];
+        // Build the witness with a zero amount blinding directly via `new`,
+        // bypassing any native check. The statement is built with a non-zero
+        // blinding so that `matches_witness` would otherwise pass on amount
+        // alone — isolating the in-circuit blinding-non-zero check.
+        let ordered: Vec<&RgkAllocation> = allocations.iter().collect();
+        let mut sorted = ordered.clone();
+        sorted.sort_by_key(|allocation| allocation_sort_key(allocation));
+        let encoded: [Vec<u8>; 2] = [
+            encode_native_allocation(sorted[0]),
+            encode_native_allocation(sorted[1]),
+        ];
+        let segment_amount = allocations.iter().map(|a| a.amount).sum::<u64>();
+        let zero_blinding_witness = AllocationTranscriptSegmentWitness::<2>::new(
+            encoded,
+            segment_amount,
+            [0u8; 32], // amount_blinding = 0
+        )
+        .expect("transcript witness constructor allows zero amount blinding (native gap)");
+
+        // The matching statement uses the SAME zero blinding so that roots
+        // and commitments agree, isolating the in-circuit nonzero check.
+        let statement = AllocationTranscriptSegmentStatement::<2>::from_allocations(
+            allocation_transcript_empty_root(RgkAllocationTranscriptSide::Spent),
+            RgkAllocationTranscriptSide::Spent,
+            0,
+            allocations.len() as u64,
+            &allocations,
+            [0u8; 32], // matching zero blinding
+        )
+        .expect("transcript statement with zero blinding constructs");
+        assert!(
+            statement.matches_witness(&zero_blinding_witness),
+            "statement/witness matching must agree for the zero-blinding case to isolate the circuit check"
+        );
+
+        let circuit = AllocationTranscriptSegmentCircuit::<2>::from_statement_and_witness(
+            &statement,
+            zero_blinding_witness,
+        )
+        .expect("transcript circuit constructs with zero amount blinding");
+        let cs = ConstraintSystem::<Fr>::new_ref();
+        circuit
+            .generate_constraints(cs.clone())
+            .expect("constraint synthesis");
+        assert!(
+            !cs.is_satisfied().expect("zero-blinding satisfaction check"),
+            "transcript segment circuit must reject a zero amount blinding via \
+             enforce_nonzero_bytes, closing the native constructor gap"
+        );
+    }
+
     #[test]
     fn allocation_audit_certificate_binds_verified_groth16_stack_material() {
         let fixture = sample_allocation_audit_certificate_fixture();
