@@ -1,0 +1,43 @@
+/* RGK wiki extras — small tweaks that don't belong in the theme config. */
+
+/* Slightly tighter H1 spacing on dense concept pages. */
+.md-typeset h1 {
+  margin-bottom: 1rem;
+}
+
+/* Mermaid diagrams: keep them readable but not full-bleed. */
+.mermaid {
+  max-width: 920px;
+  margin: 1rem auto;
+}
+
+/* Code-block caption (PyMdownx snippets) alignment. */
+.md-typeset code {
+  font-size: 0.85em;
+}
+
+/* Tables: tighter padding, no full-width stretch on small screens. */
+.md-typeset table:not([class]) {
+  font-size: 0.78rem;
+}
+.md-typeset table:not([class]) th,
+.md-typeset table:not([class]) td {
+  padding: 0.45rem 0.65rem;
+}
+
+/* "Not Yet Proven" admonitions get a slight tint. */
+.md-typeset .admonition.warning {
+  border-left: 4px solid #ffb300;
+}
+
+/* Anchor permalinks: subtle, only on hover. */
+.md-typeset .headerlink {
+  opacity: 0;
+  transition: opacity 120ms;
+}
+.md-typeset h1:hover .headerlink,
+.md-typeset h2:hover .headerlink,
+.md-typeset h3:hover .headerlink,
+.md-typeset h4:hover .headerlink {
+  opacity: 1;
+}

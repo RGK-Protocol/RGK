@@ -100,7 +100,7 @@ Every field has a meaning. Let me decode the ones you'll use most:
 
 ---
 
-## Step 3 — See every resolver state (3 minutes)
+## Step 3 — See every resolver state {#step-3-see-every-resolver-state}
 
 Each resolver state has at least one test that produces it. To see them all
 at once:

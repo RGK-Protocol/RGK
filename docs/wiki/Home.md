@@ -38,9 +38,9 @@ Plus:
 
 - **[Glossary](./Glossary.md)** — domain-separated tags, hot-path types,
   supported allocation shapes, the constant `32`.
-- **[recon/](./recon/)** — read-only reconnaissance (codebase / docs /
-  runtime) that backs every other page. If a tutorial seems to disagree with
-  the source, the recon wins.
+- **[recon/](./recon/RECON-CODEBASE.md)** — read-only reconnaissance
+  (codebase / docs / runtime) that backs every other page. If a tutorial
+  seems to disagree with the source, the recon wins.
 
 ---
 

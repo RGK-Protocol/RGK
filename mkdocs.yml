@@ -1,0 +1,182 @@
+# mkdocs.yml — RGK Wiki
+#
+# Builds docs/wiki/ as a static site with Material theme, deployed to
+# GitHub Pages via .github/workflows/docs.yml.
+#
+# Site URL assumes the default org/repo Pages path:
+#   https://rgk-protocol.github.io/RGK/
+# Update site_url if the repo is renamed or hosted under a custom domain.
+
+site_name: RGK Wiki
+site_description: >-
+  Kaspa-native covenant-lineage asset system — tutorials, concepts,
+  reference, and runbook for the RGK protocol.
+site_url: https://rgk-protocol.github.io/RGK/
+site_author: RGK Contributors
+
+# Source root: every wiki page is one docs_dir child.
+docs_dir: docs/wiki
+
+# Static site output (not committed; GitHub Actions builds into this
+# directory and deploys it via actions/deploy-pages).
+site_dir: site
+
+# Wiki pages link to canonical source docs (../*.md) and source files
+# (../../crates/, ../../scripts/) — those are not under docs_dir so
+# mkdocs treats them as "not found". Downgrade those to info; keep
+# strict-on-missing for actual wiki-internal broken links.
+strict: false
+
+validation:
+  nav:
+    omitted_files: ignore       # recon/ legacy sidebar is kept as a reference, not in nav
+    absolute_links: warn
+  links:
+    not_found: ignore           # canonical docs / source paths are intentional
+    absolute_links: warn
+    unrecognized_links: warn    # still catch anchor slug typos in wiki-internal links
+
+theme:
+  name: material
+  language: en
+  features:
+    # Navigation
+    - navigation.tabs
+    - navigation.tabs.sticky
+    - navigation.sections
+    - navigation.indexes
+    - navigation.top
+    - navigation.tracking
+    - navigation.footer
+    # Search
+    - search.suggest
+    - search.highlight
+    - search.share
+    # Content
+    - content.code.copy
+    - content.code.annotate
+    - content.tabs.link
+    - content.tooltips
+    # TOC
+    - toc.follow
+  palette:
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
+      primary: teal
+      accent: teal
+      toggle:
+        icon: material/weather-night
+        name: Switch to dark mode
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      primary: teal
+      accent: teal
+      toggle:
+        icon: material/weather-sunny
+        name: Switch to light mode
+  icon:
+    repo: fontawesome/brands/github
+    edit: material/pencil
+    view: material/eye
+
+extra:
+  generator: false
+  social:
+    - icon: fontawesome/brands/github
+      link: https://github.com/RGK-Protocol/RGK
+      name: RGK on GitHub
+  # Alt-text / hero on the home page (Material supports this).
+  homepage: https://rgk-protocol.github.io/RGK/
+
+extra_css:
+  - assets/extra.css
+
+markdown_extensions:
+  # Standard
+  - abbr
+  - admonition
+  - attr_list
+  - def_list
+  - footnotes
+  - md_in_html
+  - tables
+  - toc:
+      permalink: true
+      toc_depth: 3
+  # PyMdown extensions (bundled with mkdocs-material)
+  - pymdownx.details
+  - pymdownx.highlight:
+      anchor_linenums: true
+      line_spans: __span
+      pygments_lang_class: true
+  - pymdownx.inlinehilite
+  - pymdownx.snippets
+  - pymdownx.superfences:
+      custom_fences:
+        - name: mermaid
+          class: mermaid
+          format: !!python/name:pymdownx.superfences.fence_code_format
+  - pymdownx.tabbed:
+      alternate_style: true
+  - pymdownx.tasklist:
+      custom_checkbox: true
+  - pymdownx.tilde
+  - pymdownx.caret
+  - pymdownx.keys
+  - pymdownx.smartsymbols
+  - pymdownx.emoji:
+      emoji_index: !!python/name:material.extensions.emoji.twemoji
+      emoji_generator: !!python/name:material.extensions.emoji.to_svg
+
+plugins:
+  - search:
+      lang: en
+
+# Nav — mirrors the docs/wiki/ tree but exposes Concepts / Reference /
+# Runbook / Tutorials as top-level sections under the Home tab. This is
+# the only place the order of pages is set; alphabetical fallback applies
+# elsewhere if you remove an entry.
+nav:
+  - Home: Home.md
+  - Tutorials:
+      - Overview: Tutorials/index.md
+      - 0 — 10-Minute Fixture Walkthrough: Tutorials/Tutorial-0-10-Minute-Fixture-Walkthrough.md
+      - 1 — What RGK Actually Is: Tutorials/Tutorial-1-What-RGK-Actually-Is.md
+      - 2 — Build, Verify, and Resolve a Receipt: Tutorials/Tutorial-2-Receipts.md
+      - 3 — Integrate a Wallet: Tutorials/Tutorial-3-Integrate-A-Wallet.md
+      - 4 — Run the E2E Harness: Tutorials/Tutorial-4-Run-E2E-Harness.md
+      - 5 — Operate rgk-walletd: Tutorials/Tutorial-5-Operate-Walletd.md
+  - Concepts:
+      - Architecture: Concepts/Architecture.md
+      - Identity: Concepts/Identity.md
+      - Continuation: Concepts/Continuation.md
+      - Resolver: Concepts/Resolver.md
+      - Privacy: Concepts/Privacy.md
+      - Bounded Objects: Concepts/Bounded-Objects.md
+      - Production Allocation Strategy: Concepts/Production-Allocation-Strategy.md
+      - Walletd Boundary: Concepts/Walletd-Boundary.md
+      - Funding: Concepts/Funding.md
+  - Reference:
+      - Resolver State Machine: Reference/Resolver-State-Machine.md
+      - Covenant Spec: Reference/Covenant-Spec.md
+      - Receipt Spec: Reference/Receipt-Spec.md
+      - Lane Calculus: Reference/Lane-Calculus.md
+      - Threat Model: Reference/Threat-Model.md
+      - ZK Boundary: Reference/ZK-Boundary.md
+      - ZK Proof Plan: Reference/ZK-Proof-Plan.md
+      - Adversarial Scenarios: Reference/Adversarial-Scenarios.md
+      - Roadmap: Reference/Roadmap.md
+      - Status: Reference/Status.md
+      - Testnet Staging Snapshot: Reference/Testnet-Staging-Snapshot.md
+      - Unsafe Audit: Reference/Unsafe-Audit.md
+      - API Stability Policy: Reference/API-Stability-Policy.md
+      - API Surface Audit: Reference/API-Surface-Audit.md
+  - Runbook:
+      - E2E: Runbook/E2E.md
+      - Launch Gates: Runbook/Launch-Gates.md
+      - Funding: Runbook/Funding.md
+  - Glossary: Glossary.md
+  - Reconnaissance:
+      - Codebase: recon/RECON-CODEBASE.md
+      - Docs: recon/RECON-DOCS.md
+      - Runtime: recon/RECON-RUNTIME.md

@@ -5,6 +5,10 @@ Cargo.lock
 # External checkouts are symlinked, never committed.
 /external
 
+# mkdocs build output and local virtualenv (used only for local wiki builds).
+/site/
+/.venv-docs/
+
 # Local capture/session logs.
 /.cap/logs/
 

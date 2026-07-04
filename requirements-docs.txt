@@ -1,0 +1,8 @@
+# Pin every dep so the docs site is byte-identical across rebuilds.
+# Bump these in lockstep; the deployed Pages site is reproducible iff
+# these pins are unchanged.
+
+mkdocs==1.6.1
+mkdocs-material==9.5.49
+pygments==2.18.0
+pymdown-extensions==10.9

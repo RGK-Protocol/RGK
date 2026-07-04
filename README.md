@@ -1,5 +1,7 @@
 # RGK - Really Good Kaspa
 
+[![Wiki](https://img.shields.io/badge/wiki-rgk--protocol.github.io%2FRGK-teal)](https://rgk-protocol.github.io/RGK/)
+
 RGK is a Kaspa-native covenant-lineage asset system.
 
 It lets wallets issue and move assets while Kaspa Toccata covenants anchor the
@@ -225,13 +227,18 @@ bash scripts/verify-launch-readiness.sh --allow-blocked
 
 ## Where to Go Next
 
-**New to RGK?** Start with the [wiki Home](./wiki/Home.md) — a 30-second
-orientation plus 6 numbered tutorials. The wiki also has 9 Concepts pages
-(Identity, Continuation, Resolver, Privacy, Bounded Objects, …), 14
-Reference pages linking to the canonical specs, and 3 Runbook pages for
-operators. The long-form narrative intro is at
+**New to RGK?** Read the wiki — published at
+**[rgk-protocol.github.io/RGK](https://rgk-protocol.github.io/RGK/)**.
+
+The wiki has 30-second orientation, 6 numbered tutorials, 9 Concepts
+pages (Identity, Continuation, Resolver, Privacy, Bounded Objects, …),
+14 Reference pages linking to the canonical specs, and 3 Runbook pages
+for operators. The long-form narrative intro lives in
 [`Quant Dev / INTRODUCTION.md`](https://github.com/a19q3/quant-dev/blob/main/INTRODUCTION.md)
 (republished pointer at [`docs/INTRODUCTION.md`](./INTRODUCTION.md)).
+
+You can also browse the wiki source tree directly at
+[`docs/wiki/`](./wiki/Home.md).
 
 **Looking for the spec?** Read the canonical docs:
 

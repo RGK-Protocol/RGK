@@ -78,7 +78,7 @@ stateDiagram-v2
 The arrows are illustrative, not formally proven — but every transition
 corresponds to an `Index` or `Index`+`Spend` event in the source. The
 single-test-per-state pattern is at
-[`Tutorial-0: 10-Minute Fixture Walkthrough`](../Tutorials/Tutorial-0-10-Minute-Fixture-Walkthrough.md#step-3--see-every-resolver-state).
+[`Tutorial-0: 10-Minute Fixture Walkthrough`](../Tutorials/Tutorial-0-10-Minute-Fixture-Walkthrough.md#step-3-see-every-resolver-state).
 
 ---
 
@@ -286,4 +286,4 @@ above. No expensive work is done before classification.
 - [`docs/INTEGRATION.md` §Private Lane Discovery](../../INTEGRATION.md) —
   how wallet code calls these entry points.
 - [Tutorial-2: Build, Verify, and Resolve a Receipt](../Tutorials/Tutorial-2-Receipts.md).
-- [Tutorial-0 §Step 3 — See every resolver state](../Tutorials/Tutorial-0-10-Minute-Fixture-Walkthrough.md#step-3--see-every-resolver-state).
+- [Tutorial-0 §Step 3 — See every resolver state](../Tutorials/Tutorial-0-10-Minute-Fixture-Walkthrough.md#step-3-see-every-resolver-state).

@@ -1,0 +1,85 @@
+# Deploy docs/wiki/ to GitHub Pages via mkdocs-material.
+#
+# Triggers:
+#   - push to main: rebuild + deploy
+#   - workflow_dispatch: manual rebuild (e.g. after settings flip)
+#
+# Permissions required:
+#   - contents: read   (clone the repo)
+#   - pages: write     (deploy to Pages)
+#   - id-token: write  (OIDC for deploy-pages)
+#
+# Environment:
+#   - github-pages    (created automatically on first deploy)
+#
+# First-time setup:
+#   - One-time: Settings → Pages → Source = "GitHub Actions".
+#     This is required because before the first deploy, GitHub doesn't
+#     know to provision a Pages environment for the repo. After the
+#     first successful deploy, future runs reuse the environment.
+
+name: Deploy Wiki to GitHub Pages
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "docs/wiki/**"
+      - "docs/assets/**"
+      - "mkdocs.yml"
+      - "requirements-docs.txt"
+      - ".github/workflows/docs.yml"
+  workflow_dispatch:
+
+# Allow only one concurrent deploy; cancel in-flight runs on new push.
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+jobs:
+  build:
+    name: Build site
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: requirements-docs.txt
+
+      - name: Install mkdocs-material
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements-docs.txt
+
+      - name: Build site
+        run: mkdocs build --strict
+
+      - name: Configure Pages
+        uses: actions/configure-pages@v5
+
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: site
+
+  deploy:
+    name: Deploy to Pages
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
