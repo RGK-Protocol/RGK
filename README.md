@@ -223,7 +223,17 @@ bash scripts/verify-example-matrix.sh
 bash scripts/verify-launch-readiness.sh --allow-blocked
 ```
 
-## Further Reading
+## Where to Go Next
+
+**New to RGK?** Start with the [wiki Home](./wiki/Home.md) — a 30-second
+orientation plus 6 numbered tutorials. The wiki also has 9 Concepts pages
+(Identity, Continuation, Resolver, Privacy, Bounded Objects, …), 14
+Reference pages linking to the canonical specs, and 3 Runbook pages for
+operators. The long-form narrative intro is at
+[`Quant Dev / INTRODUCTION.md`](https://github.com/a19q3/quant-dev/blob/main/INTRODUCTION.md)
+(republished pointer at [`docs/INTRODUCTION.md`](./INTRODUCTION.md)).
+
+**Looking for the spec?** Read the canonical docs:
 
 * `docs/ARCHITECTURE.md` - system boundaries and data flow
 * `docs/LANE-CALCULUS.md` - asset, lane, privacy, and continuation model
@@ -236,6 +246,8 @@ bash scripts/verify-launch-readiness.sh --allow-blocked
 * `docs/E2E.md` - local and devnet runbook
 * `docs/INTEGRATION.md` - wallet integration shape
 * `docs/MAINNET-LAUNCH.md` - public-network launch gates
+
+**Looking for an audit?** See [`docs/audits/public-api-surface.md`](./audits/public-api-surface.md).
 
 ## License
 
