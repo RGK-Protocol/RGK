@@ -137,7 +137,7 @@ plugins:
 # the only place the order of pages is set; alphabetical fallback applies
 # elsewhere if you remove an entry.
 nav:
-  - Home: Home.md
+  - Home: index.md
   - Tutorials:
       - Overview: Tutorials/index.md
       - 0 — 10-Minute Fixture Walkthrough: Tutorials/Tutorial-0-10-Minute-Fixture-Walkthrough.md

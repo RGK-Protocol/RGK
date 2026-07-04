@@ -5,7 +5,7 @@
 
 ## Quick Links
 
-- [Home](Home.md)
+- [Home](index.md)
 - [Glossary](Glossary.md)
 
 ## Tutorials
