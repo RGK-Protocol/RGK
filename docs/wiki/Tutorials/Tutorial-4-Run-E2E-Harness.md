@@ -1,11 +1,30 @@
 # Tutorial 4 — Run the E2E Harness
 
+!!! info "At a glance"
+    **Difficulty:** Intermediate · **Time:** 30 min (local) to several hours (live) ·
+    **Code required:** Shell + Rust toolchain · **You'll run:** the full
+    script matrix from fixture to funded public testnet, with the strict
+    launch audit at the end.
+
 > **Read time:** ~30 minutes for the local path; longer for live. **Operator-facing.**
 > This tutorial walks through every script in `scripts/` from the perspective
 > of someone running them.
 
 The canonical reference is [`docs/E2E.md`](../../E2E.md). This wiki page
 adds ordering, expected output, and decision points.
+
+---
+
+## The Three Paths at a Glance
+
+| Path | What runs | Network |
+| --- | --- | --- |
+| **Local** | Fixture harness + 21-gate internal readiness + privacy-observer | None — pure `cargo test` |
+| **Live simnet** | `run-kaspa-local.sh` + `e2e-local.sh --live` | Local `kaspad --simnet` |
+| **Local devnet** | `run-kaspa-devnet.sh` + `e2e-devnet.sh` (Toccata from genesis) | Local `kaspad --devnet` |
+| **Public testnet** | `e2e-testnet-staging.sh` (wallet set → preflight → fund → resume) | `testnet-12` (not 10) |
+
+The local path is the on-ramp. The public testnet path is the launch gate.
 
 ---
 

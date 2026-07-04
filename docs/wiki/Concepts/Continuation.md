@@ -1,10 +1,46 @@
 # Concepts / Continuation
 
+!!! info "TL;DR"
+    RGK needs to commit to the next covenant output's shape **before** the
+    spending transaction exists. Two phases solve this: **Phase 1** builds
+    an `RgkContinuationPlan` whose commitment is stable across re-plans, and
+    **Phase 2** calls `finalize(witness_txid, daa, depth)` to bind the actual
+    txid into the transition. The resolver enforces that both commitments
+    agree with the observed spend.
+
 > **The two-phase continuation model is what lets RGK bind the next output
 > shape before the future transaction id exists.**
 
 This page explains *why* two phases are needed, what each phase commits to,
 and what the resolver rejects if either phase is missing or mismatched.
+
+---
+
+## The Chicken-and-Egg at a Glance
+
+```mermaid
+%%{init: {'theme': 'base', 'themeVariables': {
+  'primaryColor': '#49eacb', 'primaryTextColor': '#0a1f2e',
+  'primaryBorderColor': '#112233', 'lineColor': '#70C7BA',
+  'fontFamily': 'Inter, system-ui, sans-serif'
+}}}%%
+flowchart LR
+    P["Phase 1<br/>RgkContinuationPlan<br/>(no txid yet)"] -- "validates to" --> C["RgkContinuationCommitment<br/>stable across re-plans"]
+    S["Sign + broadcast"] --> T["witness_txid now exists"]
+    T --> F["Phase 2<br/>finalize(witness_txid, daa, depth)"]
+    F --> R["RgkFinalizedContinuation<br/>(commitment + transition + report)"]
+    C --> S
+    S --> T
+
+    style P fill:#49eacb,stroke:#112233,color:#0a1f2e
+    style F fill:#fff8e1,stroke:#FFB300,color:#231F20
+    style R fill:#49eacb,stroke:#112233,color:#0a1f2e
+    style C fill:#fff8e1,stroke:#FFB300,color:#231F20
+```
+
+The phase-1 commitment is what gets baked into the covenant script and
+the receipt; the phase-2 transition is what binds the actual txid. The
+resolver checks both against the observed spend.
 
 ---
 

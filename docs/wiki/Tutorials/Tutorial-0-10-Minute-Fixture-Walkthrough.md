@@ -1,11 +1,29 @@
 # Tutorial 0 — 10-Minute Fixture Walkthrough
 
+!!! info "At a glance"
+    **Difficulty:** Beginner · **Time:** 10 min · **Node required:** No ·
+    **You'll see:** the resolver classify a real transition as
+    `NativeTransitionedValid` and the canonical e2e summary block.
+
 > **Goal.** In 10 minutes, run the RGK fixture harness end-to-end, see the
 > resolver classify a transition as `NativeTransitionedValid`, and walk away
 > knowing exactly which crate each result came from.
 >
 > **No node required.** This uses the `FixtureBackend` in `rgk-kaspa`, not a
 > live Kaspa node. Live runs are covered in [Tutorial-4](./Tutorial-4-Run-E2E-Harness.md).
+
+---
+
+## What You'll Build / See
+
+By the end of this tutorial you will have:
+
+- Run the RGK fixture harness against `FixtureBackend`.
+- Read a canonical `RGK e2e summary` block — every field decoded.
+- Located one test per `ResolverState` variant in the source.
+- Run the privacy-observer evidence producer + verifier.
+
+No file edits. No chain connection. No funds. Just `cargo test`.
 
 ---
 

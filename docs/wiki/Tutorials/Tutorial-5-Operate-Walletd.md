@@ -1,5 +1,10 @@
 # Tutorial 5 — Operate rgk-walletd
 
+!!! info "At a glance"
+    **Difficulty:** Intermediate · **Time:** 30 min · **Code required:** Shell +
+    curl · **You'll launch:** the local Avato HTTP daemon, walk all 11
+    endpoints, and run the contract verifier.
+
 > **Read time:** ~30 minutes. **Operator-facing.** How to launch the
 > Avato frontend's local HTTP daemon, point it at a Kaspa node, and verify
 > the contract.
@@ -7,6 +12,25 @@
 This tutorial is the production-side companion to
 [Concepts / Walletd Boundary](../Concepts/Walletd-Boundary.md). The
 canonical doc is [`docs/AVATO-WALLETD.md`](../../AVATO-WALLETD.md).
+
+---
+
+## The 11 Endpoints at a Glance
+
+| | Endpoint | What it does |
+| --- | --- | --- |
+| 1 | `GET /health` | Liveness check. |
+| 2 | `GET /wallet/profile` | Public profile (no secrets). |
+| 3 | `POST /wallets` | Create a wallet. |
+| 4 | `POST /wallet/import` | Import an existing wallet. |
+| 5 | `POST /wallet/lock` | Lock the vault. |
+| 6 | `POST /wallet/unlock` | Unlock with passphrase. |
+| 7 | `POST /wallet/kaspa-endpoint` | Update the Kaspa node endpoint. |
+| 8 | `POST /wallet/sync` | One `rgk-sync` tick + dashboard re-resolve. |
+| 9 | `GET /dashboard` | Aggregated view. |
+| 10 | `POST /lanes` | Register a lane (metadata or full evidence). |
+| 11 | `POST /proofs` | Stage a proof as `pending`. |
+| 12 | `POST /transitions` | Wallet-built receipt path. |
 
 ---
 

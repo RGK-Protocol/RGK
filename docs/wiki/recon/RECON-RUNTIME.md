@@ -14,6 +14,37 @@
 > `target` time; script files referenced below were read at the listed
 > line numbers on `Sat Jul 04 2026`.
 
+## TL;DR
+
+- **22 executable scripts** in `scripts/`. Shebang: `#!/usr/bin/env bash` for
+  all except `verify-avato-walletd-contract.sh` which embeds Python.
+- **3 local run modes**: fixture (`cargo test`), live simnet (`kaspad --simnet`),
+  live devnet (`kaspad --devnet` with Toccata overrides).
+- **1 public staging flow**: `e2e-testnet-staging.sh` — six subcommands, pinned
+  to `testnet-12` (not `testnet-10`).
+- **4 binaries** + **1 criterion bench**: `rgk-walletd`, `rgk-sync`,
+  `rgk-testnet-funding-readiness`, `rgk-testnet-staging-address`, `local_e2e`.
+- **1 fixture mode**, **1 live mode**, **6 e2e harness variants**, **14 verifier
+  scripts** for the various evidence gates.
+- **No `cargo run --example`** — `examples/` is Silverscript source only; the
+  runnable harness is the `rgk-e2e` test crate, not `rgk-walletd`.
+
+## How to Use This File
+
+1. **Read the TL;DR above.** If you need to invoke something, the
+   [`§1 scripts/ inventory`](#1-scripts-inventory) is the master table.
+2. **Per-script detail in [`§1.1`](#11-per-script-detail)** has prereqs,
+   invocation form, expected output, exit codes.
+3. **The "Concept" column** links each script to the concept it most
+   directly demonstrates (e.g. `e2e-privacy-observer.sh` → privacy
+   observer boundary).
+4. **Cross-references**: scripts ⇄ the wiki
+   [`../Reference/`](../Reference/Roadmap.md) section (or
+   [`../Runbook/`](../Runbook/E2E.md) for operator-facing pages) for the
+   canonical docs they implement.
+
+---
+
 ---
 
 ## 1. `scripts/` inventory

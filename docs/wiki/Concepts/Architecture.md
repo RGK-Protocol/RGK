@@ -1,5 +1,14 @@
 # Concepts / Architecture
 
+!!! info "TL;DR"
+    RGK is a five-layer stack: **L1 native asset grammar** (issuance,
+    transition, ownership, proof policy, privacy) → **L2 client-side
+    validation** (commitments, receipts) → **L3 Toccata covenant** (the
+    chain anchor) → **L4 indexer + sync** (replay-safe state, scan
+    cursors) → **L5 resolver** (13-state classifier). Above sits
+    `rgk-walletd` (the Avato HTTP boundary). 12 crates total; no
+    `unsafe`; encoding version is `ENCODING_VERSION` (consensus-bound).
+
 > **RGK is a layered Kaspa-native covenant-lineage asset system.** Five
 > layers, eleven crates plus `rgk-walletd`, one resolver state machine.
 

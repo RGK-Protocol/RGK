@@ -3,8 +3,20 @@
 > **The terms below are RGK-native.** They do not always map onto the
 > RGB / Liquid / Bitcoin vocabulary you may have seen elsewhere, and that
 > is intentional. The drift register at
-> [`recon/RECON-DOCS.md` §Contradictions / staleness](../../recon/RECON-DOCS.md#contradictions--staleness)
+> [`recon/RECON-DOCS.md` §Contradictions / staleness](./recon/RECON-DOCS.md#contradictions--staleness)
 > calls out the places where this matters.
+
+## On This Page
+
+- [Domain-Separated Tags](#domain-separated-tags) — every `"rgk:..."` literal.
+- [Hot-Path Types](#hot-path-types) — the 14 RGK-native types you see repeatedly.
+- [Resolver States](#resolver-states-the-13-hard-outcomes) — the 13 outcomes.
+- [Supported Allocation Shapes](#supported-allocation-shapes) — the 6 fixed Groth16 shapes.
+- [Proof Policies](#proof-policies) — `VerifierReceipt` / `ZkReceipt` / `Hybrid`.
+- [Receipt Policies](#receipt-policies) — `Any` / `VerifierOnly` / `ZkOnly`.
+- [The 32-Byte Invariant](#the-32-byte-invariant) — why every wire object is 32 bytes.
+- ["Not Yet Proven" Items](#not-yet-proven-items) — the 5 launch-gate items.
+- [Vocabulary Boundary](#vocabulary-boundary-no-rgb-etc) — terms RGK does **not** use.
 
 ---
 
@@ -17,15 +29,15 @@ the literal byte string used as a hash domain prefix. Treat these as
 
 | Tag | Where it appears | Source |
 | --- | --- | --- |
-| `"rgk:lineage"` | `lineage_id = H("rgk:lineage" \|\| genesis_outpoint_payload \|\| asset_id)` | [`docs/COVENANT-SPEC.md`](../../COVENANT-SPEC.md) |
-| `"rgk:receipt"` | `receipt_id = H("rgk:receipt" \|\| canonical_receipt_bytes)` | [`docs/RECEIPT-SPEC.md`](../../RECEIPT-SPEC.md), [`crates/rgk-core/src/commit.rs`](../../crates/rgk-core/src/commit.rs) |
-| `"rgk:asset:schema:v1_____________"` (`RGK_FUNGIBLE_ASSET_SCHEMA_ID`) | `schema_id` for the default fungible schema | [`crates/rgk-asset/src/lib.rs:111`](../../crates/rgk-asset/src/lib.rs) |
-| `"rgk:lane:graph-root:v1"` | Private lane graph root derivation | [`docs/LANE-CALCULUS.md`](../../LANE-CALCULUS.md) |
-| `"rgk:asset:allocation-transcript-amount:v1"` | Allocation transcript amount commitment | [`docs/ZK-BOUNDARY.md`](../../ZK-BOUNDARY.md) |
-| `"rgk:zk:allocation-audit-certificate:v1"` | ZK allocation-audit certificate envelope | [`docs/ZK-BOUNDARY.md`](../../ZK-BOUNDARY.md) |
-| `"rgk:aac1"` | Compact allocation-audit certificate envelope | [`docs/ZK-BOUNDARY.md`](../../ZK-BOUNDARY.md) |
-| `"rgk:policy-migration"` | Policy migration proof domain | [`docs/INTEGRATION.md`](../../INTEGRATION.md) |
-| `"rgk:replay-nonce-v1"` (sample) | Replay nonce derivation test fixture | [`tests/rgk-e2e/src/lib.rs:600`](../../tests/rgk-e2e/src/lib.rs) |
+| `"rgk:lineage"` | `lineage_id = H("rgk:lineage" \|\| genesis_outpoint_payload \|\| asset_id)` | [`docs/COVENANT-SPEC.md`](./../COVENANT-SPEC.md) |
+| `"rgk:receipt"` | `receipt_id = H("rgk:receipt" \|\| canonical_receipt_bytes)` | [`docs/RECEIPT-SPEC.md`](./../RECEIPT-SPEC.md), [`crates/rgk-core/src/commit.rs`](./../../crates/rgk-core/src/commit.rs) |
+| `"rgk:asset:schema:v1_____________"` (`RGK_FUNGIBLE_ASSET_SCHEMA_ID`) | `schema_id` for the default fungible schema | [`crates/rgk-asset/src/lib.rs:111`](./../../crates/rgk-asset/src/lib.rs) |
+| `"rgk:lane:graph-root:v1"` | Private lane graph root derivation | [`docs/LANE-CALCULUS.md`](./../LANE-CALCULUS.md) |
+| `"rgk:asset:allocation-transcript-amount:v1"` | Allocation transcript amount commitment | [`docs/ZK-BOUNDARY.md`](./../ZK-BOUNDARY.md) |
+| `"rgk:zk:allocation-audit-certificate:v1"` | ZK allocation-audit certificate envelope | [`docs/ZK-BOUNDARY.md`](./../ZK-BOUNDARY.md) |
+| `"rgk:aac1"` | Compact allocation-audit certificate envelope | [`docs/ZK-BOUNDARY.md`](./../ZK-BOUNDARY.md) |
+| `"rgk:policy-migration"` | Policy migration proof domain | [`docs/INTEGRATION.md`](./../INTEGRATION.md) |
+| `"rgk:replay-nonce-v1"` (sample) | Replay nonce derivation test fixture | [`tests/rgk-e2e/src/lib.rs:600`](./../../tests/rgk-e2e/src/lib.rs) |
 
 > **Rule of thumb.** If you see a string literal starting with `"rgk:` in
 > the source, it is a domain-separated tag. Treat changes to it as
@@ -35,7 +47,7 @@ the literal byte string used as a hash domain prefix. Treat these as
 
 ## Hot-Path Types
 
-The 14 RGK-native types you will see repeatedly. Source: [`docs/LANE-CALCULUS.md` §Native Asset Grammar](../../LANE-CALCULUS.md) and the recon.
+The 14 RGK-native types you will see repeatedly. Source: [`docs/LANE-CALCULUS.md` §Native Asset Grammar](./../LANE-CALCULUS.md) and the recon.
 
 | Type | Crate | What it represents |
 | --- | --- | --- |
@@ -55,7 +67,7 @@ The 14 RGK-native types you will see repeatedly. Source: [`docs/LANE-CALCULUS.md
 | `RgkResolver` | `rgk-resolver` | The 13-state native resolver. |
 
 Plus three lane-discovery primitives (see
-[`docs/LANE-CALCULUS.md` §Discovery](../../LANE-CALCULUS.md)):
+[`docs/LANE-CALCULUS.md` §Discovery](./../LANE-CALCULUS.md)):
 
 | Type | What it represents |
 | --- | --- |
@@ -67,7 +79,7 @@ Plus three lane-discovery primitives (see
 
 ## Resolver States (the 13 hard outcomes)
 
-Source: [`crates/rgk-resolver/src/lib.rs:42-108`](../../crates/rgk-resolver/src/lib.rs). See [Concepts / Resolver](./Concepts/Resolver.md) for the full worked treatment.
+Source: [`crates/rgk-resolver/src/lib.rs:42-108`](./../../crates/rgk-resolver/src/lib.rs). See [Concepts / Resolver](./Concepts/Resolver.md) for the full worked treatment.
 
 `Open`, `NativeTransitionedValid`, `NativeTransitionedInvalid`, `Unconfirmed`,
 `ReorgRisk`, `CompetingBranch`, `PolicyMigrationRequired`, `ReplayRejected`,
@@ -84,10 +96,10 @@ rule, not a missing enum variant.
 
 These are the six fixed allocation-vector shapes for which Groth16
 allocation proofs are produced and verified end-to-end. They are listed
-in [`docs/ZK-BOUNDARY.md`](../../ZK-BOUNDARY.md) and
-[`docs/ARCHITECTURE.md`](../../ARCHITECTURE.md), and the human-readable
+in [`docs/ZK-BOUNDARY.md`](./../ZK-BOUNDARY.md) and
+[`docs/ARCHITECTURE.md`](./../ARCHITECTURE.md), and the human-readable
 form is the constant
-[`docs/audits/public-api-surface.md`](../../audits/public-api-surface.md)
+[`docs/audits/public-api-surface.md`](./../audits/public-api-surface.md)
 line 653:
 
 ```rust
@@ -117,7 +129,7 @@ certificates** (`RgkProductionAllocationStrategyRecord`). See
 ## Proof Policies
 
 The three `RgkProofPolicy` variants
-([`crates/rgk-asset/src/native.rs:455-468`](../../crates/rgk-asset/src/native.rs)):
+([`crates/rgk-asset/src/native.rs:455-468`](./../../crates/rgk-asset/src/native.rs)):
 
 | Variant | What it commits to |
 | --- | --- |
@@ -136,7 +148,7 @@ The three `RgkProofPolicy` variants
 The policy commitment `RgkProofPolicy::commitment() -> RgkPolicyCommitment`
 binds the chosen policy into state — **proof policy is part of RGK state**.
 Downgrading to an unconstrained `image_id` is rejected. The validation
-rules are at [`crates/rgk-asset/src/native.rs:470-507`](../../crates/rgk-asset/src/native.rs).
+rules are at [`crates/rgk-asset/src/native.rs:470-507`](./../../crates/rgk-asset/src/native.rs).
 
 ---
 
@@ -167,15 +179,15 @@ consensus-level review.**
 ## "Not Yet Proven" Items
 
 The same five-ish items appear in
-[`docs/SECURITY.md`](../../SECURITY.md),
-[`docs/ZK-BOUNDARY.md`](../../ZK-BOUNDARY.md),
-[`docs/ROADMAP.md`](../../ROADMAP.md),
-[`docs/MAINNET-LAUNCH.md`](../../MAINNET-LAUNCH.md), and
-[`docs/E2E.md`](../../E2E.md). The wiki canonicalises them here:
+[`docs/SECURITY.md`](./../SECURITY.md),
+[`docs/ZK-BOUNDARY.md`](./../ZK-BOUNDARY.md),
+[`docs/ROADMAP.md`](./../ROADMAP.md),
+[`docs/MAINNET-LAUNCH.md`](./../MAINNET-LAUNCH.md), and
+[`docs/E2E.md`](./../E2E.md). The wiki canonicalises them here:
 
 1. **Public testnet operation.** The launch audit's strict mode remains
    non-zero until `public_testnet_funded_report=ok`. See
-   [`Runbook / Launch Gates`](../Runbook/Launch-Gates.md).
+   [`Runbook / Launch Gates`](./../Runbook/Launch-Gates.md).
 2. **Single recursive Groth16 proof for arbitrary-size allocation
    vectors.** Larger transfers use segmented allocation-audit certificates
    instead. See [Concepts / Production Allocation Strategy](./Concepts/Production-Allocation-Strategy.md).
@@ -192,7 +204,7 @@ The same five-ish items appear in
 ## Vocabulary Boundary (no `rgb*` etc.)
 
 The verify script
-[`scripts/verify-native-terminology.sh`](../../scripts/verify-native-terminology.sh)
+[`scripts/verify-native-terminology.sh`](./../../scripts/verify-native-terminology.sh)
 asserts that no `rgb*` legacy vocabulary, "outpoint seal", `cell`, `aluvm`,
 `tapret`, `opret`, `consignment`, `argent`, or `strict-types` strings
 appear in the public workspace surface. This is enforced on every CI run.
@@ -201,12 +213,12 @@ appear in the public workspace surface. This is enforced on every CI run.
 
 ## Cross-references
 
-- [`docs/LANE-CALCULUS.md`](../../LANE-CALCULUS.md) — hot-path types.
-- [`docs/COVENANT-SPEC.md`](../../COVENANT-SPEC.md) — covenant payload.
-- [`docs/RECEIPT-SPEC.md`](../../RECEIPT-SPEC.md) — receipt invariants.
-- [`docs/ZK-BOUNDARY.md`](../../ZK-BOUNDARY.md) — public-input sizes.
-- [`docs/VERIFICATION-BUDGET.md`](../../VERIFICATION-BUDGET.md) — bounded
+- [`docs/LANE-CALCULUS.md`](./../LANE-CALCULUS.md) — hot-path types.
+- [`docs/COVENANT-SPEC.md`](./../COVENANT-SPEC.md) — covenant payload.
+- [`docs/RECEIPT-SPEC.md`](./../RECEIPT-SPEC.md) — receipt invariants.
+- [`docs/ZK-BOUNDARY.md`](./../ZK-BOUNDARY.md) — public-input sizes.
+- [`docs/VERIFICATION-BUDGET.md`](./../VERIFICATION-BUDGET.md) — bounded
   objects.
-- [`docs/ROADMAP.md`](../../ROADMAP.md) — milestones and "removed track".
-- [`docs/API-DEPRECATION.md`](../../API-DEPRECATION.md) — pre-release vs
+- [`docs/ROADMAP.md`](./../ROADMAP.md) — milestones and "removed track".
+- [`docs/API-DEPRECATION.md`](./../API-DEPRECATION.md) — pre-release vs
   compat-tagged deprecation rules.

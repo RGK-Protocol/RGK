@@ -1,5 +1,14 @@
 # Concepts / Walletd Boundary
 
+!!! info "TL;DR"
+    `rgk-walletd` is a **local non-custodial HTTP daemon** — the Avato
+    browser frontend talks to it over HTTP on `127.0.0.1:8788`. It owns
+    local profile state, lock/unlock, and (forward) handoff to the
+    scanner / resolver / prover. **Out of scope today:** running its own
+    node, persisting secrets to disk, auto-discovering lanes, auto-staging
+    proofs, signing transactions, exposing `StealthLane`. Don't treat it
+    as production-ready.
+
 > **`rgk-walletd` is a local HTTP boundary, not a node, not a wallet
 > backend, not a prover service.** This page spells out what is in scope
 > today and what is explicitly out of scope.
@@ -10,6 +19,42 @@ The canonical source for this page is
 flags that `rgk-walletd` is a single `main.rs` with no `lib.rs` — it
 cannot be embedded as a library; the only way to talk to it is HTTP via
 the axum router.
+
+---
+
+## In Scope vs Out of Scope at a Glance
+
+```mermaid
+%%{init: {'theme': 'base', 'themeVariables': {
+  'primaryColor': '#49eacb', 'primaryTextColor': '#0a1f2e',
+  'primaryBorderColor': '#112233', 'lineColor': '#70C7BA',
+  'fontFamily': 'Inter, system-ui, sans-serif'
+}}}%%
+flowchart LR
+    subgraph in["In scope today"]
+        A[Profile state]
+        B[Lock / unlock cycle]
+        C[Lane registration]
+        D[Manual proof staging]
+        E[Receipt path]
+        F[Kaspa endpoint config]
+    end
+    subgraph out["Out of scope today"]
+        G[Own Kaspa node]
+        H[Persist secrets]
+        I[Auto-discover lanes]
+        J[Auto-stage proofs]
+        K[Sign transactions]
+        L[StealthLane]
+    end
+
+    style in fill:#A9F2E1,stroke:#112233,color:#0a1f2e
+    style out fill:#fff8e1,stroke:#FFB300,color:#231F20
+```
+
+The green side is what you can ship today. The amber side is "future
+handoff" — the underlying crates work, but `rgk-walletd` does not yet
+expose them as separate services.
 
 ---
 

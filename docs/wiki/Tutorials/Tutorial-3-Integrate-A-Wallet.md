@@ -1,5 +1,11 @@
 # Tutorial 3 — Integrate a Wallet
 
+!!! info "At a glance"
+    **Difficulty:** Advanced · **Time:** 45 min · **Code required:** Rust ·
+    **You'll implement:** the 7-step Issue and 10-step Transfer procedures
+    a wallet must implement, plus private-lane discovery, policy migration,
+    and advanced covenant flows.
+
 > **Read time:** ~45 minutes. **Code-first.** The 7-step Issue and 10-step
 > Transfer procedures a wallet must implement, lifted from
 > [`docs/INTEGRATION.md`](../../INTEGRATION.md) and made concrete.

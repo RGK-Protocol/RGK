@@ -1,11 +1,42 @@
 # Concepts / Bounded Objects
 
+!!! info "TL;DR"
+    Every wire object is **32 bytes** (or a canonical `MAX_BLOB_BYTES`). The
+    32-byte invariant is not arbitrary — it's what makes the resolver
+    bounded, the verifier `no_std`-friendly, and the ZK public-input byte
+    counts aligned to BN254 field elements. Change a bound and you break
+    consensus; treat `32` as load-bearing.
+
 > **Every wire object is 32 bytes (or a canonical `MAX_BLOB_BYTES`).**
 > This is not arbitrary. The 32-byte invariant is what makes the resolver
 > bounded, the verifier no_std-friendly, and the chain lean.
 
 This page lifts the table from [`docs/VERIFICATION-BUDGET.md`](../../VERIFICATION-BUDGET.md)
 into tutorial form and explains why each bound exists.
+
+---
+
+## Why 32 Bytes? (at a glance)
+
+```mermaid
+%%{init: {'theme': 'base', 'themeVariables': {
+  'primaryColor': '#49eacb', 'primaryTextColor': '#0a1f2e',
+  'primaryBorderColor': '#112233', 'lineColor': '#70C7BA',
+  'fontFamily': 'Inter, system-ui, sans-serif'
+}}}%%
+flowchart LR
+    A["Domain separation<br/>8+ bytes headroom per concept"] --> B["32 bytes<br/>per wire object"]
+    C["BN254 field element<br/>exactly 32 bytes"] --> B
+    D["Bounded verifier cost<br/>no dynamic allocation"] --> B
+
+    B --> E["Bounded resolver"]
+    B --> F["no_std verifier"]
+    B --> G["Toccata precompile<br/>aligned public inputs"]
+
+    style B fill:#fff8e1,stroke:#FFB300,color:#231F20
+```
+
+Three forces converge on the same number. Each is load-bearing.
 
 ---
 

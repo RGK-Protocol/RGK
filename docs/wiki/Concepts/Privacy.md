@@ -1,5 +1,13 @@
 # Concepts / Privacy
 
+!!! info "TL;DR"
+    `LanePrivacyPolicy::PrivateLane` is the **default** — opaque commitments
+    to outside observers. `PublicLineage` is opt-in (issuers wanting
+    explorers to see balances). `StealthLane` is reserved (tag `0x02`,
+    `exposes_public_fields = false`) but **not yet wired** end-to-end —
+    no live example exists, and `rgk-walletd`'s `PrivacyMode` enum omits it.
+    Don't advertise stealth as production-ready.
+
 > **Private by default. The default variant is `PrivateLane`.**
 > `PublicLineage` is opt-in. `StealthLane` is reserved but not yet wired
 > end-to-end.

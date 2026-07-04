@@ -12,6 +12,38 @@ The recon sweep covered every file in `/Users/arthur/RustroverProjects/rgk/docs/
 (including the `audits/` subdirectory) plus the repo-level context files
 `README.md` and `CHANGELOG.md`.
 
+## TL;DR
+
+- **19 files mapped**: 14 docs in `docs/` + `audits/public-api-surface.md`
+  + 4 reference wrappers. Each tagged by tutorial fit
+  (`tutorial-shaped` / `canonical-source` / `reference-shaped`).
+- **9 gaps identified** — every one is now filled by a wiki page
+  (`Tutorial-0`, `Concepts/Continuation`, `Concepts/Identity`, `Concepts/Resolver`,
+  `Concepts/Privacy`, `Concepts/Walletd-Boundary`, `Concepts/Funding`,
+  `Concepts/Production-Allocation-Strategy`, `Glossary`).
+- **12 contradictions / staleness items** tracked in the
+  [§Contradictions / staleness](#contradictions--staleness) section below.
+  The most load-bearing: the `1x0, 1x1, 2x2, 3x2, 4x2, 4x4` shape set is
+  duplicated across 6+ docs; the wiki binds it to a single glossary entry.
+- **`rgk-walletd` is the biggest drift** — present in `Cargo.toml` and
+  `README.md` but missing from `ARCHITECTURE.md` and `INTRODUCTION.md`.
+  The wiki fixes this in `Concepts/Architecture.md`.
+
+## How to Use This File
+
+1. **Read the TL;DR above.** If you need more, the [File Index](#file-index)
+   maps every `docs/` file to a wiki target.
+2. **The [`§Gaps`](#gaps) section is the wiki shopping list.** If a gap is
+   not filled yet, this file is the source of truth.
+3. **The [`§Contradictions / staleness`](#contradictions--staleness) section
+   is the drift register.** Before quoting the wiki anywhere, check whether
+   your claim is on this list.
+4. **The [`§Cross-cutting risk`](#cross-cutting-risk-where-tutorial-writers-should-be-most-careful)
+   section flags the highest-drift surfaces** that should be treated as
+   "versioned, cite the date".
+
+---
+
 ---
 
 ## File index
@@ -1428,7 +1460,7 @@ no current `docs/` file is dedicated.
    `COVENANT-SPEC.md`, `RECEIPT-SPEC.md`, `LANE-CALCULUS.md`, and
    `ZK-BOUNDARY.md`.
 
-### Contradictions / staleness
+### Contradictions / staleness {#contradictions--staleness}
 
 This is the drift register. Each item is something a tutorial writer must
 either canonicalise, version-pin, or teach the reader to verify.

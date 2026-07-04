@@ -1,5 +1,15 @@
 # Concepts / Resolver
 
+!!! info "TL;DR"
+    The `RgkResolver` is the native state machine that classifies every
+    covenant into one of **13 hard-defined outcomes** — no `OptimisticValid`,
+    no `SoftInvalid`, no `Pending`. After a spend is confirmed at
+    `confirmation_depth >= reorg_safety_depth`, the resolver returns
+    `NativeTransitionedValid` and the receipt is accepted; any structural
+    mismatch (receipt, continuation proof, replay, policy migration)
+    returns a specific `*Invalid` / `Rejected` / `MigrationRequired`
+    variant. No silent failures.
+
 > **The resolver is the native state machine that classifies every covenant
 > into one of 13 hard-defined outcomes. There is no `OptimisticValid`. There
 > is no `SoftInvalid`. Every variant means exactly one thing.**

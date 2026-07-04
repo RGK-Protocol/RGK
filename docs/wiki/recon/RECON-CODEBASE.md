@@ -5,15 +5,43 @@
 > certain way, it should look the way this file says it does. Drift notes are
 > at the bottom.
 
-- **Repo root**: `/Users/arthur/RustroverProjects/rgk`
-- **Cargo workspace** (`Cargo.toml:1`): 12 members (11 crates + 1 e2e test crate).
-- **Toolchain** (`Cargo.toml:20`): `edition = "2021"`, `rust-version = "1.82"`.
-- **Encoding version** (`rgk-core/src/lib.rs:32`): `ENCODING_VERSION` — bumping
-  is a breaking change.
-- **No unsafe** in the workspace; every crate sets `#![forbid(unsafe_code)]`
-  (e.g. `rgk-core/src/lib.rs:34`, `rgk-receipt/src/lib.rs:34`,
-  `rgk-resolver/src/lib.rs:17`, `rgk-tx/src/lib.rs:33`,
-  `rgk-walletd/src/main.rs:1`, `rgk-sync/src/lib.rs:12`).
+## TL;DR
+
+- **12 workspace members** (11 crates + 1 e2e test crate); **no `unsafe`**;
+  `edition = "2021"`, `rust-version = "1.82"`.
+- **Encoding version** is a consensus-level constant: `ENCODING_VERSION` at
+  `rgk-core/src/lib.rs:32`. Bumping it is a breaking change.
+- **5-layer architecture** (native grammar → CSV → covenant → indexer → resolver)
+  + `rgk-walletd` on top.
+- **14 hot-path RGK types** (see [`../Glossary.md`](../Glossary.md#hot-path-types))
+  are the canonical API surface. Every tutorial and concept page is anchored
+  on `file:line` references to these types.
+- **13-variant `ResolverState`** with no `OptimisticValid` / `SoftInvalid`
+  (design rule, not missing enum).
+- **6 supported Groth16 allocation shapes**: `1x0, 1x1, 2x2, 3x2, 4x2, 4x4`.
+- **20 drift notes** at the bottom of this file — read them before quoting
+  the wiki anywhere.
+
+## At a Glance
+
+| | |
+| --- | --- |
+| **Repo root** | `/Users/arthur/RustroverProjects/rgk` |
+| **Cargo workspace** (`Cargo.toml:1`) | 12 members (11 crates + 1 e2e test crate). |
+| **Toolchain** (`Cargo.toml:20`) | `edition = "2021"`, `rust-version = "1.82"`. |
+| **Encoding version** (`rgk-core/src/lib.rs:32`) | `ENCODING_VERSION` — bumping is a breaking change. |
+| **No unsafe** in the workspace | every crate sets `#![forbid(unsafe_code)]` (e.g. `rgk-core/src/lib.rs:34`, `rgk-receipt/src/lib.rs:34`, `rgk-resolver/src/lib.rs:17`, `rgk-tx/src/lib.rs:33`, `rgk-walletd/src/main.rs:1`, `rgk-sync/src/lib.rs:12`). |
+
+## How to Use This File
+
+1. **Read the TL;DR** above. If you need more, jump to the relevant section.
+2. **Quote with the line number.** Every claim is `file:line`-pinned.
+3. **Check the [Drift Notes](#drift-notes) at the bottom** before treating
+   anything in the wiki as authoritative.
+4. **Cross-check against [`../Glossary.md`](../Glossary.md)** for the
+   canonical term definitions.
+
+---
 
 ---
 

@@ -1,5 +1,10 @@
 # Tutorial 2 — Build, Verify, and Resolve a Receipt
 
+!!! info "At a glance"
+    **Difficulty:** Intermediate · **Time:** 30 min · **Code required:** Rust ·
+    **You'll build:** a phase-1 plan, a phase-2 transition, an `RgkReceipt`,
+    and a resolver classification of `NativeTransitionedValid`.
+
 > **Read time:** ~30 minutes. **Runnable.** You will build a phase-1 plan,
 > finalize it as a transition, build the `RgkReceipt`, verify it locally,
 > then resolve it against the indexer.
@@ -7,6 +12,35 @@
 This tutorial is the canonical "issuance → receipt → resolver"
 walkthrough. It is the smallest end-to-end story that touches every layer
 of the architecture.
+
+---
+
+## What You'll Build
+
+A single RGK asset that goes through the full pipeline:
+
+```mermaid
+%%{init: {'theme': 'base', 'themeVariables': {
+  'primaryColor': '#49eacb', 'primaryTextColor': '#0a1f2e',
+  'primaryBorderColor': '#112233', 'lineColor': '#70C7BA',
+  'fontFamily': 'Inter, system-ui, sans-serif'
+}}}%%
+flowchart LR
+    A[1. Issue<br/>RgkAssetIssue] --> B[2. Plan<br/>RgkContinuationPlan]
+    B --> C[3. Sign + broadcast]
+    C --> D[4. Finalize<br/>RgkFinalizedContinuation]
+    D --> E[5. Receipt<br/>RgkReceipt]
+    E --> F[6. Verify locally]
+    F --> G[7. Apply spend to indexer]
+    G --> H[8. Resolve<br/>NativeTransitionedValid]
+
+    style A fill:#49eacb,stroke:#112233,color:#0a1f2e
+    style H fill:#fff8e1,stroke:#FFB300,color:#231F20
+```
+
+You can read this top-to-bottom without writing code, but each step has
+a `file:line` snippet you can paste into `cargo test` to drive it
+yourself.
 
 ---
 

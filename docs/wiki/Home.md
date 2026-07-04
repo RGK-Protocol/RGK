@@ -8,9 +8,62 @@
 
 ---
 
-## 30-Second Orientation
+## What This Site Is
 
-If you have 30 seconds, here is the elevator pitch:
+The navigation + tutorial surface for the RGK protocol. It sits between
+two other surfaces:
+
+- The **long-form narrative intro** lives in
+  [`Quant Dev / INTRODUCTION.md`](https://github.com/a19q3/quant-dev/blob/main/INTRODUCTION.md)
+  (1160 lines, 14 mermaid diagrams, philosophy + privacy scenarios + the
+  RGK + Kurrent channel roadmap).
+- The **canonical technical specs** live in
+  [`docs/`](https://github.com/RGK-Protocol/RGK/tree/main/docs) (Receipt
+  Spec, Lane Calculus, Threat Model, etc.).
+
+This wiki is the **third surface**: it tells you which surface to read,
+when, and in what order. It does not duplicate the other two.
+
+---
+
+## The 60-Second Mental Model
+
+```mermaid
+%%{init: {'theme': 'base', 'themeVariables': {
+  'primaryColor': '#49eacb',
+  'primaryTextColor': '#0a1f2e',
+  'primaryBorderColor': '#112233',
+  'lineColor': '#70C7BA',
+  'secondaryColor': '#A9F2E1',
+  'tertiaryColor': '#f0fdfa',
+  'fontFamily': 'Inter, system-ui, sans-serif'
+}}}%%
+flowchart LR
+    classDef chain fill:#112233,stroke:#49eacb,color:#A9F2E1,stroke-width:2px
+    classDef client fill:#49eacb,stroke:#112233,color:#0a1f2e,stroke-width:2px
+    classDef judge fill:#fff8e1,stroke:#FFB300,color:#231F20,stroke-width:2px
+
+    W["Wallet<br/>issues, plans, signs"]:::client
+    C["Kaspa Toccata<br/>covenant lineage"]:::chain
+    R["Resolver<br/>13-state classifier"]:::judge
+
+    W -- "covenant spend" --> C
+    C -- "observed spend" --> R
+    W -- "receipt + continuation proof" --> R
+    R -- "Valid / Invalid / Replay / Reorg" --> W
+
+    style W font-weight:600
+    style C font-weight:600
+    style R font-weight:600
+```
+
+Three actors. The chain is a notary. The wallet is a judge. The resolver
+is the judge's verdict. **No single actor can lie about the asset's
+state.**
+
+---
+
+## 30-Second Orientation
 
 | Question | Answer |
 | --- | --- |
@@ -19,7 +72,7 @@ If you have 30 seconds, here is the elevator pitch:
 | What does the chain store? | One small covenant payload per lineage output — *opaque commitments*, not plaintext balances. |
 | What about privacy? | **Private by default.** Outside observers see commitments; only the view-key holder sees their lane. |
 | Where do I start? | [Tutorial-0: 10-Minute Fixture Walkthrough](./Tutorials/Tutorial-0-10-Minute-Fixture-Walkthrough.md) — no node required. |
-| Long-form intro? | [`Quant Dev / INTRODUCTION.md`](https://github.com/a19q3/quant-dev/blob/main/INTRODUCTION.md) — the narrative version (1160 lines, 14 diagrams). |
+| Long-form intro? | [`Quant Dev / INTRODUCTION.md`](https://github.com/a19q3/quant-dev/blob/main/INTRODUCTION.md) — the narrative version. |
 
 ---
 

@@ -1,5 +1,10 @@
 # Tutorial 1 — What RGK Actually Is
 
+!!! info "At a glance"
+    **Difficulty:** Beginner · **Time:** 20 min · **Code required:** No ·
+    **You'll read:** the philosophy, the lineage-first identity, the
+    chain-as-notary stance — and why RGK differs from RGB.
+
 > **Read time:** ~20 minutes. **No code required.** This is the philosophy
 > layer; it explains *why* RGK is shaped the way it is.
 

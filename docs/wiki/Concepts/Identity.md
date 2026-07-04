@@ -1,5 +1,13 @@
 # Concepts / Identity
 
+!!! info "TL;DR"
+    The asset's **real** identity is the **covenant lineage**, not an
+    external contract id. `asset_id` is a wallet-friendly **label** derived
+    from the issue's commitments; `lineage_id` is the on-chain identity that
+    binds the genesis outpoint to that label. Faking the label doesn't forge
+    the lineage — two issues with the same `asset_id` but different genesis
+    outpoints have different `lineage_id`s.
+
 > **The asset's real identity is the covenant lineage, not an external
 > contract id.** `asset_id` is native label material committed into the
 > lineage, not the primary identity.
@@ -7,6 +15,35 @@
 This page pulls together the lineage formula, the `asset_id` derivation, the
 provenance of the byte types, and the answer to the most common question:
 "if `asset_id` is just a hash, can't I mint two assets with the same id?"
+
+---
+
+## The Two Identities at a Glance
+
+```mermaid
+%%{init: {'theme': 'base', 'themeVariables': {
+  'primaryColor': '#49eacb', 'primaryTextColor': '#0a1f2e',
+  'primaryBorderColor': '#112233', 'lineColor': '#70C7BA',
+  'fontFamily': 'Inter, system-ui, sans-serif'
+}}}%%
+flowchart TB
+    subgraph L["asset_id (label) — wallet / explorer display"]
+        A["H(supply + commitments + allocations<br/>+ lane + privacy + proof)"]
+    end
+    subgraph R["lineage_id (identity) — on-chain covenant payload"]
+        B["H('rgk:lineage' || genesis_outpoint_payload || asset_id)"]
+    end
+
+    A -->|"committed into"| B
+    B -->|"anchored to"| G["genesis covenant UTXO<br/>(transaction_id, index)"]
+
+    style A fill:#49eacb,stroke:#112233,color:#0a1f2e
+    style B fill:#fff8e1,stroke:#FFB300,color:#231F20
+    style G fill:#112233,stroke:#49eacb,color:#A9F2E1
+```
+
+Two hashes, two roles. The label is what humans see; the lineage is what
+the chain commits to.
 
 ---
 

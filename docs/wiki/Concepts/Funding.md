@@ -1,5 +1,13 @@
 # Concepts / Funding
 
+!!! info "TL;DR"
+    **Target network: `testnet-12`** (not `testnet-10`). Seven steps:
+    print address → generate wallet set → preflight → funding-readiness
+    check → fund the address → resume → verify. The frozen snapshot
+    (`wallet_set_id`, `preflight_id`, funding address, value limits) is
+    pinned in `TESTNET-STAGING-REPORT.md`. **Never** send mainnet KAS to
+    the testnet funding address; the snapshot is testnet-only by design.
+
 > **The funding flow is split across four docs.** This page gives you the
 > single happy-path: wallet set → preflight → funding-readiness → full
 > lifecycle.
@@ -15,6 +23,33 @@ The information lives, fragmented, in:
 - [`docs/MAINNET-LAUNCH.md`](../../MAINNET-LAUNCH.md) — launch-gate rules.
 
 This page stitches them together.
+
+---
+
+## The 7-Step Happy Path at a Glance
+
+```mermaid
+%%{init: {'theme': 'base', 'themeVariables': {
+  'primaryColor': '#49eacb', 'primaryTextColor': '#0a1f2e',
+  'primaryBorderColor': '#112233', 'lineColor': '#70C7BA',
+  'fontFamily': 'Inter, system-ui, sans-serif'
+}}}%%
+flowchart LR
+    A["1. Print<br/>funding address"] --> B["2. Generate<br/>wallet set"]
+    B --> C["3. Preflight<br/>(read-only)"]
+    C --> D["4. Funding-readiness<br/>(read-only, no funds)"]
+    D --> E["5. Send testnet KAS<br/>(fund the address)"]
+    E --> F["6. Resume<br/>staging run"]
+    F --> G["7. Verify<br/>evidence"]
+
+    style A fill:#49eacb,stroke:#112233,color:#0a1f2e
+    style E fill:#fff8e1,stroke:#FFB300,color:#231F20
+    style G fill:#49eacb,stroke:#112233,color:#0a1f2e
+```
+
+Steps 1, 3, 4, 7 are read-only — they don't move funds. Steps 5, 6 are
+the only ones that touch the network. Step 7 produces the
+`public_testnet_funded_report=ok` line that the launch audit consumes.
 
 ---
 

@@ -1,5 +1,13 @@
 # Concepts / Production Allocation Strategy
 
+!!! info "TL;DR"
+    Three paths. **Fixed Groth16** is the hot path for `1x0, 1x1, 2x2, 3x2,
+    4x2, 4x4` shapes (cost: ~2312 VK + 128-byte proof). **Segmented audit
+    certificates** are the fallback for shapes > 4×4 (cost grows as
+    `2*(spent+new) + 1 + spent*new`). **Fail-closed** rejects everything
+    else. Never describe segmented audit as one recursive proof — until
+    RGK has a native RISC0 prover, segmented audit is what we have.
+
 > **Use fixed Groth16 allocation proofs whenever the transfer shape is one
 > of the six supported shapes. Use segmented allocation-audit certificates
 > for larger conserving full-state transfers. Never describe segmented
